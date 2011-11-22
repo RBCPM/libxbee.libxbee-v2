@@ -21,9 +21,10 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "listen.h"
+#include "internal.h"
+
 /* xbee_s1.[ch] */
-extern struct xbee_pktHandler *pktHandler_s1;
+extern struct xbee_mode xbee_mode_s1;
 
 #endif /* __XBEE_S1_H */
 

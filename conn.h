@@ -1,5 +1,5 @@
-#ifndef __XBEE_LISTEN_H
-#define __XBEE_LISTEN_H
+#ifndef __XBEE_CONN_H
+#define __XBEE_CONN_H
 
 /*
   libxbee - a C library to aid the use of Digi's Series 1 XBee modules
@@ -21,12 +21,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "ll.h"
+struct xbee_conType *xbee_conFromID(struct xbee_conType *conTypes, unsigned char ID);
 
-#define XBEE_LISTEN_RESTART_DELAY 25
-#define XBEE_LISTEN_BUFLEN        1024
-
-void xbee_listen(struct xbee *xbee);
-
-#endif /* __XBEE_LISTEN_H */
+#endif /* __XBEE_CONN_H */
 

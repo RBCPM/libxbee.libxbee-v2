@@ -23,6 +23,8 @@
 
 #include "xbee.h"
 
+/* ######################################################################### */
+
 struct xbee_device {
 	char *path;
 	int fd;
@@ -32,13 +34,69 @@ struct xbee_device {
 };
 
 struct xbee {
+	int running;
 	struct xbee_device device;
 	int run;
+	struct xbee_mode *mode;
 };
 
-struct xbee_pktList {
-	struct xbee_pkt **pktist;
-	int numPackets;
+/* ######################################################################### */
+
+struct bufData {
+	int len;
+	unsigned char buf[1];
+};
+
+/* functions are given:
+		xbee    the 'master' libxbee struct
+		buf			is a double pointer so that:
+							Tx functions may return the packet
+							Rx functions may take charge of the packet (setting *buf = NULL will prevent libxbee from free'ing buf)
+*/
+struct xbee_pktHandler;
+typedef int(*xbee_pktHandlerFunc)(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf);
+
+/* ADD_HANDLER(packetID, dataStarts, functionName) */
+#define ADD_HANDLER(a, b) \
+	{ (a), (#b), (b), NULL }
+#define ADD_HANDLER_TERMINATOR() \
+	{ 0, NULL, NULL, NULL }
+
+/* a NULL handler indicates the end of the list */
+struct xbee_pktHandler  {
+	unsigned char id;
+	char *handlerName; /* used for debug output, identifies handler function */
+	xbee_pktHandlerFunc handler;
+	void *listenData; /* used by listen thread (listen.c) */
+	struct xbee_conType *con;
+};
+
+/* ADD_TYPE_RXTX(rxID, txID, name) */
+#define ADD_TYPE_RXTX(a, b, c) \
+	{ 1, (a), 1, (b), (c),  NULL }
+#define ADD_TYPE_RX(a, b) \
+	{ 1, (a), 0,  0 , (b),  NULL }
+#define ADD_TYPE_TX(a, b) \
+	{ 0,  0,  1, (a), (b),  NULL }
+#define ADD_TYPE_TERMINATOR() \
+	{ 0,  0,  0,  0 , NULL, NULL }
+
+/* a NULL name indicates the end of the list */
+struct xbee_conType {
+	unsigned char rxEnabled;
+	unsigned char rxID;
+	unsigned char txEnabled;
+	unsigned char txID;
+	char *name;
+	void *data;
+	struct ll_head *rxList;
+	struct ll_head *txList;
+};
+
+struct xbee_mode {
+	struct xbee_pktHandler *pktHandlers;
+	struct xbee_conType *conTypes;
+	char *name;
 };
 
 #endif /* __XBEE_INTERNAL_H */

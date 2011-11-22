@@ -4,7 +4,7 @@ LIBMIN:=0
 LIBREV:=0
 
 BUILDDIR:=.build
-SRCS:=io listen ll
+SRCS:=io listen ll xbee_s1 xbee_s2 xbee_sG conn mode
 LIBS:=rt pthread
 
 GCC:=gcc
@@ -34,7 +34,7 @@ $(LIBOUT).so: $(addprefix $(BUILDDIR)/,$(addsuffix .o,$(SRCS)))
 #	mkdir -p $@
 
 #$(BUILDDIR)/%.o: $(BUILDDIR)/ $(BUILDDIR)/%.d %.c
-$(BUILDDIR)/%.o: $(BUILDDIR)/%.d %.c
+$(BUILDDIR)/%.o: %.c
 	$(GCC) $(CFLAGS) $(filter %.c,$^) -o $@
 
 #$(BUILDDIR)/%.d: $(BUILDDIR)/ %.c

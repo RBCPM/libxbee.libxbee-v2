@@ -33,6 +33,8 @@
 #define XBEE_ESEMAPHORE                                     -9
 #define XBEE_ELINKEDLIST                                   -10
 #define XBEE_EPTHREAD                                      -11
+#define XBEE_ENOXBEE                                       -12
+#define XBEE_EMISSINGPARAM                                 -13
 
 #endif /* __XBEE_ERRORS_H */
 

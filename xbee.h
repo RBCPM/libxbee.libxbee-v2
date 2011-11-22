@@ -24,9 +24,16 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+struct xbee;
+
 struct xbee_pkt {
 	unsigned char *data;
 };
+
+/* --- mode.c --- */
+char **xbee_getModes(void);
+char *xbee_getMode(struct xbee *xbee);
+int xbee_setMode(struct xbee *xbee, char *name);
 
 #endif /* __XBEE_H */
 

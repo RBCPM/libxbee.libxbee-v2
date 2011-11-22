@@ -19,23 +19,63 @@
 */
 
 #include "internal.h"
-#include "listen.h"
 #include "xbee_s2.h"
+#include "xbee_sG.h"
 
+int xbee_s2_txStatus(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf) { return 0; }
 
+int xbee_s2_dataRx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf) { return 0; }
+int xbee_s2_dataTx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf) { return 0; }
 
-struct xbee_pktHandler pktHandler_s2[] = {
-	ADD_HANDLER(0x88,   0, xbee_s2_localAt),
-	ADD_HANDLER(0x88,   0, xbee_s2_localAtReq),
-	ADD_HANDLER(0x88,   0, xbee_s2_localAtQueue),
+int xbee_s2_explicitRx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf) { return 0; }
+int xbee_s2_explicitTx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf) { return 0; }
 
-	ADD_HANDLER(0x88,   0, xbee_s2_remoteAt),
-	ADD_HANDLER(0x88,   0, xbee_s2_remoteAtReq),
+int xbee_s2_IO(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf) { return 0; }
+int xbee_s2_sensor(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf) { return 0; }
+int xbee_s2_identify(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf) { return 0; }
 
-	ADD_HANDLER(0x88,   0, xbee_s2_modemStatus),
+/* ######################################################################### */
 
-	ADD_HANDLER(0x88,   0, xbee_s2_txStatus),
-	ADD_HANDLER(0x88,   0, xbee_s2_dataTx),
-	ADD_HANDLER(0x88,   0, xbee_s2_dataRx)
+static struct xbee_conType conTypes[] = {
+	ADD_TYPE_RX  (0x8A,       "Modem Status"),
+	ADD_TYPE_RX  (0x8B,       "Transmit Status"),
+	
+	ADD_TYPE_RXTX(0x88, 0x08, "Local AT"),
+	ADD_TYPE_TX  (      0x09, "Local AT (queued)"),
+	
+	ADD_TYPE_RXTX(0x97, 0x17, "Remote AT"),
+	
+	ADD_TYPE_RXTX(0x90, 0x10, "Data"),
+	ADD_TYPE_RXTX(0x91, 0x11, "Data (explicit)"),
+	
+	ADD_TYPE_RX  (0x92,       "I/O"),
+	ADD_TYPE_RX  (0x94,       "Sensor"),
+	
+	ADD_TYPE_TERMINATOR()
 };
 
+static struct xbee_pktHandler pktHandlers[] = {
+	ADD_HANDLER(0x88, xbee_sG_localAtTx),
+	ADD_HANDLER(0x08, xbee_sG_localAtRx),
+	ADD_HANDLER(0x09, xbee_sG_localAtQueue),
+
+	ADD_HANDLER(0x97, xbee_sG_remoteAtTx),
+	ADD_HANDLER(0x17, xbee_sG_remoteAtRx), /* see page 62 of http://attie.co.uk/file/XBee2.5.pdf... hmm... */
+
+	ADD_HANDLER(0x8A, xbee_sG_modemStatus),
+	ADD_HANDLER(0x8B, xbee_s2_txStatus),
+
+	ADD_HANDLER(0x90, xbee_s2_dataRx),
+	ADD_HANDLER(0x10, xbee_s2_dataTx),
+	
+	ADD_HANDLER(0x91, xbee_s2_explicitRx),
+	ADD_HANDLER(0x11, xbee_s2_explicitTx),
+	
+	ADD_HANDLER(0x92, xbee_s2_IO),
+	ADD_HANDLER(0x94, xbee_s2_sensor),
+	ADD_HANDLER(0x95, xbee_s2_identify),
+	
+	ADD_HANDLER_TERMINATOR()
+};
+
+struct xbee_mode xbee_mode_s2 = { pktHandlers, conTypes, "series2" };

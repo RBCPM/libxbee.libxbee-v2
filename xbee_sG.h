@@ -1,5 +1,5 @@
-#ifndef __XBEE_LISTEN_H
-#define __XBEE_LISTEN_H
+#ifndef __XBEE_SG_H
+#define __XBEE_SG_H
 
 /*
   libxbee - a C library to aid the use of Digi's Series 1 XBee modules
@@ -21,12 +21,16 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "ll.h"
+extern struct xbee_mode *xbee_modes[];
 
-#define XBEE_LISTEN_RESTART_DELAY 25
-#define XBEE_LISTEN_BUFLEN        1024
+int xbee_sG_modemStatus(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf);
 
-void xbee_listen(struct xbee *xbee);
+int xbee_sG_localAtRx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf);
+int xbee_sG_localAtTx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf);
+int xbee_sG_localAtQueue(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf);
 
-#endif /* __XBEE_LISTEN_H */
+int xbee_sG_remoteAtRx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf);
+int xbee_sG_remoteAtTx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf);
+
+#endif /* __XBEE_SG_H */
 
