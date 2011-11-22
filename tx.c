@@ -34,10 +34,10 @@ int _xbee_tx(struct xbee *xbee) {
 void xbee_tx(struct xbee *xbee) {
 	int ret;
 	
-	while (xbee->run) {
+	while (xbee->running) {
 		ret = _xbee_tx(xbee);
 		xbee_log("_xbee_tx() returned %d\n", ret);
-		if (!xbee->run) break;
+		if (!xbee->running) break;
 		usleep(XBEE_TX_RESTART_DELAY * 1000);
 	}
 }

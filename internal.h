@@ -36,7 +36,6 @@ struct xbee_device {
 struct xbee {
 	int running;
 	struct xbee_device device;
-	int run;
 	struct xbee_mode *mode;
 	struct ll_head *txList; /* data is struct bufData */
 };

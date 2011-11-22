@@ -135,7 +135,7 @@ int _xbee_rx(struct xbee *xbee) {
 	if (!xbee) return XBEE_ENOXBEE;
 
 	buf = NULL;
-	while (xbee->run) {
+	while (xbee->running) {
 		ret = XBEE_ENONE;
 		if (!buf) {
 			/* there are a number of occasions where we don't need to allocate new memory,
@@ -231,10 +231,10 @@ done:
 void xbee_rx(struct xbee *xbee) {
 	int ret;
 	
-	while (xbee->run) {
+	while (xbee->running) {
 		ret = _xbee_rx(xbee);
 		xbee_log("_xbee_rx() returned %d\n", ret);
-		if (!xbee->run) break;
+		if (!xbee->running) break;
 		usleep(XBEE_RX_RESTART_DELAY * 1000);
 	}
 }
