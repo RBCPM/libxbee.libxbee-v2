@@ -22,13 +22,18 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "xbee_internal.h"
-#include "xbee_errors.h"
-#include "xbee_log.h"
-#include "xbee_io.h"
-#include "xbee_sx.h"
+#include "internal.h"
+#include "errors.h"
+#include "log.h"
+#include "io.h"
+#include "il.h"
+#include "listen.h"
 
 struct xbee_pktHandler *pktHandler = NULL;
+
+struct listenData {
+	struct xbee *xbee;
+};
 
 void _xbee_sx_listenHandler(struct xbee *xbee, unsigned char *buf, unsigned char buflen, struct xbee_pktList *pktList, unsigned char id) {
 	

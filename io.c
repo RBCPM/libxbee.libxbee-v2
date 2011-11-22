@@ -19,16 +19,17 @@
 */
 
 #include <stdio.h>
+#include <unistd.h>
 #include <string.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/types.h>
 
-#include "xbee_internal.h"
-#include "xbee_errors.h"
-#include "xbee_log.h"
-#include "xbee_xsys.h"
-#include "xbee_io.h"
+#include "internal.h"
+#include "errors.h"
+#include "log.h"
+#include "xsys.h"
+#include "io.h"
 
 int xbee_io_open(struct xbee *xbee) {
 	int fd;

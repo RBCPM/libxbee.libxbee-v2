@@ -18,9 +18,8 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "xbee_internal.h"
-
-#include "xbee_sx.h"
+#include "internal.h"
+#include "listen.h"
 #include "xbee_s2.h"
 
 

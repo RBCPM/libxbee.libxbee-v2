@@ -21,6 +21,8 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "listen.h"
+
 /* xbee_s2.[ch] */
 extern struct xbee_pktHandler *pktHandler_s2;
 

@@ -22,7 +22,6 @@
 */
 
 #include <stdio.h>
-#include <unistd.h>
 
 int xsys_open(char *path, int flags);
 int xsys_close(int fd);

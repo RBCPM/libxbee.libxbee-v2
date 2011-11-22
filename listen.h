@@ -1,5 +1,5 @@
-#ifndef __XBEE_SX_H
-#define __XBEE_SX_H
+#ifndef __XBEE_LISTEN_H
+#define __XBEE_LISTEN_H
 
 /*
   libxbee - a C library to aid the use of Digi's Series 1 XBee modules
@@ -32,8 +32,9 @@
 */
 typedef int(*xbee_pktHandlerFunc)(struct xbee *xbee, unsigned char *buf, unsigned char buflen, struct xbee_pktList *pktList);
 
+/* ADD_HANDLER(packetID, dataStarts, functionName) */
 #define ADD_HANDLER(a, b, c) \
-	{ (a), (b), (#c), (c) }
+	{ (a), (b), (#c), (c), NULL }
 
 /* a NULL handler indicates the end of the list */
 struct xbee_pktHandler  {
@@ -41,7 +42,8 @@ struct xbee_pktHandler  {
 	unsigned short dataStarts; /* used for debug output, adds  ' <-- data starts' */
 	unsigned char *handlerName; /* used for debug output, identifies handler function */
 	xbee_pktHandlerFunc handler;
+	void *data;
 };
 
-#endif /* __XBEE_SX_H */
+#endif /* __XBEE_LISTEN_H */
 

@@ -4,8 +4,8 @@ LIBMIN:=0
 LIBREV:=0
 
 BUILDDIR:=.build
-SRCS:=xbee_io xbee_sx
-LIBS:=
+SRCS:=io listen ll
+LIBS:=rt pthread
 
 GCC:=gcc
 
