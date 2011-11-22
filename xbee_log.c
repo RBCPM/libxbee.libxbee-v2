@@ -1,6 +1,3 @@
-#ifndef __XBEE_S1_H
-#define __XBEE_S1_H
-
 /*
   libxbee - a C library to aid the use of Digi's Series 1 XBee modules
             running in API mode (AP=2).
@@ -20,9 +17,4 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-
-/* xbee_s1.[ch] */
-extern struct xbee_pktHandler *pktHandler_s1;
-
-#endif /* __XBEE_S1_H */
 

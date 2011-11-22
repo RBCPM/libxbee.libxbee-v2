@@ -1,5 +1,5 @@
-#ifndef __XBEE_S1_H
-#define __XBEE_S1_H
+#ifndef __XBEE_ERRORS_H
+#define __XBEE_ERRORS_H
 
 /*
   libxbee - a C library to aid the use of Digi's Series 1 XBee modules
@@ -21,8 +21,14 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* xbee_s1.[ch] */
-extern struct xbee_pktHandler *pktHandler_s1;
+#define XBEE_ENONE                                           0
+#define XBEE_EUNKNOWN                                       -1
+#define XBEE_ENOMEM                                         -2
+#define XBEE_ESELECT                                        -3
+#define XBEE_ESELECTINTERRUPTED                             -4
+#define XBEE_EEOF                                           -5
+#define XBEE_EIORETRIES                                     -6
+#define XBEE_EOPENFAILED                                    -7
 
-#endif /* __XBEE_S1_H */
+#endif /* __XBEE_ERRORS_H */
 

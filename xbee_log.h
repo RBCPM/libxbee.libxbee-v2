@@ -1,5 +1,5 @@
-#ifndef __XBEE_S1_H
-#define __XBEE_S1_H
+#ifndef __XBEE_LOG_H
+#define __XBEE_LOG_H
 
 /*
   libxbee - a C library to aid the use of Digi's Series 1 XBee modules
@@ -21,8 +21,11 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* xbee_s1.[ch] */
-extern struct xbee_pktHandler *pktHandler_s1;
+#include <stdarg.h>
 
-#endif /* __XBEE_S1_H */
+void xbee_log(char *format, ...);
+void xbee_perror(char *message);
+void xbee_logsstderr(char *format, ...);
+
+#endif /* __XBEE_LOG_H */
 

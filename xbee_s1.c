@@ -18,12 +18,12 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "global.h"
+#include "xbee_internal.h"
 
 #include "xbee_sx.h"
 #include "xbee_s1.h"
 
-int xbee_s1_localAt(struct xbee *xbee, unsigned char *buf, unsigned char buflen, xbee_pktList *pktList, unsigned char id) {
+int xbee_s1_localAt(struct xbee *xbee, unsigned char *buf, unsigned char buflen, xbee_pktList *pktList) {
 	
 }
 
@@ -45,3 +45,4 @@ struct xbee_pktHandler pktHandler_s1[] = {
 	ADD_HANDLER(0x82,  13, xbee_s1_64bitIO),
 	ADD_HANDLER(0x83,   7, xbee_s1_16bitIO)
 };
+

@@ -21,19 +21,27 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define XBEE_LISTEN_RESTART_DELAY 25
+#define XBEE_LISTEN_BUFLEN        1024
+
 /* functions are given:
-		
+		xbee    the 'master' libxbee struct
+		buf     memory containg the entire packet (starting after length, and not including checksum). this memory is calloc'ed and free'd on behalf of the handler
+		buflen  the length of memory at buf
+		pktList a struct which should be populated with the packets returned. this is calloc'ed and free'd on behalf of the handler
 */
-typedef int(*xbee_pktHandler)(struct xbee *xbee, unsigned char *buf, unsigned char buflen, struct xbee_pktList *pktList, unsigned char id);
+typedef int(*xbee_pktHandlerFunc)(struct xbee *xbee, unsigned char *buf, unsigned char buflen, struct xbee_pktList *pktList);
 
 #define ADD_HANDLER(a, b, c) \
 	{ (a), (b), (#c), (c) }
 
+/* a NULL handler indicates the end of the list */
 struct xbee_pktHandler  {
 	unsigned char id;
-	unsigned char dataStarts; /* used for debug output, adds  ' <-- data starts' */
+	unsigned short dataStarts; /* used for debug output, adds  ' <-- data starts' */
 	unsigned char *handlerName; /* used for debug output, identifies handler function */
-	xbee_pktHandler handler;
+	xbee_pktHandlerFunc handler;
 };
 
 #endif /* __XBEE_SX_H */
+

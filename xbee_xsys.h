@@ -1,5 +1,5 @@
-#ifndef __XBEE_S1_H
-#define __XBEE_S1_H
+#ifndef __XBEE_XSYS_H
+#define __XBEE_XSYS_H
 
 /*
   libxbee - a C library to aid the use of Digi's Series 1 XBee modules
@@ -21,8 +21,28 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* xbee_s1.[ch] */
-extern struct xbee_pktHandler *pktHandler_s1;
+#include <stdio.h>
+#include <unistd.h>
 
-#endif /* __XBEE_S1_H */
+int xsys_open(char *path, int flags);
+int xsys_close(int fd);
+int xsys_read(int fd, void *buf, size_t count);
+ssize_t xsys_write(int fd, void *buf, size_t count);
 
+FILE *xsys_fopen(char *path, char *mode);
+FILE *xsys_fdopen(int fd, char *mode);
+FILE *xsys_fdopen(int fd, char *mode);
+int xsys_fclose(FILE *fp);
+
+size_t xsys_fread(void *ptr, size_t size, size_t nmemb, FILE *stream);
+size_t xsys_fwrite(void *ptr, size_t size, size_t nmemb, FILE *stream);
+int xsys_fflush(FILE *stream);
+int xsys_ferror(FILE *stream);
+int xsys_feof(FILE *stream);
+
+int xsys_select(FILE *stream, struct timeval *timeout);
+
+int xsys_disableBuffer(FILE *stream);
+int xsys_setSerial(int fd, FILE *stream, int baudrate);
+
+#endif /* __XBEE_XSYS_H */

@@ -18,7 +18,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "global.h"
+#include "xbee_internal.h"
 
 #include "xbee_sx.h"
 #include "xbee_s2.h"
@@ -39,3 +39,4 @@ struct xbee_pktHandler pktHandler_s2[] = {
 	ADD_HANDLER(0x88,   0, xbee_s2_dataTx),
 	ADD_HANDLER(0x88,   0, xbee_s2_dataRx)
 };
+

@@ -1,0 +1,17 @@
+xbee_perror
+xbee_log
+xbee_logsstderr
+
+xsys_open
+xsys_fdopen
+xsys_fflush
+xsys_select
+xsys_read
+xsys_ferror
+xsys_feof
+xsys_fclose
+xsys_close
+
+xsys_disableBuffer
+xsys_setSerial
+

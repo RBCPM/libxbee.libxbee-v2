@@ -1,5 +1,5 @@
-#ifndef __XBEE_S1_H
-#define __XBEE_S1_H
+#ifndef __XBEE_IO_H
+#define __XBEE_IO_H
 
 /*
   libxbee - a C library to aid the use of Digi's Series 1 XBee modules
@@ -21,8 +21,14 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* xbee_s1.[ch] */
-extern struct xbee_pktHandler *pktHandler_s1;
+#define XBEE_IO_RETRIES 10
 
-#endif /* __XBEE_S1_H */
+int xbee_io_open(struct xbee *xbee);
+void xbee_io_close(struct xbee *xbee);
+int xbee_io_reopen(struct xbee *xbee);
+
+int xbee_io_getRawByte(FILE *f, unsigned char *cOut);
+int xbee_io_getEscapedByte(FILE *f, unsigned char *cOut);
+
+#endif /* __XBEE_IO_H */
 
