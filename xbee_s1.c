@@ -22,7 +22,7 @@
 #include "listen.h"
 #include "xbee_s1.h"
 
-int xbee_s1_localAt(struct xbee *xbee, unsigned char *buf, unsigned char buflen, xbee_pktList *pktList) {
+int xbee_s1_localAt(struct xbee *xbee, unsigned char *buf, unsigned char buflen) {
 	
 }
 

@@ -21,38 +21,131 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
+#include <semaphore.h>
 
 #include "internal.h"
 #include "errors.h"
 #include "log.h"
 #include "io.h"
-#include "il.h"
+#include "ll.h"
 #include "listen.h"
 
 struct xbee_pktHandler *pktHandler = NULL;
 
 struct listenData {
+	unsigned char threadStarted;
+	unsigned char threadRunning;
+	unsigned char threadShutdown;
 	struct xbee *xbee;
+	sem_t sem;
+	struct ll_head list;
+	pthread_t thread;
 };
 
-void _xbee_sx_listenHandler(struct xbee *xbee, unsigned char *buf, unsigned char buflen, struct xbee_pktList *pktList, unsigned char id) {
+struct bufData {
+	int len;
+	unsigned char buf[];
+};
+
+int _xbee_listenHandlerThread(struct xbee_pktHandler *pktHandler) {
+	struct listenData *data;
+	struct bufData *buffer;
 	
+	if (!pktHandler) return 1;
+	data = pktHandler->data;
+	if (!data) return 1;
+	
+	data->threadRunning = 1;
+	
+	for (;!data->threadShutdown;) {
+		if (sem_wait(&data->sem)) {
+			xbee_perror("sem_wait()");
+			usleep(100000);
+			continue;
+		}
+		
+		buffer = ll_get_head(&data->list);
+		if (!buffer) {
+			xbee_log("No buffer!");
+			continue;
+		}
+		
+		pktHandler->handler(data->xbee, buffer->buf, buffer->len);
+		free(buffer);
+	}
+	
+	data->threadRunning = 0;
+	return 0;
 }
 
-int _xbee_sx_listen(struct xbee *xbee) {
-	unsigned char *buf, *p;
+int _xbee_listenHandler(struct xbee *xbee, struct xbee_pktHandler *pktHandler, struct bufData *buf) {
+	int ret = XBEE_ENONE;
+	struct listenData *data;
+	
+	if (!xbee) return 1;
+	if (!pktHandler) return 2;
+	if (!buf) return 3;
+	data = pktHandler->data;
+	if (!data) {
+		if (!(data = calloc(1, sizeof(struct listenData)))) {
+			ret = XBEE_ENOMEM;
+			goto die1;
+		}
+		pktHandler->data = data;
+		data->xbee = xbee;
+		if (sem_init(&data->sem, 0, 0)) {
+			ret = XBEE_ESEMAPHORE;
+			goto die2;
+		}
+		if (ll_init(&data->list)) {
+			ret = XBEE_ELINKEDLIST;
+			goto die3;
+		}
+	}
+	
+	if (!data->threadStarted) {
+		data->threadRunning = 0;
+		if (pthread_create(&data->thread, NULL, (void *(*)(void*))_xbee_listenHandlerThread, (void*)pktHandler)) {
+			ret = XBEE_EPTHREAD;
+			goto die4;
+		}
+		data->threadStarted = 1;
+	}
+	
+	ll_add_tail(&data->list, buf);
+	sem_post(&data->sem);
+	
+	goto done;
+die4:
+	ll_destroy(&data->list, free);
+die3:
+	sem_destroy(&data->sem);
+die2:
+	free(data);
+die1:
+done:
+	free(buf);
+	return ret;
+}
+
+int _xbee_listen(struct xbee *xbee) {
+	struct bufData *buf;
+	void *p;
 	unsigned char c;
 	int pos;
 	int len;
 	int chksum;
 	int retries = XBEE_IO_RETRIES;
-	int ret = 0;
+	int ret;
 
 	buf = NULL;
 	while (xbee->run) {
+		ret = XBEE_ENONE;
 		if (!buf) {
-			/* there are a number of occasions where we don't need to allocate new memory (e.g. checksum fails) */
-			if (!(buf = calloc(1, XBEE_LISTEN_BUFLEN))) {
+			/* there are a number of occasions where we don't need to allocate new memory,
+			   we just re-use the previous memory (e.g. checksum fails) */
+			if (!(buf = calloc(1, sizeof(struct bufData) + (sizeof(unsigned char) * XBEE_LISTEN_BUFLEN)))) {
 				ret = XBEE_ENOMEM;
 				goto die1;
 			}
@@ -69,12 +162,14 @@ int _xbee_sx_listen(struct xbee *xbee) {
 					/* try closing and re-opening the device */
 					usleep(100000);
 					if ((ret = xbee_io_reopen(xbee)) != 0) {
+						ret = XBEE_EOPENFAILED;
 						goto die2;
 					}
 					usleep(10000);
 					continue;
 				}
 				xbee_perror("xbee_io_getEscapedByte()");
+				ret = XBEE_EIO;
 				goto die2;
 			}
 			switch (pos) {
@@ -86,11 +181,12 @@ int _xbee_sx_listen(struct xbee *xbee) {
 					break;
 				case -1:
 					len |= c;                /* length low byte */
+					buf->len = len;
 					chksum = 0;              /* wipe the checksum */
 					break;
 				default:
 					chksum += c;
-					buf[pos] = c;
+					buf->buf[pos] = c;
 			}
 		}
 		
@@ -108,7 +204,7 @@ int _xbee_sx_listen(struct xbee *xbee) {
 		}
 
 		for (pos = 0; pktHandler[pos].handler; pos++) {
-			if (pktHandler[pos].id == buf[0]) break;
+			if (pktHandler[pos].id == buf->buf[0]) break;
 		}
 		if (!pktHandler[pos].handler) {
 			xbee_log("Unknown packet received / no packet handler (0x%02X)", buf[0]);
@@ -117,10 +213,15 @@ int _xbee_sx_listen(struct xbee *xbee) {
 		xbee_log("Received packet (0x%02X - '%s')", buf[0], pktHandler[pos].handlerName);
 		
 		/* try (and ignore failure) to realloc buf to the correct length */
-		if ((p = realloc(buf, sizeof(*buf) * len)) != NULL) buf = p;
+		if ((p = realloc(buf, sizeof(struct bufData) + (sizeof(unsigned char) * len))) != NULL) buf = p;
 
-#warning TODO - needs to be threaded, and pktList needs to be handled
-		pktHandler[pos].handler(xbee, buf, len, NULL);
+		if ((ret = _xbee_listenHandler(xbee, &pktHandler[pos], buf)) != 0) {
+			xbee_log("Failed to handle packet... _xbee_listenHandler() returned %d", ret);
+			continue;
+		}
+		
+		/* trigger a new calloc() */
+		buf = NULL;
 	}
 	goto done;
 
@@ -131,11 +232,11 @@ done:
 	return ret;
 }
 
-void xbee_sx_listen(struct xbee *xbee) {
+void xbee_listen(struct xbee *xbee) {
 	int ret;
 	
 	while (xbee->run) {
-		ret = _xbee_sx_listen(xbee);
+		ret = _xbee_listen(xbee);
 		xbee_log("_xbee_listen() returned %d\n", ret);
 		if (!xbee->run) break;
 		usleep(XBEE_LISTEN_RESTART_DELAY * 1000);

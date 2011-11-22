@@ -22,7 +22,6 @@
 */
 
 #include <pthread.h>
-#include <semaphore.h>
 
 struct ll_head {
   struct ll_info *head;
@@ -30,7 +29,6 @@ struct ll_head {
   int is_head;
   struct ll_head *self;
   pthread_mutex_t mutex;
-	sem_t sem;
 };
 
 struct ll_info {
@@ -41,7 +39,8 @@ struct ll_info {
   void *item;
 };
 
-void ll_init(struct ll_head *list);
+int ll_init(struct ll_head *list);
+void ll_destroy(struct ll_head *h, void (*freeCallback)(void *p));
 
 int ll_add_head(void *list, void *item);
 int ll_add_tail(void *list, void *item);

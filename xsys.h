@@ -22,6 +22,7 @@
 */
 
 #include <stdio.h>
+#include <sys/time.h>
 
 int xsys_open(char *path, int flags);
 int xsys_close(int fd);

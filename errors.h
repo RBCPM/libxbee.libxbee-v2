@@ -29,6 +29,10 @@
 #define XBEE_EEOF                                           -5
 #define XBEE_EIORETRIES                                     -6
 #define XBEE_EOPENFAILED                                    -7
+#define XBEE_EIO                                            -8
+#define XBEE_ESEMAPHORE                                     -9
+#define XBEE_ELINKEDLIST                                   -10
+#define XBEE_EPTHREAD                                      -11
 
 #endif /* __XBEE_ERRORS_H */
 

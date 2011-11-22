@@ -21,6 +21,8 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "ll.h"
+
 #define XBEE_LISTEN_RESTART_DELAY 25
 #define XBEE_LISTEN_BUFLEN        1024
 
@@ -30,7 +32,7 @@
 		buflen  the length of memory at buf
 		pktList a struct which should be populated with the packets returned. this is calloc'ed and free'd on behalf of the handler
 */
-typedef int(*xbee_pktHandlerFunc)(struct xbee *xbee, unsigned char *buf, unsigned char buflen, struct xbee_pktList *pktList);
+typedef int(*xbee_pktHandlerFunc)(struct xbee *xbee, unsigned char *buf, unsigned char buflen);
 
 /* ADD_HANDLER(packetID, dataStarts, functionName) */
 #define ADD_HANDLER(a, b, c) \
@@ -44,6 +46,8 @@ struct xbee_pktHandler  {
 	xbee_pktHandlerFunc handler;
 	void *data;
 };
+
+void xbee_listen(struct xbee *xbee);
 
 #endif /* __XBEE_LISTEN_H */
 
