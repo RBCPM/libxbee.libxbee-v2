@@ -1,17 +1,14 @@
-xbee_perror
-xbee_log
-xbee_logsstderr
+xbee_setup() et al
 
-xsys_open
-xsys_fdopen
-xsys_fflush
-xsys_select
-xsys_read
-xsys_ferror
-xsys_feof
-xsys_fclose
-xsys_close
+new connection
+new connection by NI
+get connection (maybe)
+end connection
 
-xsys_disableBuffer
-xsys_setSerial
+get data from connection
+send data to connection
+
+transmit thread
+
+debug output (and all xbee_log() functions)
 
