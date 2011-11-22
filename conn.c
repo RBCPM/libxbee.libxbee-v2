@@ -19,11 +19,29 @@
 */
 
 #include <stdio.h>
+#include <string.h>
 
 #include "internal.h"
 #include "conn.h"
 
-struct xbee_conType *xbee_conFromID(struct xbee_conType *conTypes, unsigned char ID) {
+int xbee_conTypeIdFromName(struct xbee *xbee, char *name, unsigned char *id) {
+	int i;
+	if (!xbee) return 1;
+	if (!name) return 1;
+	if (!xbee->mode) return 1;
+	if (!xbee->mode->conTypes) return 1;
+	
+	for (i = 0; xbee->mode->conTypes[i].name; i++) {
+		if (xbee->mode->conTypes[i].txEnabled &&
+				!strcasecmp(name, xbee->mode->conTypes[i].name)) {
+			if (id) *id = xbee->mode->conTypes[i].txID;
+			return 0;
+		}
+	}
+	return 1;
+}
+
+struct xbee_conType *xbee_conTypeFromID(struct xbee_conType *conTypes, unsigned char ID) {
 	int i;
 	if (!conTypes) return NULL;
 	

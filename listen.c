@@ -43,7 +43,7 @@ struct listenData {
 
 int _xbee_listenHandlerThread(struct xbee_pktHandler *pktHandler) {
 	struct listenData *data;
-	struct bufData *buffer;
+	struct bufData *buf;
 	
 	if (!pktHandler) return XBEE_EMISSINGPARAM;
 	data = pktHandler->listenData;
@@ -58,14 +58,14 @@ int _xbee_listenHandlerThread(struct xbee_pktHandler *pktHandler) {
 			continue;
 		}
 		
-		buffer = ll_get_head(&data->list);
-		if (!buffer) {
+		buf = ll_get_head(&data->list);
+		if (!buf) {
 			xbee_log("No buffer!");
 			continue;
 		}
 		
-		pktHandler->handler(data->xbee, pktHandler, &buffer);
-		if (buffer) free(buffer);
+		pktHandler->handler(data->xbee, pktHandler, &buf);
+		if (buf) free(buf);
 	}
 	
 	data->threadRunning = 0;
@@ -118,7 +118,6 @@ die2:
 	free(data);
 die1:
 done:
-	free(buf);
 	return ret;
 }
 

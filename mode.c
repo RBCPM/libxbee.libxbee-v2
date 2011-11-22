@@ -60,7 +60,7 @@ done:
 
 int xbee_setMode(struct xbee *xbee, char *name) {
 	struct xbee_mode *mode;
-	struct xbee_conType *con;
+	struct xbee_conType *conType;
 	int i;
 	if (!xbee) return 1;
 	if (!name) return 1;
@@ -74,8 +74,8 @@ int xbee_setMode(struct xbee *xbee, char *name) {
 	
 	/* match all handlers to thier connection */
 	for (i = 0; mode->pktHandlers[i].handler; i++) {
-		if ((con = xbee_conFromID(mode->conTypes, mode->pktHandlers[i].id)) == NULL) return 1;
-		mode->pktHandlers[i].con = con;
+		if ((conType = xbee_conTypeFromID(mode->conTypes, mode->pktHandlers[i].id)) == NULL) return 1;
+		mode->pktHandlers[i].conType = conType;
 	}
 	
 	return 0;

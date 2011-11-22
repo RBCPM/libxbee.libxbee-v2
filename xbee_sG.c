@@ -24,6 +24,15 @@
 #include "xbee_s1.h"
 #include "xbee_s2.h"
 
+/* these are the modes avaliable to the user */
+struct xbee_mode *xbee_modes[] = {
+	&xbee_mode_s1,
+	&xbee_mode_s2,
+	NULL
+};
+
+/* ######################################################################### */
+
 int xbee_sG_modemStatus(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf) { return 0; }
 
 int xbee_sG_localAtRx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf) { return 0; }
@@ -32,9 +41,3 @@ int xbee_sG_localAtQueue(struct xbee *xbee, struct xbee_pktHandler *handler, str
 
 int xbee_sG_remoteAtRx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf) { return 0; }
 int xbee_sG_remoteAtTx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf) { return 0; }
-
-struct xbee_mode *xbee_modes[] = {
-	&xbee_mode_s1,
-	&xbee_mode_s2,
-	NULL
-};

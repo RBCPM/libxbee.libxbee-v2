@@ -21,7 +21,6 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-struct xbee_conType *xbee_conFromID(struct xbee_conType *conTypes, unsigned char ID);
+struct xbee_conType *xbee_conTypeFromID(struct xbee_conType *conTypes, unsigned char ID);
 
 #endif /* __XBEE_CONN_H */
-

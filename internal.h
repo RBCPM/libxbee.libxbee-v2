@@ -38,9 +38,23 @@ struct xbee {
 	struct xbee_device device;
 	int run;
 	struct xbee_mode *mode;
+	struct ll_head *txList; /* data is struct bufData */
 };
 
 /* ######################################################################### */
+
+struct xbee_con {
+	unsigned char addr16_enabled;
+	unsigned char addr16[2];
+	
+	unsigned char addr64_enabled;
+	unsigned char addr64[2];
+	
+	unsigned char frameID_enabled;
+	unsigned char frameID;
+	
+	struct ll_head *rxList; /* data is struct xbee_pkt */
+};
 
 struct bufData {
 	int len;
@@ -68,7 +82,7 @@ struct xbee_pktHandler  {
 	char *handlerName; /* used for debug output, identifies handler function */
 	xbee_pktHandlerFunc handler;
 	void *listenData; /* used by listen thread (listen.c) */
-	struct xbee_conType *con;
+	struct xbee_conType *conType;
 };
 
 /* ADD_TYPE_RXTX(rxID, txID, name) */
@@ -89,8 +103,7 @@ struct xbee_conType {
 	unsigned char txID;
 	char *name;
 	void *data;
-	struct ll_head *rxList;
-	struct ll_head *txList;
+	struct ll_head *conList; /* data is struct xbee_con */
 };
 
 struct xbee_mode {

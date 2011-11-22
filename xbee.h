@@ -35,5 +35,8 @@ char **xbee_getModes(void);
 char *xbee_getMode(struct xbee *xbee);
 int xbee_setMode(struct xbee *xbee, char *name);
 
+/* --- conn.c --- */
+int xbee_conTypeIdFromName(struct xbee *xbee, char *name, unsigned char *id);
+
 #endif /* __XBEE_H */
 
