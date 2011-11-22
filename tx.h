@@ -1,5 +1,5 @@
-#ifndef __XBEE_RX_H
-#define __XBEE_RX_H
+#ifndef __XBEE_TX_H
+#define __XBEE_TX_H
 
 /*
   libxbee - a C library to aid the use of Digi's Series 1 XBee modules
@@ -21,9 +21,8 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define XBEE_RX_RESTART_DELAY 25
-#define XBEE_RX_BUFLEN        1024
+#define XBEE_TX_RESTART_DELAY 25
 
-void xbee_listen(struct xbee *xbee);
+void xbee_tx(struct xbee *xbee);
 
-#endif /* __XBEE_RX_H */
+#endif /* __XBEE_TX_H */

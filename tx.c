@@ -1,6 +1,3 @@
-#ifndef __XBEE_RX_H
-#define __XBEE_RX_H
-
 /*
   libxbee - a C library to aid the use of Digi's Series 1 XBee modules
             running in API mode (AP=2).
@@ -21,9 +18,26 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define XBEE_RX_RESTART_DELAY 25
-#define XBEE_RX_BUFLEN        1024
+#include <stdio.h>
+#include <unistd.h>
 
-void xbee_listen(struct xbee *xbee);
+#include "internal.h"
+#include "tx.h"
+#include "errors.h"
+#include "log.h"
 
-#endif /* __XBEE_RX_H */
+int _xbee_tx(struct xbee *xbee) {
+	sleep(60);
+	return 0;
+}
+
+void xbee_tx(struct xbee *xbee) {
+	int ret;
+	
+	while (xbee->run) {
+		ret = _xbee_tx(xbee);
+		xbee_log("_xbee_tx() returned %d\n", ret);
+		if (!xbee->run) break;
+		usleep(XBEE_TX_RESTART_DELAY * 1000);
+	}
+}
