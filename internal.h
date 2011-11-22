@@ -81,7 +81,7 @@ struct xbee_pktHandler  {
 	unsigned char id;
 	char *handlerName; /* used for debug output, identifies handler function */
 	xbee_pktHandlerFunc handler;
-	void *listenData; /* used by listen thread (listen.c) */
+	void *rxData; /* used by listen thread (listen.c) */
 	struct xbee_conType *conType;
 };
 

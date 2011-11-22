@@ -25,13 +25,13 @@
 #include <semaphore.h>
 
 #include "internal.h"
+#include "rx.h"
 #include "errors.h"
 #include "log.h"
 #include "io.h"
 #include "ll.h"
-#include "listen.h"
 
-struct listenData {
+struct rxData {
 	unsigned char threadStarted;
 	unsigned char threadRunning;
 	unsigned char threadShutdown;
@@ -41,12 +41,12 @@ struct listenData {
 	pthread_t thread;
 };
 
-int _xbee_listenHandlerThread(struct xbee_pktHandler *pktHandler) {
-	struct listenData *data;
+int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
+	struct rxData *data;
 	struct bufData *buf;
 	
 	if (!pktHandler) return XBEE_EMISSINGPARAM;
-	data = pktHandler->listenData;
+	data = pktHandler->rxData;
 	if (!data) return XBEE_EMISSINGPARAM;
 	
 	data->threadRunning = 1;
@@ -72,20 +72,20 @@ int _xbee_listenHandlerThread(struct xbee_pktHandler *pktHandler) {
 	return 0;
 }
 
-int _xbee_listenHandler(struct xbee *xbee, struct xbee_pktHandler *pktHandler, struct bufData *buf) {
+int _xbee_rxHandler(struct xbee *xbee, struct xbee_pktHandler *pktHandler, struct bufData *buf) {
 	int ret = XBEE_ENONE;
-	struct listenData *data;
+	struct rxData *data;
 	
 	if (!xbee) return XBEE_ENOXBEE;
 	if (!pktHandler) return XBEE_EMISSINGPARAM;
 	if (!buf) return XBEE_EMISSINGPARAM;
-	data = pktHandler->listenData;
+	data = pktHandler->rxData;
 	if (!data) {
-		if (!(data = calloc(1, sizeof(struct listenData)))) {
+		if (!(data = calloc(1, sizeof(struct rxData)))) {
 			ret = XBEE_ENOMEM;
 			goto die1;
 		}
-		pktHandler->listenData = data;
+		pktHandler->rxData = data;
 		data->xbee = xbee;
 		if (sem_init(&data->sem, 0, 0)) {
 			ret = XBEE_ESEMAPHORE;
@@ -99,7 +99,7 @@ int _xbee_listenHandler(struct xbee *xbee, struct xbee_pktHandler *pktHandler, s
 	
 	if (!data->threadStarted) {
 		data->threadRunning = 0;
-		if (pthread_create(&data->thread, NULL, (void *(*)(void*))_xbee_listenHandlerThread, (void*)pktHandler)) {
+		if (pthread_create(&data->thread, NULL, (void *(*)(void*))_xbee_rxHandlerThread, (void*)pktHandler)) {
 			ret = XBEE_EPTHREAD;
 			goto die4;
 		}
@@ -121,7 +121,7 @@ done:
 	return ret;
 }
 
-int _xbee_listen(struct xbee *xbee) {
+int _xbee_rx(struct xbee *xbee) {
 	struct bufData *buf;
 	void *p;
 	unsigned char c;
@@ -140,13 +140,13 @@ int _xbee_listen(struct xbee *xbee) {
 		if (!buf) {
 			/* there are a number of occasions where we don't need to allocate new memory,
 			   we just re-use the previous memory (e.g. checksum fails) */
-			if (!(buf = calloc(1, sizeof(struct bufData) + (sizeof(unsigned char) * (XBEE_LISTEN_BUFLEN - 1))))) {
+			if (!(buf = calloc(1, sizeof(struct bufData) + (sizeof(unsigned char) * (XBEE_RX_BUFLEN - 1))))) {
 				ret = XBEE_ENOMEM;
 				goto die1;
 			}
 		}
 		
-		for (pos = -3; pos < 0 || (pos < len && pos < XBEE_LISTEN_BUFLEN); pos++) {
+		for (pos = -3; pos < 0 || (pos < len && pos < XBEE_RX_BUFLEN); pos++) {
 #warning TODO - possible performance improvement by reading multiple bytes
 			if ((ret = xbee_io_getEscapedByte(xbee->device.f, &c)) != 0) {
 				if (ret == XBEE_EEOF) {
@@ -211,8 +211,8 @@ int _xbee_listen(struct xbee *xbee) {
 		/* try (and ignore failure) to realloc buf to the correct length */
 		if ((p = realloc(buf, sizeof(struct bufData) + (sizeof(unsigned char) * (len - 1)))) != NULL) buf = p;
 
-		if ((ret = _xbee_listenHandler(xbee, &pktHandlers[pos], buf)) != 0) {
-			xbee_log("Failed to handle packet... _xbee_listenHandler() returned %d", ret);
+		if ((ret = _xbee_rxHandler(xbee, &pktHandlers[pos], buf)) != 0) {
+			xbee_log("Failed to handle packet... _xbee_rxHandler() returned %d", ret);
 			continue;
 		}
 		
@@ -228,14 +228,14 @@ done:
 	return ret;
 }
 
-void xbee_listen(struct xbee *xbee) {
+void xbee_rx(struct xbee *xbee) {
 	int ret;
 	
 	while (xbee->run) {
-		ret = _xbee_listen(xbee);
-		xbee_log("_xbee_listen() returned %d\n", ret);
+		ret = _xbee_rx(xbee);
+		xbee_log("_xbee_rx() returned %d\n", ret);
 		if (!xbee->run) break;
-		usleep(XBEE_LISTEN_RESTART_DELAY * 1000);
+		usleep(XBEE_RX_RESTART_DELAY * 1000);
 	}
 }
 
