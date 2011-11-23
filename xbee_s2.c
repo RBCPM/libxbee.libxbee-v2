@@ -18,22 +18,27 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "internal.h"
+#include "errors.h"
+#include "xbee.h"
 #include "xbee_s2.h"
 #include "xbee_sG.h"
 
 #warning TODO - The Series 2 handlers
-int xbee_s2_txStatus(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf) { return 0; }
+int xbee_s2_txStatus(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
 
-int xbee_s2_dataRx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf) { return 0; }
-int xbee_s2_dataTx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf) { return 0; }
+int xbee_s2_dataRx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
+int xbee_s2_dataTx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
 
-int xbee_s2_explicitRx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf) { return 0; }
-int xbee_s2_explicitTx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf) { return 0; }
+int xbee_s2_explicitRx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
+int xbee_s2_explicitTx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
 
-int xbee_s2_IO(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf) { return 0; }
-int xbee_s2_sensor(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf) { return 0; }
-int xbee_s2_identify(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf) { return 0; }
+int xbee_s2_IO(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
+int xbee_s2_sensor(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
+int xbee_s2_identify(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
 
 /* ######################################################################### */
 

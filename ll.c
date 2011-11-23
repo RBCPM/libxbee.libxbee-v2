@@ -110,9 +110,11 @@ out:
   return ret;
 }
 int ll_add_after(void *list, void *ref, void *item) {
+#warning - TODO ll_add_after
   return 1;
 }
 int ll_add_before(void *list, void *ref, void *item) {
+#warning - TODO ll_add_before
   return 1;
 }
 
@@ -123,11 +125,9 @@ void *ll_get_head(void *list) {
   ret = NULL;
   i = list;
   h = i->head;
-  if (!(h->is_head && h->self == h)) goto out;
-  xsys_mutex_lock(&h->mutex);
-  ret = h->head->item;
-out:
-  xsys_mutex_unlock(&h->mutex);
+  if (h->is_head && h->self == h) {
+		ret = h->head->item;
+	}
   return ret;
 }
 void *ll_get_tail(void *list) {
@@ -137,21 +137,51 @@ void *ll_get_tail(void *list) {
   ret = NULL;
   i = list;
   h = i->head;
+  if (h->is_head && h->self == h) {
+		ret = h->tail->item;
+	}
+  return ret;
+}
+/* returns struct ll_info* or NULL - don't touch the pointer ;) */
+void *ll_get_item(void *list, void *item) {
+  struct ll_head *h;
+  struct ll_info *i;
+  void *ret;
+  ret = NULL;
+  i = list;
+  h = i->head;
   if (!(h->is_head && h->self == h)) goto out;
   xsys_mutex_lock(&h->mutex);
-  ret = h->tail->item;
+  i = h->head;
+	while (i) {
+		if (i->item == item) break;
+		i = i->next;
+	}
+	if (!i) goto out;
+	ret = i;
 out:
   xsys_mutex_unlock(&h->mutex);
   return ret;
 }
-void *ll_get_item(void *list, void *item) {
-  return NULL;
-}
 void *ll_get_next(void *list, void *ref) {
-  return NULL;
+	struct ll_info *i;
+	void *ret;
+	if (!(i = ll_get_item(list, ref))) goto out;
+	i = i->next;
+	if (!i) goto out;
+	ret = i->item;
+out:
+	return ret;
 }
 void *ll_get_prev(void *list, void *ref) {
-  return NULL;
+	struct ll_info *i;
+	void *ret;
+	if (!(i = ll_get_item(list, ref))) goto out;
+	i = i->prev;
+	if (!i) goto out;
+	ret = i->item;
+out:
+	return ret;
 }
 
 void *ll_ext_head(void *list) {

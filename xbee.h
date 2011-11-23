@@ -27,7 +27,10 @@
 struct xbee;
 
 struct xbee_pkt {
-	unsigned char *data;
+	unsigned char status;
+
+	int datalen;
+	unsigned char data[1];
 };
 
 /* --- xbee.c --- */

@@ -24,6 +24,37 @@
 #include "internal.h"
 #include "conn.h"
 
+struct xbee_con *xbee_conFromAddress(struct xbee *xbee, unsigned char id, struct xbee_conAddress *address) {
+	struct xbee_con *con;
+	struct xbee_conType *conType;
+	if (!xbee) return NULL;
+	if (!address) return NULL;
+	
+	if ((conType = xbee_conTypeFromID(xbee->mode->conTypes, id)) == NULL) return NULL;
+	
+	con = NULL;
+	while ((con = ll_get_next(&conType->conList, con)) != NULL) {
+		if (address->frameID_enabled && con->address.frameID_enabled) {
+			/* frameID must match */
+			if (address->frameID != con->address.frameID) continue;
+		}
+		if (address->addr64_enabled && con->address.addr64_enabled) {
+			/* if 64-bit address matches, accept, else decline (don't even accept matching 16-bit address */
+			if (!memcmp(address->addr64, con->address.addr64, 8)) {
+				break;
+			} else {
+				continue;
+			}
+		}
+		if (address->addr16_enabled && con->address.addr16_enabled) {
+			/* if 16-bit address matches accept */
+			if (!memcmp(address->addr16, con->address.addr16, 2)) break;
+		}
+	}
+	
+	return con;
+}
+
 int xbee_conTypeIdFromName(struct xbee *xbee, char *name, unsigned char *id) {
 	int i;
 	if (!xbee) return 1;
@@ -41,13 +72,13 @@ int xbee_conTypeIdFromName(struct xbee *xbee, char *name, unsigned char *id) {
 	return 1;
 }
 
-struct xbee_conType *xbee_conTypeFromID(struct xbee_conType *conTypes, unsigned char ID) {
+struct xbee_conType *xbee_conTypeFromID(struct xbee_conType *conTypes, unsigned char id) {
 	int i;
 	if (!conTypes) return NULL;
 	
 	for (i = 0; conTypes[i].name; i++) {
-		if ((conTypes[i].rxEnabled && conTypes[i].rxID == ID) ||
-				(conTypes[i].txEnabled && conTypes[i].txID == ID)) {
+		if ((conTypes[i].rxEnabled && conTypes[i].rxID == id) ||
+				(conTypes[i].txEnabled && conTypes[i].txID == id)) {
 			return &(conTypes[i]);
 		}
 	}

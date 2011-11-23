@@ -26,6 +26,7 @@
 #include "internal.h"
 #include "xsys.h"
 #include "rx.h"
+#include "conn.h"
 #include "errors.h"
 #include "log.h"
 #include "io.h"
@@ -42,8 +43,12 @@ struct rxData {
 };
 
 int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
+	int ret;
 	struct rxData *data;
 	struct bufData *buf;
+	struct xbee_pkt *pkt;
+	struct xbee_con con;
+	struct xbee_con *rxCon;
 	
 #warning CHECK - does this do what I want it to?
 	/* prevent having to xsys_thread_join() */
@@ -55,6 +60,7 @@ int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
 	
 	data->threadRunning = 1;
 	
+	pkt = NULL;
 	for (;!data->threadShutdown;) {
 		if (xsys_sem_wait(&data->sem)) {
 			xbee_perror("xsys_sem_wait()");
@@ -62,13 +68,37 @@ int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
 			continue;
 		}
 		
+		if (!pkt) {
+			/* only allocate memory if nessesary (re-use where possible) */
+			if ((pkt = calloc(1, sizeof(struct xbee_pkt))) == NULL) {
+				xbee_perror("calloc()");
+				usleep(100000);
+				continue;
+			}
+		}
+		memset(&con, 0, sizeof(struct xbee_con));
+		
 		buf = ll_get_head(&data->list);
 		if (!buf) {
 			xbee_log("No buffer!");
 			continue;
 		}
 		
-		pktHandler->handler(data->xbee, pktHandler, &buf);
+		if ((ret = pktHandler->handler(data->xbee, pktHandler, &buf, &con, &pkt)) != 0) {
+			xbee_log("Failed to handle packet... pktHandler->handler() returned %d", ret);
+			goto skip;
+		}
+		
+		if ((rxCon = xbee_conFromAddress(data->xbee, pktHandler->id, &con.address)) == NULL) {
+			xbee_log("No connection for packet...");
+			goto skip;
+		}
+		
+		ll_add_tail(&rxCon->rxList, pkt);
+		
+		/* flag pkt for a new allocation */
+		pkt = NULL;
+skip:
 		if (buf) free(buf);
 	}
 	
@@ -101,7 +131,7 @@ int _xbee_rxHandler(struct xbee *xbee, struct xbee_pktHandler *pktHandler, struc
 		}
 	}
 	
-	if (!data->threadStarted) {
+	if (!data->threadStarted || !data->threadRunning) {
 		data->threadRunning = 0;
 		if (xsys_thread_create(&data->thread, (void*(*)(void*))_xbee_rxHandlerThread, (void*)pktHandler)) {
 			ret = XBEE_EPTHREAD;

@@ -37,6 +37,7 @@
 #define XBEE_EMISSINGPARAM                                 -13
 #define XBEE_EINVALBAUDRATE                                -14
 #define XBEE_ESETUP                                        -15
+#define XBEE_ELENGTH                                       -16
 
 #endif /* __XBEE_ERRORS_H */
 

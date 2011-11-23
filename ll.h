@@ -21,8 +21,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <pthread.h>
-
+/* DO NOT RE-ORDER! */
 struct ll_head {
   struct ll_info *head;
   struct ll_info *tail;
@@ -31,6 +30,7 @@ struct ll_head {
   pthread_mutex_t mutex;
 };
 
+/* DO NOT RE-ORDER! */
 struct ll_info {
   struct ll_info *next;
   struct ll_info *prev;
@@ -49,9 +49,11 @@ int ll_add_before(void *list, void *ref, void *item); /* dead */
 
 void *ll_get_head(void *list);
 void *ll_get_tail(void *list);
-void *ll_get_item(void *list, void *item); /* dead */
-void *ll_get_next(void *list, void *ref); /* dead */
-void *ll_get_prev(void *list, void *ref); /* dead */
+
+/* returns struct ll_info* or NULL - don't touch the pointer ;) */
+void *ll_get_item(void *list, void *item);
+void *ll_get_next(void *list, void *ref);
+void *ll_get_prev(void *list, void *ref);
 
 void *ll_ext_head(void *list);
 void *ll_ext_tail(void *list);

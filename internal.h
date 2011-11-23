@@ -53,15 +53,21 @@ struct xbee {
 
 /* ######################################################################### */
 
-struct xbee_con {
+struct xbee_conAddress {
 	unsigned char addr16_enabled;
 	unsigned char addr16[2];
 	
 	unsigned char addr64_enabled;
-	unsigned char addr64[2];
+	unsigned char addr64[8];
 	
 	unsigned char frameID_enabled;
 	unsigned char frameID;
+};
+
+struct xbee_con {
+	struct xbee_conType *conType;
+	
+	struct xbee_conAddress address;
 	
 	int rxPackets;
 	int txPackets;
@@ -75,19 +81,30 @@ struct bufData {
 };
 
 /* functions are given:
-		xbee    the 'master' libxbee struct
-		buf			is a double pointer so that:
-							Tx functions may return the packet
-							Rx functions may take charge of the packet (setting *buf = NULL will prevent libxbee from free'ing buf)
+    xbee      the 'master' libxbee struct
+    handler   is the handler (used to get packet ID, conType, and potentially recursive calling)
+    buf       is a double pointer so that:
+                Rx functions may take charge of the packet (setting *buf = NULL will prevent libxbee from free'ing buf)
+                Tx functions may return the packet
+    con       is used to identify the destination address
+                Rx is ONLY used for the address, returns the addressing info to _xbee_rxHandlerThread() so it can be added to the correct connection
+                Tx is a valid pointer
+		pkt				is used to convey the packet information
+								Rx allows the handler to return the populated packet struct (is ** so that realloc may be called)
+								Tx allows the user to 'hand write' a packet
 */
 struct xbee_pktHandler;
-typedef int(*xbee_pktHandlerFunc)(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf);
+typedef int(*xbee_pktHandlerFunc)(struct xbee *xbee,
+                                  struct xbee_pktHandler *handler,
+                                  struct bufData **buf,
+                                  struct xbee_con *con,
+                                  struct xbee_pkt **pkt);
 
 /* ADD_HANDLER(packetID, dataStarts, functionName) */
 #define ADD_HANDLER(a, b) \
-	{ (a), (#b), (b), NULL }
+	{ (a), (#b), (b), NULL, NULL }
 #define ADD_HANDLER_TERMINATOR() \
-	{ 0, NULL, NULL, NULL }
+	{ 0, NULL, NULL, NULL, NULL }
 
 /* a NULL handler indicates the end of the list */
 struct xbee_pktHandler  {

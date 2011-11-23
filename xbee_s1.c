@@ -18,21 +18,63 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "internal.h"
+#include "errors.h"
+#include "xbee.h"
 #include "xbee_s1.h"
 #include "xbee_sG.h"
 
 #warning TODO - The Series 1 handlers
-int xbee_s1_txStatus(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf) { return 0; }
+int xbee_s1_txStatus(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) {
+	int ret = XBEE_ENONE;
+	
+	if (!pkt || !*pkt) {
+		ret = XBEE_EMISSINGPARAM;
+		goto die1;
+	}
+	
+	if ((*buf)->len != 3) {
+		ret = XBEE_ELENGTH;
+		goto die1;
+	}
+	
+	(*pkt)->status = (*buf)->buf[2];
+	
+	goto done;
+die1:
+done:
+	return ret;
+}
 
-int xbee_s1_64bitDataRx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf) { return 0; }
-int xbee_s1_64bitDataTx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf) { return 0; }
+int xbee_s1_64bitDataRx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) {
+	int ret = XBEE_ENONE;
+	
+	if (!pkt || !*pkt) {
+		ret = XBEE_EMISSINGPARAM;
+		goto die1;
+	}
+	
+	if ((*buf)->len != 3) {
+		ret = XBEE_ELENGTH;
+		goto die1;
+	}
+	
+	(*pkt)->status = (*buf)->buf[2];
+	
+	goto done;
+die1:
+done:
+	return ret;}
+int xbee_s1_64bitDataTx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
 
-int xbee_s1_16bitDataRx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf) { return 0; }
-int xbee_s1_16bitDataTx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf) { return 0; }
+int xbee_s1_16bitDataRx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
+int xbee_s1_16bitDataTx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
 
-int xbee_s1_64bitIO(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf) { return 0; }
-int xbee_s1_16bitIO(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf) { return 0; }
+int xbee_s1_64bitIO(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
+int xbee_s1_16bitIO(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
 
 /* ######################################################################### */
 
