@@ -33,6 +33,7 @@ struct xbee_mode *xbee_modes[] = {
 
 /* ######################################################################### */
 
+#warning TODO - The Generic handlers
 int xbee_sG_modemStatus(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf) { return 0; }
 
 int xbee_sG_localAtRx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf) { return 0; }

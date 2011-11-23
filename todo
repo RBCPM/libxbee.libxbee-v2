@@ -1,4 +1,5 @@
 xbee_setup() et al
+xbee_shutdown()
 
 new connection
 new connection by NI
@@ -7,8 +8,6 @@ end connection
 
 get data from connection
 send data to connection
-
-debug output (and all xbee_log() functions)
 
 win32 implementation of xsys
 

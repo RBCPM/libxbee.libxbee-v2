@@ -22,6 +22,7 @@
 #include "xbee_s2.h"
 #include "xbee_sG.h"
 
+#warning TODO - The Series 2 handlers
 int xbee_s2_txStatus(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf) { return 0; }
 
 int xbee_s2_dataRx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf) { return 0; }
