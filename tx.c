@@ -23,6 +23,7 @@
 #include <unistd.h>
 
 #include "internal.h"
+#include "xsys.h"
 #include "tx.h"
 #include "io.h"
 #include "errors.h"
@@ -36,7 +37,7 @@ int _xbee_tx(struct xbee *xbee) {
 	if (!xbee) return XBEE_ENOXBEE;
 	
 	while (xbee->running) {
-		sem_wait(&xbee->txSem);
+		xsys_sem_wait(&xbee->txSem);
 		
 		buf = ll_get_head(&xbee->txList);
 		if (!buf) continue;

@@ -22,9 +22,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include <semaphore.h>
 
 #include "internal.h"
+#include "xsys.h"
 #include "rx.h"
 #include "errors.h"
 #include "log.h"
@@ -46,7 +46,7 @@ int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
 	struct bufData *buf;
 	
 #warning CHECK - does this do what I want it to?
-	/* prevent having to pthread_join() */
+	/* prevent having to xsys_thread_join() */
 	pthread_detach(pthread_self());
 	
 	if (!pktHandler) return XBEE_EMISSINGPARAM;
@@ -56,8 +56,8 @@ int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
 	data->threadRunning = 1;
 	
 	for (;!data->threadShutdown;) {
-		if (sem_wait(&data->sem)) {
-			xbee_perror("sem_wait()");
+		if (xsys_sem_wait(&data->sem)) {
+			xbee_perror("xsys_sem_wait()");
 			usleep(100000);
 			continue;
 		}
@@ -91,7 +91,7 @@ int _xbee_rxHandler(struct xbee *xbee, struct xbee_pktHandler *pktHandler, struc
 		}
 		pktHandler->rxData = data;
 		data->xbee = xbee;
-		if (sem_init(&data->sem, 0, 0)) {
+		if (xsys_sem_init(&data->sem)) {
 			ret = XBEE_ESEMAPHORE;
 			goto die2;
 		}
@@ -103,7 +103,7 @@ int _xbee_rxHandler(struct xbee *xbee, struct xbee_pktHandler *pktHandler, struc
 	
 	if (!data->threadStarted) {
 		data->threadRunning = 0;
-		if (pthread_create(&data->thread, NULL, (void*(*)(void*))_xbee_rxHandlerThread, (void*)pktHandler)) {
+		if (xsys_thread_create(&data->thread, (void*(*)(void*))_xbee_rxHandlerThread, (void*)pktHandler)) {
 			ret = XBEE_EPTHREAD;
 			goto die4;
 		}
@@ -111,13 +111,13 @@ int _xbee_rxHandler(struct xbee *xbee, struct xbee_pktHandler *pktHandler, struc
 	}
 	
 	ll_add_tail(&data->list, buf);
-	sem_post(&data->sem);
+	xsys_sem_post(&data->sem);
 	
 	goto done;
 die4:
 	ll_destroy(&data->list, free);
 die3:
-	sem_destroy(&data->sem);
+	xsys_sem_destroy(&data->sem);
 die2:
 	free(data);
 die1:

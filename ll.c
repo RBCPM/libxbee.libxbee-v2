@@ -22,13 +22,14 @@
 #include <stdlib.h>
 
 #include "ll.h"
+#include "xsys.h"
 
 int ll_init(struct ll_head *list) {
   list->is_head = 1;
   list->head = NULL;
   list->tail = NULL;
   list->self = list;
-  if (pthread_mutex_init(&list->mutex,NULL)) return 1;
+  if (xsys_mutex_init(&list->mutex)) return 1;
 	return 0;
 }
 
@@ -37,7 +38,7 @@ void ll_destroy(struct ll_head *list, void (*freeCallback)(void *)) {
 	while ((p = ll_ext_tail(list)) != NULL) {
 		if (freeCallback) freeCallback(p);
 	}
-	pthread_mutex_destroy(&list->mutex);
+	xsys_mutex_destroy(&list->mutex);
 }
 
 int ll_add_head(void *list, void *item) {
@@ -51,7 +52,7 @@ int ll_add_head(void *list, void *item) {
     ret = 1;
     goto out;
   }
-  pthread_mutex_lock(&h->mutex);
+  xsys_mutex_lock(&h->mutex);
   p = h->head;
   
   if (!(h->head = calloc(1, sizeof(struct ll_info)))) {
@@ -71,7 +72,7 @@ int ll_add_head(void *list, void *item) {
   
   h->head->item = item;
 out:
-  pthread_mutex_unlock(&h->mutex);
+  xsys_mutex_unlock(&h->mutex);
   return ret;
 }
 int ll_add_tail(void *list, void *item) {
@@ -85,7 +86,7 @@ int ll_add_tail(void *list, void *item) {
     ret = 1;
     goto out;
   }
-  pthread_mutex_lock(&h->mutex);
+  xsys_mutex_lock(&h->mutex);
   p = h->tail;
   
   if (!(h->tail = calloc(1, sizeof(struct ll_info)))) {
@@ -105,7 +106,7 @@ int ll_add_tail(void *list, void *item) {
   
   h->tail->item = item;
 out:
-  pthread_mutex_unlock(&h->mutex);
+  xsys_mutex_unlock(&h->mutex);
   return ret;
 }
 int ll_add_after(void *list, void *ref, void *item) {
@@ -123,10 +124,10 @@ void *ll_get_head(void *list) {
   i = list;
   h = i->head;
   if (!(h->is_head && h->self == h)) goto out;
-  pthread_mutex_lock(&h->mutex);
+  xsys_mutex_lock(&h->mutex);
   ret = h->head->item;
 out:
-  pthread_mutex_unlock(&h->mutex);
+  xsys_mutex_unlock(&h->mutex);
   return ret;
 }
 void *ll_get_tail(void *list) {
@@ -137,10 +138,10 @@ void *ll_get_tail(void *list) {
   i = list;
   h = i->head;
   if (!(h->is_head && h->self == h)) goto out;
-  pthread_mutex_lock(&h->mutex);
+  xsys_mutex_lock(&h->mutex);
   ret = h->tail->item;
 out:
-  pthread_mutex_unlock(&h->mutex);
+  xsys_mutex_unlock(&h->mutex);
   return ret;
 }
 void *ll_get_item(void *list, void *item) {
@@ -161,7 +162,7 @@ void *ll_ext_head(void *list) {
   i = list;
   h = i->head;
   if (!(h->is_head && h->self == h)) goto out;
-  pthread_mutex_lock(&h->mutex);
+  xsys_mutex_lock(&h->mutex);
   p = h->head;
   if (p) {
     ret = p->item;
@@ -172,7 +173,7 @@ void *ll_ext_head(void *list) {
     free(p);
   }
 out:
-  pthread_mutex_unlock(&h->mutex);
+  xsys_mutex_unlock(&h->mutex);
   return ret;
 }
 void *ll_ext_tail(void *list) {
@@ -183,7 +184,7 @@ void *ll_ext_tail(void *list) {
   i = list;
   h = i->head;
   if (!(h->is_head && h->self == h)) goto out;
-  pthread_mutex_lock(&h->mutex);
+  xsys_mutex_lock(&h->mutex);
   p = h->tail;
   if (p) {
     ret = p->item;
@@ -194,7 +195,7 @@ void *ll_ext_tail(void *list) {
     free(p);
   }
 out:
-  pthread_mutex_unlock(&h->mutex);
+  xsys_mutex_unlock(&h->mutex);
   return ret;
 }
 int ll_ext_item(void *list, void *item) {
@@ -206,7 +207,7 @@ int ll_ext_item(void *list, void *item) {
   h = i->head;
   if (!item) return 0;
   if (!(h->is_head && h->self == h)) goto out;
-  pthread_mutex_lock(&h->mutex);
+  xsys_mutex_lock(&h->mutex);
   p = h->head;
   while (p) {
     if (p->is_head) {
@@ -235,7 +236,7 @@ int ll_ext_item(void *list, void *item) {
     p = p->next;
   }
 out:
-  pthread_mutex_unlock(&h->mutex);
+  xsys_mutex_unlock(&h->mutex);
   return ret;
 }
 
@@ -247,7 +248,7 @@ int ll_count_items(void *list) {
   i = list;
   h = i->head;
   if (!(h->is_head && h->self == h)) goto out;
-  pthread_mutex_lock(&h->mutex);
+  xsys_mutex_lock(&h->mutex);
   p = h->head;
   ret = 0;
   while (p) {
@@ -255,6 +256,6 @@ int ll_count_items(void *list) {
     p = p->next;
   }
 out:
-  pthread_mutex_unlock(&h->mutex);
+  xsys_mutex_unlock(&h->mutex);
   return ret;
 }
