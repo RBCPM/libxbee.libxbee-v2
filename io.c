@@ -39,7 +39,7 @@ int xbee_io_open(struct xbee *xbee) {
 	ret = XBEE_ENONE;
 	
 	/* open the device */
-	if ((fd = xsys_open(xbee->device.path, O_RDWR | O_NOCTTY | O_NONBLOCK)) == -1) {
+	if ((fd = xsys_open(xbee->device.path, O_RDWR | O_NOCTTY)) == -1) {
 		xbee_perror("xsys_open()");
 		ret = XBEE_EOPENFAILED;
 		goto die1;
