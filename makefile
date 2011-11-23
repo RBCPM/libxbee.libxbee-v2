@@ -4,18 +4,19 @@ LIBMIN:=0
 LIBREV:=0
 
 BUILDDIR:=.build
-SRCS:=io xbee rx tx ll xbee_s1 xbee_s2 xbee_sG conn mode
+SRCS:=conn io ll mode rx tx xbee xbee_s1 xbee_s2 xbee_sG xsys
 LIBS:=rt pthread
 
 LD:=ld
 GCC:=gcc
 
+DEBUG:=-g
 CFLAGS:=-Wall -Wstrict-prototypes -Wno-variadic-macros -c -fPIC $(DEBUG)
 #CFLAGS+=-pedantic
 CLINKS:=$(addprefix -l,$(LIBS)) $(DEBUG)
 
 
-#######################################################################################
+###############################################################################
 
 .PHONY: all clean new
 .PRECIOUS: $(BUILDDIR)/%.d

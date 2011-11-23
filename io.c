@@ -59,7 +59,7 @@ int xbee_io_open(struct xbee *xbee) {
 	xsys_disableBuffer(f);
 	
 	/* setup serial port (baud, control lines etc...) */
-	xsys_setSerial(fd, f, xbee->device.baudrate);
+	xsys_setupSerial(fd, f, xbee->device.baudrate);
 	
 	xbee->device.fd = fd;
 	xbee->device.f = f;

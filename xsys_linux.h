@@ -1,3 +1,9 @@
+#ifndef __XBEE_XSYS_LOAD_H
+#error This header should be included by xsys.h only
+#endif /* __XBEE_XSYS_LOAD_H */
+#ifndef __XBEE_XSYS_LINUX_H
+#define __XBEE_XSYS_LINUX_H
+
 /*
   libxbee - a C library to aid the use of Digi's Series 1 XBee modules
             running in API mode (AP=2).
@@ -18,14 +24,17 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "xsys.h"
+#include <fcntl.h>
+#define __USE_GNU
+#include <pthread.h>
+#undef __USE_GNU
+#include <semaphore.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/select.h>
 
-#define __XBEE_XSYS_LOAD_C
-#if defined(__GNUC__) /* ------- */
-#include "xsys_linux.c"
-#elif defined(_WIN32) /* ------- */
-#include "xsys_win32.c"
-#else /* ----------------------- */
-#error Unsupported OS
-#endif /* ---------------------- */
-#undef __XBEE_XSYS_LOAD_C
+typedef pthread_t         xsys_thread;
+typedef pthread_mutex_t   xsys_mutex;
+typedef sem_t             xsys_sem;
+
+#endif /* __XBEE_XSYS_LINUX_H */

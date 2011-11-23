@@ -22,15 +22,26 @@
 */
 
 #include <stdio.h>
+#include <unistd.h>
 #include <sys/time.h>
 
+#define __XBEE_XSYS_LOAD_H
+#if defined(__GNUC__) /* ------- */
+#include "xsys_linux.h"
+#elif defined(_WIN32) /* ------- */
+#include "xsys_win32.h"
+#else /* ----------------------- */
+#error Unsupported OS
+#endif /* ---------------------- */
+#undef __XBEE_XSYS_LOAD_H
+
+/* file I/O */
 int xsys_open(char *path, int flags);
 int xsys_close(int fd);
-int xsys_read(int fd, void *buf, size_t count);
+ssize_t xsys_read(int fd, void *buf, size_t count);
 ssize_t xsys_write(int fd, void *buf, size_t count);
 
 FILE *xsys_fopen(char *path, char *mode);
-FILE *xsys_fdopen(int fd, char *mode);
 FILE *xsys_fdopen(int fd, char *mode);
 int xsys_fclose(FILE *fp);
 
@@ -43,6 +54,31 @@ int xsys_feof(FILE *stream);
 int xsys_select(FILE *stream, struct timeval *timeout);
 
 int xsys_disableBuffer(FILE *stream);
-int xsys_setSerial(int fd, FILE *stream, int baudrate);
+
+
+/* configuration */
+int xsys_setupSerial(int fd, FILE *stream, int baudrate);
+
+
+/* threads */
+int xsys_thread_create(xsys_thread *thread, void*(*start_routine)(void*), void *arg);
+int xsys_thread_cancel(xsys_thread thread);
+int xsys_thread_join(xsys_thread thread, void **retval);
+int xsys_thread_tryjoin(xsys_thread thread, void **retval);
+
+
+/* mutexes */
+int xsys_mutex_init(xsys_mutex *mutex);
+int xsys_mutex_destroy(xsys_mutex *mutex);
+int xsys_mutex_lock(xsys_mutex *mutex);
+int xsys_mutex_trylock(xsys_mutex *mutex);
+int xsys_mutex_unlock(xsys_mutex *mutex);
+
+
+/* semaphores */
+int xsys_sem_init(xsys_sem *sem);
+int xsys_sem_destroy(xsys_sem *sem);
+int xsys_sem_wait(xsys_sem *sem);
+int xsys_sem_post(xsys_sem *sem);
 
 #endif /* __XBEE_XSYS_H */

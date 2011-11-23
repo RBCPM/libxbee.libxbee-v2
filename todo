@@ -8,7 +8,7 @@ end connection
 get data from connection
 send data to connection
 
-transmit thread
-
 debug output (and all xbee_log() functions)
+
+win32 implementation of xsys
 
