@@ -19,25 +19,59 @@
 */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 #include "internal.h"
 #include "tx.h"
+#include "io.h"
 #include "errors.h"
 #include "log.h"
 
 int _xbee_tx(struct xbee *xbee) {
-	sleep(60);
+	unsigned char chksum;
+	int i;
+	struct bufData *buf;
+	
+	if (!xbee) return XBEE_ENOXBEE;
+	
+	while (xbee->running) {
+		sem_wait(&xbee->txSem);
+		
+		buf = ll_get_head(&xbee->txList);
+		if (!buf) continue;
+		
+		chksum = 0;
+		
+		xbee_io_writeEscapedByte(xbee->device.f, 0x7E);
+		xbee_io_writeEscapedByte(xbee->device.f, ((buf->len >> 8) & 0xFF));
+		xbee_io_writeEscapedByte(xbee->device.f, ( buf->len       & 0xFF));
+		
+		for (i = 0; i < buf->len; i++) {
+			chksum += buf->buf[i];
+			xbee_io_writeEscapedByte(xbee->device.f, buf->buf[i]);
+		}
+		
+		xbee_io_writeEscapedByte(xbee->device.f, 0xFF - chksum);
+		
+		free(buf);
+	}
+	
 	return 0;
 }
 
-void xbee_tx(struct xbee *xbee) {
+int xbee_tx(struct xbee *xbee) {
 	int ret;
+	if (!xbee) return 1;
 	
+	xbee->txRunning = 1;
 	while (xbee->running) {
 		ret = _xbee_tx(xbee);
 		xbee_log("_xbee_tx() returned %d\n", ret);
 		if (!xbee->running) break;
 		usleep(XBEE_TX_RESTART_DELAY * 1000);
 	}
+	xbee->txRunning = 0;
+	
+	return 0;
 }

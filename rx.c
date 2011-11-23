@@ -45,6 +45,10 @@ int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
 	struct rxData *data;
 	struct bufData *buf;
 	
+#warning CHECK - does this do what I want it to?
+	/* prevent having to pthread_join() */
+	pthread_detach(pthread_self());
+	
 	if (!pktHandler) return XBEE_EMISSINGPARAM;
 	data = pktHandler->rxData;
 	if (!data) return XBEE_EMISSINGPARAM;
@@ -99,7 +103,7 @@ int _xbee_rxHandler(struct xbee *xbee, struct xbee_pktHandler *pktHandler, struc
 	
 	if (!data->threadStarted) {
 		data->threadRunning = 0;
-		if (pthread_create(&data->thread, NULL, (void *(*)(void*))_xbee_rxHandlerThread, (void*)pktHandler)) {
+		if (pthread_create(&data->thread, NULL, (void*(*)(void*))_xbee_rxHandlerThread, (void*)pktHandler)) {
 			ret = XBEE_EPTHREAD;
 			goto die4;
 		}
@@ -127,7 +131,7 @@ int _xbee_rx(struct xbee *xbee) {
 	unsigned char c;
 	int pos;
 	int len;
-	int chksum;
+	unsigned char chksum;
 	int retries = XBEE_IO_RETRIES;
 	int ret;
 	struct xbee_pktHandler *pktHandlers;
@@ -228,14 +232,18 @@ done:
 	return ret;
 }
 
-void xbee_rx(struct xbee *xbee) {
+int xbee_rx(struct xbee *xbee) {
 	int ret;
+	if (!xbee) return 1;
 	
+	xbee->rxRunning = 1;
 	while (xbee->running) {
 		ret = _xbee_rx(xbee);
 		xbee_log("_xbee_rx() returned %d\n", ret);
 		if (!xbee->running) break;
 		usleep(XBEE_RX_RESTART_DELAY * 1000);
 	}
+	xbee->rxRunning = 0;
+	
+	return 0;
 }
-

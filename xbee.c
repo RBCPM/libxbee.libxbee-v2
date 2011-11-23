@@ -19,24 +19,80 @@
 */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <pthread.h>
 
+#include "xbee.h"
 #include "internal.h"
+#include "errors.h"
+#include "log.h"
 #include "rx.h"
 #include "tx.h"
 
-struct xbee xbee;
+int xbee_setup(struct xbee **retXbee) {
+	struct xbee *xbee;
+	int ret;
+	
+	ret = 0;
+	if ((xbee = calloc(1, sizeof(struct xbee))) == NULL) {
+		ret = XBEE_ENOMEM;
+		goto die1;
+	}
+	
+#warning TODO - setup serial port
+	if (0) goto die2;
+	
+	if (xbee_threadStart(xbee, &(xbee->rxThread), xbee_rx)) {
+		xbee_perror("xbee_threadStart(xbee_rx)");
+		ret = XBEE_EPTHREAD;
+		goto die3;
+	}
+	
+	if (sem_init(&xbee->txSem, 0, 0)) {
+		ret = XBEE_ESEMAPHORE;
+		goto die4;
+	}
+	if (ll_init(&xbee->txList)) {
+		ret = XBEE_ELINKEDLIST;
+		goto die5;
+	}
+	if (xbee_threadStart(xbee, &(xbee->txThread), xbee_tx)) {
+		xbee_perror("xbee_threadStart(xbee_tx)");
+		ret = XBEE_EPTHREAD;
+		goto die6;
+	}
+	
+	*retXbee = xbee;
+	goto done;
+die6:
+	ll_destroy(&xbee->txList, free);
+die5:
+	sem_destroy(&xbee->txSem);
+die4:
+	if (!pthread_cancel(xbee->rxThread)) {
+		pthread_join(xbee->rxThread, NULL);
+	}
+die3:
+#warning TODO - cleanup serial port
+die2:
+	free(xbee);
+die1:
+	*retXbee = NULL;
+done:
+	return ret;
+}
 
-void xbee_setup(void) {
-	pthread_t t;
+int _xbee_threadStart(struct xbee *xbee, pthread_t *thread, void*(*startFunction)(void*), char *startFuncName) {
+	int i;
+	if (!xbee) return 1;
 	
-	if (pthread_create(&t, NULL, (void *(*)(void*))xbee_rx, (void*)&xbee)) {
-		perror("pthread_create(xbee_rx)");
-	}
-	if (pthread_create(&t, NULL, (void *(*)(void*))xbee_tx, (void*)&xbee)) {
-		perror("pthread_create(xbee_tx)");
+	if (!pthread_join(*thread, (void**)&i)) {
+		xbee_log("%s has previously ended and returned %d... restarting...", startFuncName, i);
 	}
 	
-	while (xbee.running) sleep(1);
+	if (pthread_create(thread, NULL, startFunction, (void*)xbee)) {
+		return 1;
+	}
+	return 0;
 }

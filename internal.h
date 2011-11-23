@@ -21,7 +21,11 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <pthread.h>
+#include <semaphore.h>
+
 #include "xbee.h"
+#include "ll.h"
 
 /* ######################################################################### */
 
@@ -37,7 +41,14 @@ struct xbee {
 	int running;
 	struct xbee_device device;
 	struct xbee_mode *mode;
-	struct ll_head *txList; /* data is struct bufData */
+	
+	struct ll_head txList; /* data is struct bufData containing 'Frame Data' (no start delim, length or checksum) */
+	pthread_t txThread;
+	sem_t txSem;
+	int txRunning;
+	
+	pthread_t rxThread;
+	int rxRunning;
 };
 
 /* ######################################################################### */
@@ -52,7 +63,10 @@ struct xbee_con {
 	unsigned char frameID_enabled;
 	unsigned char frameID;
 	
-	struct ll_head *rxList; /* data is struct xbee_pkt */
+	int rxPackets;
+	int txPackets;
+	
+	struct ll_head rxList; /* data is struct xbee_pkt */
 };
 
 struct bufData {
@@ -102,7 +116,7 @@ struct xbee_conType {
 	unsigned char txID;
 	char *name;
 	void *data;
-	struct ll_head *conList; /* data is struct xbee_con */
+	struct ll_head conList; /* data is struct xbee_con */
 };
 
 struct xbee_mode {
@@ -110,6 +124,11 @@ struct xbee_mode {
 	struct xbee_conType *conTypes;
 	char *name;
 };
+
+/* ######################################################################### */
+
+#define xbee_threadStart(a, b, c) _xbee_threadStart((a), (b), (void*(*)(void*))(c), (#c))
+int _xbee_threadStart(struct xbee *xbee, pthread_t *thread, void*(*startFunction)(void*), char *startFuncName);
 
 #endif /* __XBEE_INTERNAL_H */
 

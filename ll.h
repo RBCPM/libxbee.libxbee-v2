@@ -40,7 +40,7 @@ struct ll_info {
 };
 
 int ll_init(struct ll_head *list);
-void ll_destroy(struct ll_head *h, void (*freeCallback)(void *p));
+void ll_destroy(struct ll_head *list, void (*freeCallback)(void*));
 
 int ll_add_head(void *list, void *item);
 int ll_add_tail(void *list, void *item);

@@ -30,6 +30,9 @@ struct xbee_pkt {
 	unsigned char *data;
 };
 
+/* --- xbee.c --- */
+int xbee_setup(struct xbee **retXbee);
+
 /* --- mode.c --- */
 char **xbee_getModes(void);
 char *xbee_getMode(struct xbee *xbee);

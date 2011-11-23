@@ -24,6 +24,6 @@
 #define XBEE_RX_RESTART_DELAY 25
 #define XBEE_RX_BUFLEN        1024
 
-void xbee_rx(struct xbee *xbee);
+int xbee_rx(struct xbee *xbee);
 
 #endif /* __XBEE_RX_H */

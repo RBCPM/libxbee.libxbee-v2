@@ -23,21 +23,21 @@
 
 #include "ll.h"
 
-int ll_init(struct ll_head *h) {
-  h->is_head = 1;
-  h->head = NULL;
-  h->tail = NULL;
-  h->self = h;
-  if (pthread_mutex_init(&h->mutex,NULL)) return 1;
+int ll_init(struct ll_head *list) {
+  list->is_head = 1;
+  list->head = NULL;
+  list->tail = NULL;
+  list->self = list;
+  if (pthread_mutex_init(&list->mutex,NULL)) return 1;
 	return 0;
 }
 
-void ll_destroy(struct ll_head *h, void (*freeCallback)(void *p)) {
+void ll_destroy(struct ll_head *list, void (*freeCallback)(void *)) {
 	void *p;
-	while ((p = ll_ext_tail(h)) != NULL) {
+	while ((p = ll_ext_tail(list)) != NULL) {
 		if (freeCallback) freeCallback(p);
 	}
-	pthread_mutex_destroy(&h->mutex);
+	pthread_mutex_destroy(&list->mutex);
 }
 
 int ll_add_head(void *list, void *item) {

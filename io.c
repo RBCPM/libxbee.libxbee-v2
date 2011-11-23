@@ -88,6 +88,8 @@ int xbee_io_reopen(struct xbee *xbee) {
 	return xbee_io_open(xbee);
 }
 
+/* ######################################################################### */
+
 int xbee_io_getRawByte(FILE *f, unsigned char *cOut) {
 	unsigned char c;
 	int ret = XBEE_EUNKNOWN;
@@ -154,3 +156,56 @@ int xbee_io_getEscapedByte(FILE *f, unsigned char *cOut) {
 	return ret;
 }
 
+/* ######################################################################### */
+
+int xbee_io_writeRawByte(FILE *f, unsigned char c) {
+	int ret = XBEE_EUNKNOWN;
+	int retries = XBEE_IO_RETRIES;
+	
+	do {
+		if (xsys_fwrite(&c, 1, 1, f) == 0) {
+			/* for some reason nothing was written... */
+			if (xsys_ferror(f)) {
+				char *s;
+				if (xsys_feof(f)) {
+					xbee_logsstderr("EOF detected...");
+					ret = XBEE_EEOF;
+					goto done;
+				}
+				if (!(s = strerror(errno))) {
+					xbee_logsstderr("Unknown error detected (%d)",errno);
+				} else {
+					xbee_logsstderr("Error detected (%s)",s);
+				}
+				usleep(1000);
+			} else {
+				/* no error? weird... try again */
+				usleep(100);
+			}
+		}
+	} while (--retries);
+	
+	if (!retries) {
+		ret = XBEE_EIORETRIES;
+	} else {
+		ret = XBEE_ENONE;
+	}
+	
+done:
+	return ret;
+}
+
+int xbee_io_writeEscapedByte(FILE *f, unsigned char c) {
+	int fd;
+	fd = fileno(f);
+	
+	if (c == 0x7E ||
+			c == 0x7D ||
+			c == 0x11 ||
+			c == 0x13) {
+		if (xbee_io_writeRawByte(f, 0x7D)) return XBEE_EIO;
+		c ^= 0x20;
+	}
+	if (xbee_io_writeRawByte(f, c)) return XBEE_EIO;
+	return 0;
+}

@@ -30,5 +30,8 @@ int xbee_io_reopen(struct xbee *xbee);
 int xbee_io_getRawByte(FILE *f, unsigned char *cOut);
 int xbee_io_getEscapedByte(FILE *f, unsigned char *cOut);
 
+int xbee_io_writeRawByte(FILE *f, unsigned char c);
+int xbee_io_writeEscapedByte(FILE *f, unsigned char c);
+
 #endif /* __XBEE_IO_H */
 
