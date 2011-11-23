@@ -25,6 +25,9 @@
 #include <unistd.h>
 #include <sys/time.h>
 
+#include "errors.h"
+#include "log.h"
+
 #define __XBEE_XSYS_LOAD_H
 #if defined(__GNUC__) /* ------- */
 #include "xsys_linux.h"

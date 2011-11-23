@@ -29,9 +29,6 @@
 #include <pthread.h>
 #undef __USE_GNU
 #include <semaphore.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/select.h>
 
 typedef pthread_t         xsys_thread;
 typedef pthread_mutex_t   xsys_mutex;

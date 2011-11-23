@@ -21,6 +21,12 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <termios.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/select.h>
+
 /* ######################################################################### */
 /* file I/O */
 
@@ -83,7 +89,73 @@ int xsys_disableBuffer(FILE *stream) {
 /* configuration */
 
 int xsys_setupSerial(int fd, FILE *stream, int baudrate) {
-#warning TODO - setup serial port
+  struct termios tc;
+  speed_t chosenbaud;
+	
+  /* select the baud rate */
+  switch (baudrate) {
+  case 1200:  chosenbaud = B1200;   break;
+  case 2400:  chosenbaud = B2400;   break;
+  case 4800:  chosenbaud = B4800;   break;
+  case 9600:  chosenbaud = B9600;   break;
+  case 19200: chosenbaud = B19200;  break;
+  case 38400: chosenbaud = B38400;  break;
+  case 57600: chosenbaud = B57600;  break;
+  case 115200:chosenbaud = B115200; break;
+  default:
+    xbee_log("Invalid baud rate selected");
+    return XBEE_EINVALBAUDRATE;
+  };
+	
+  /* setup the baud rate and other io attributes */
+  if (tcgetattr(fd, &tc)) {
+		xbee_perror("tcgetattr()");
+		return XBEE_ESETUP;
+	}
+  /* input flags */
+  tc.c_iflag &= ~ IGNBRK;           /* enable ignoring break */
+  tc.c_iflag &= ~(IGNPAR | PARMRK); /* disable parity checks */
+  tc.c_iflag &= ~ INPCK;            /* disable parity checking */
+  tc.c_iflag &= ~ ISTRIP;           /* disable stripping 8th bit */
+  tc.c_iflag &= ~(INLCR | ICRNL);   /* disable translating NL <-> CR */
+  tc.c_iflag &= ~ IGNCR;            /* disable ignoring CR */
+  tc.c_iflag &= ~(IXON | IXOFF);    /* disable XON/XOFF flow control */
+  /* output flags */
+  tc.c_oflag &= ~ OPOST;            /* disable output processing */
+  tc.c_oflag &= ~(ONLCR | OCRNL);   /* disable translating NL <-> CR */
+  tc.c_oflag &= ~ OFILL;            /* disable fill characters */
+  /* control flags */
+  tc.c_cflag |=   CREAD;            /* enable reciever */
+  tc.c_cflag &= ~ PARENB;           /* disable parity */
+  tc.c_cflag &= ~ CSTOPB;           /* disable 2 stop bits */
+  tc.c_cflag &= ~ CSIZE;            /* remove size flag... */
+  tc.c_cflag |=   CS8;              /* ...enable 8 bit characters */
+  tc.c_cflag |=   HUPCL;            /* enable lower control lines on close - hang up */
+  /* local flags */
+  tc.c_lflag &= ~ ISIG;             /* disable generating signals */
+  tc.c_lflag &= ~ ICANON;           /* disable canonical mode - line by line */
+  tc.c_lflag &= ~ ECHO;             /* disable echoing characters */
+  tc.c_lflag &= ~ ECHONL;           /* ??? */
+  tc.c_lflag &= ~ NOFLSH;           /* disable flushing on SIGINT */
+  tc.c_lflag &= ~ IEXTEN;           /* disable input processing */
+  /* control characters */
+  memset(tc.c_cc,0,sizeof(tc.c_cc));
+	/* set i/o baud rate */
+  if (cfsetspeed(&tc, chosenbaud)) {
+		xbee_perror("cfsetspeed()");
+		return XBEE_ESETUP;
+	}
+  if (tcsetattr(fd, TCSANOW, &tc)) {
+		xbee_perror("tcsetattr()");
+		return XBEE_ESETUP;
+	}
+	
+	/* enable input & output transmission */
+  if (tcflow(fd, TCOON | TCION)) {
+		xbee_perror("tcflow");
+		return XBEE_ESETUP;
+	}
+	
 	return 0;
 }
 

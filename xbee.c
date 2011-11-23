@@ -25,6 +25,7 @@
 #include "xbee.h"
 #include "internal.h"
 #include "xsys.h"
+#include "io.h"
 #include "errors.h"
 #include "log.h"
 #include "rx.h"
@@ -40,8 +41,8 @@ int xbee_setup(struct xbee **retXbee) {
 		goto die1;
 	}
 	
-#warning TODO - setup serial port
-	if (0) goto die2;
+	
+	if (xbee_io_open(xbee)) goto die2;
 	
 	if (xbee_threadStart(xbee, &(xbee->rxThread), xbee_rx)) {
 		xbee_perror("xbee_threadStart(xbee_rx)");
@@ -74,7 +75,7 @@ die4:
 		xsys_thread_join(xbee->rxThread, NULL);
 	}
 die3:
-#warning TODO - cleanup serial port
+	xbee_io_close(xbee);
 die2:
 	free(xbee);
 die1:

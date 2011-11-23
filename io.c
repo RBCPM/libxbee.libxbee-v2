@@ -32,14 +32,17 @@
 #include "io.h"
 
 int xbee_io_open(struct xbee *xbee) {
+	int ret;
 	int fd;
 	FILE *f;
 	xbee->device.ready = 0;
+	ret = XBEE_ENONE;
 	
 	/* open the device */
 	if ((fd = xsys_open(xbee->device.path, O_RDWR | O_NOCTTY | O_NONBLOCK)) == -1) {
 		xbee_perror("xsys_open()");
-		return XBEE_EOPENFAILED;
+		ret = XBEE_EOPENFAILED;
+		goto die1;
 	}
 	
 	/* lock the device */
@@ -49,7 +52,8 @@ int xbee_io_open(struct xbee *xbee) {
 	if ((f = xsys_fdopen(fd, "r+")) == NULL) {
 		xsys_close(fd);
 		xbee_perror("xsys_fdopen()");
-		return XBEE_EOPENFAILED;
+		ret = XBEE_EOPENFAILED;
+		goto die2;
 	}
 	
 	/* flush the serial port */
@@ -59,13 +63,29 @@ int xbee_io_open(struct xbee *xbee) {
 	xsys_disableBuffer(f);
 	
 	/* setup serial port (baud, control lines etc...) */
-	xsys_setupSerial(fd, f, xbee->device.baudrate);
+	if ((ret = xsys_setupSerial(fd, f, xbee->device.baudrate)) != 0) {
+		if (ret == XBEE_ESETUP) {
+			xbee_perror("xsys_setupSerial()");
+		} else if (ret == XBEE_EINVALBAUDRATE) {
+			xbee_log("Invalid baud rate selected...");
+		} else {
+			xbee_log("xsys_setupSerial() failed");
+		}
+		goto die3;
+	}
 	
 	xbee->device.fd = fd;
 	xbee->device.f = f;
 	xbee->device.ready = 1;
 	
-	return XBEE_ENONE;
+	goto done;
+die3:
+	xsys_fclose(f);
+die2:
+	xsys_close(fd);
+die1:
+done:
+	return ret;
 }
 
 void xbee_io_close(struct xbee *xbee) {
