@@ -132,14 +132,14 @@ int xbee_io_getRawByte(FILE *f, unsigned char *cOut) {
 			if (xsys_ferror(f)) {
 				char *s;
 				if (xsys_feof(f)) {
-					xbee_logsstderr("EOF detected...");
+					xbee_logstderr("EOF detected...");
 					ret = XBEE_EEOF;
 					goto done;
 				}
 				if (!(s = strerror(errno))) {
-					xbee_logsstderr("Unknown error detected (%d)",errno);
+					xbee_logstderr("Unknown error detected (%d)",errno);
 				} else {
-					xbee_logsstderr("Error detected (%s)",s);
+					xbee_logstderr("Error detected (%s)",s);
 				}
 				usleep(1000);
 			} else {
@@ -188,14 +188,14 @@ int xbee_io_writeRawByte(FILE *f, unsigned char c) {
 			if (xsys_ferror(f)) {
 				char *s;
 				if (xsys_feof(f)) {
-					xbee_logsstderr("EOF detected...");
+					xbee_logstderr("EOF detected...");
 					ret = XBEE_EEOF;
 					goto done;
 				}
 				if (!(s = strerror(errno))) {
-					xbee_logsstderr("Unknown error detected (%d)",errno);
+					xbee_logstderr("Unknown error detected (%d)",errno);
 				} else {
-					xbee_logsstderr("Error detected (%s)",s);
+					xbee_logstderr("Error detected (%s)",s);
 				}
 				usleep(1000);
 			} else {

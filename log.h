@@ -21,11 +21,22 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <stdio.h>
 #include <stdarg.h>
 
-void xbee_log(char *format, ...);
-void xbee_perror(char *message);
-void xbee_logsstderr(char *format, ...);
+#include "xbee.h"
+
+#define xbee_log(...) \
+	_xbee_log(__FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
+void _xbee_log(const char *file, int line, const char *function, char *format, ...);
+
+#define xbee_perror(...) \
+	_xbee_perror(__FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
+void _xbee_perror(const char *file, int line, const char *function, char *format, ...);
+
+#define xbee_logstderr(...) \
+	_xbee_logstderr(__FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
+void _xbee_logstderr(const char *file, int line, const char *function, char *format, ...);
 
 #endif /* __XBEE_LOG_H */
 

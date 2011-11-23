@@ -4,7 +4,7 @@ LIBMIN:=0
 LIBREV:=0
 
 BUILDDIR:=.build
-SRCS:=conn io ll mode rx tx xbee xbee_s1 xbee_s2 xbee_sG xsys
+SRCS:=conn io ll log mode rx tx xbee xbee_s1 xbee_s2 xbee_sG xsys
 LIBS:=rt pthread
 
 LD:=ld

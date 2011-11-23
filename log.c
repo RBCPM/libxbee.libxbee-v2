@@ -18,5 +18,87 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "log.h"
+#include <string.h>
+#include <errno.h>
 
+#include "log.h"
+#include "xsys.h"
+
+/* defaults to stderr */
+FILE *xbee_logf;
+int xbee_logfSet = 0;
+int xbee_logReady = 0;
+xsys_mutex xbee_logMutex;
+#define XBEE_LOG_BUFFERLEN 1024
+char xbee_logBuffer[XBEE_LOG_BUFFERLEN];
+
+int xbee_logPrepare(void) {
+	if (xsys_mutex_init(&xbee_logMutex)) return 1;
+	if (!xbee_logfSet) {
+		xbee_logf = stderr;
+		xbee_logfSet = 1;
+	}
+	xbee_logReady = 1;
+	return 0;
+}
+
+void xbee_logSetTarget(FILE *f) {
+	xbee_logf = f;
+}
+
+void _xbee_log(const char *file, int line, const char *function, char *format, ...) {
+  va_list ap;
+	if (xbee_logReady) if (xbee_logPrepare()) return;
+	if (!xbee_logf) return;
+	
+	xsys_mutex_lock(&xbee_logMutex);
+	
+  va_start(ap, format);
+  vsnprintf(xbee_logBuffer, XBEE_LOG_BUFFERLEN - 1, format, ap);
+  va_end(ap);
+	fprintf(xbee_logf, "%s:%d %s(): %s\n", file, line, function, xbee_logBuffer);
+	
+	xsys_mutex_unlock(&xbee_logMutex);
+}
+
+void _xbee_perror(const char *file, int line, const char *function, char *format, ...) {
+  va_list ap;
+	int i, lerrno;
+	if (xbee_logReady) if (xbee_logPrepare()) return;
+	if (!xbee_logf) return;
+	
+	/* errno could change while we are waiting for the mutex... */
+	lerrno = errno;
+	
+	xsys_mutex_lock(&xbee_logMutex);
+	
+  va_start(ap, format);
+  vsnprintf(xbee_logBuffer, XBEE_LOG_BUFFERLEN - 1, format, ap);
+  va_end(ap);
+	
+	i = strlen(xbee_logBuffer);
+	if (i < XBEE_LOG_BUFFERLEN) {
+		xbee_logBuffer[i++] = ':';
+		strerror_r(lerrno, &(xbee_logBuffer[i]), XBEE_LOG_BUFFERLEN - 1 - i);
+	}
+	
+	fprintf(xbee_logf, "%s:%d %s(): %s\n", file, line, function, xbee_logBuffer);
+	
+	xsys_mutex_unlock(&xbee_logMutex);
+}
+
+void _xbee_logstderr(const char *file, int line, const char *function, char *format, ...) {
+  va_list ap;
+	if (xbee_logReady) if (xbee_logPrepare()) return;
+	if (!xbee_logf) return;
+	
+	xsys_mutex_lock(&xbee_logMutex);
+	
+  va_start(ap, format);
+  vsnprintf(xbee_logBuffer, XBEE_LOG_BUFFERLEN - 1, format, ap);
+  va_end(ap);
+	fprintf(xbee_logf, "%s:%d %s(): %s\n", file, line, function, xbee_logBuffer);
+	if (xbee_logf != stderr) fprintf(stderr, "%s:%d %s(): %s\n", file, line, function, xbee_logBuffer);
+	
+	xsys_mutex_unlock(&xbee_logMutex);
+}

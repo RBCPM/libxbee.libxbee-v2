@@ -41,5 +41,8 @@ int xbee_setMode(struct xbee *xbee, char *name);
 /* --- conn.c --- */
 int xbee_conTypeIdFromName(struct xbee *xbee, char *name, unsigned char *id);
 
+/* --- log.c --- */
+void xbee_logSetTarget(FILE *f);
+
 #endif /* __XBEE_H */
 
