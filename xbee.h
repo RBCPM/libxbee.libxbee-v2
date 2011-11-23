@@ -28,6 +28,8 @@ struct xbee;
 
 struct xbee_pkt {
 	unsigned char status;
+	unsigned char options;
+	unsigned char rssi;
 
 	int datalen;
 	unsigned char data[1];

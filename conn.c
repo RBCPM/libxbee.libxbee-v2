@@ -32,8 +32,17 @@ struct xbee_con *xbee_conFromAddress(struct xbee *xbee, unsigned char id, struct
 	
 	if ((conType = xbee_conTypeFromID(xbee->mode->conTypes, id)) == NULL) return NULL;
 	
-	con = NULL;
-	while ((con = ll_get_next(&conType->conList, con)) != NULL) {
+	con = ll_get_next(&conType->conList, NULL);
+	if (!con) return NULL;
+	
+	/* if address is completely blank, just return the first connection */
+	if (!address->frameID_enabled &&
+			!address->addr64_enabled &&
+			!address->addr16_enabled) {
+		return con;
+	}
+	
+	do {
 		if (address->frameID_enabled && con->address.frameID_enabled) {
 			/* frameID must match */
 			if (address->frameID != con->address.frameID) continue;
@@ -50,7 +59,7 @@ struct xbee_con *xbee_conFromAddress(struct xbee *xbee, unsigned char id, struct
 			/* if 16-bit address matches accept */
 			if (!memcmp(address->addr16, con->address.addr16, 2)) break;
 		}
-	}
+	} while ((con = ll_get_next(&conType->conList, con)) != NULL);
 	
 	return con;
 }

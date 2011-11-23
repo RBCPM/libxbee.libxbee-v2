@@ -20,6 +20,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "internal.h"
 #include "errors.h"
@@ -38,7 +39,26 @@ struct xbee_mode *xbee_modes[] = {
 /* these are GENERIC XBee Series 1 & Series 2 compatible functions */
 
 #warning TODO - The Generic handlers
-int xbee_sG_modemStatus(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
+int xbee_sG_modemStatus(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) {
+	int ret = XBEE_ENONE;
+	
+	if (!pkt || !*pkt) {
+		ret = XBEE_EMISSINGPARAM;
+		goto die1;
+	}
+	
+	if ((*buf)->len != 2) {
+		ret = XBEE_ELENGTH;
+		goto die1;
+	}
+	
+	(*pkt)->status = (*buf)->buf[1];
+	
+	goto done;
+die1:
+done:
+	return ret;
+}
 
 int xbee_sG_localAtRx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
 int xbee_sG_localAtTx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }

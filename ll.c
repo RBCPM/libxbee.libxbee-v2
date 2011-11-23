@@ -166,6 +166,9 @@ out:
 void *ll_get_next(void *list, void *ref) {
 	struct ll_info *i;
 	void *ret;
+	if (!ref) {
+		return ll_get_head(list);
+	}
 	if (!(i = ll_get_item(list, ref))) goto out;
 	i = i->next;
 	if (!i) goto out;
@@ -176,6 +179,9 @@ out:
 void *ll_get_prev(void *list, void *ref) {
 	struct ll_info *i;
 	void *ret;
+	if (!ref) {
+		return ll_get_tail(list);
+	}
 	if (!(i = ll_get_item(list, ref))) goto out;
 	i = i->prev;
 	if (!i) goto out;

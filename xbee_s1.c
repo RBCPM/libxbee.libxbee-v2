@@ -20,6 +20,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "internal.h"
 #include "errors.h"
@@ -41,6 +42,9 @@ int xbee_s1_txStatus(struct xbee *xbee, struct xbee_pktHandler *handler, struct 
 		goto die1;
 	}
 	
+	con->address.frameID_enabled = 1;
+	con->address.frameID = (*buf)->buf[1];
+	
 	(*pkt)->status = (*buf)->buf[2];
 	
 	goto done;
@@ -57,20 +61,70 @@ int xbee_s1_64bitDataRx(struct xbee *xbee, struct xbee_pktHandler *handler, stru
 		goto die1;
 	}
 	
-	if ((*buf)->len != 3) {
+	if ((*buf)->len < 11) {
 		ret = XBEE_ELENGTH;
 		goto die1;
 	}
 	
-	(*pkt)->status = (*buf)->buf[2];
+	con->address.addr64_enabled = 1;
+	memcpy(con->address.addr64, &((*buf)->buf[1]), 8);
+	
+	(*pkt)->rssi = (*buf)->buf[9];
+	(*pkt)->options = (*buf)->buf[10];
+	
+	(*pkt)->datalen = (*buf)->len - 11;
+	if ((*pkt)->datalen > 1) {
+		void *p;
+		if (!(p = realloc((*pkt), sizeof(struct xbee_pkt) + (sizeof(unsigned char) * (*pkt)->datalen)))) {
+			ret = XBEE_ENOMEM;
+			goto die1;
+		}
+		(*pkt) = p;
+	}
+	if ((*pkt)->datalen) memcpy((*pkt)->data, &((*buf)->buf[11]), (*pkt)->datalen);
 	
 	goto done;
 die1:
 done:
-	return ret;}
+	return ret;
+}
 int xbee_s1_64bitDataTx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
 
-int xbee_s1_16bitDataRx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
+int xbee_s1_16bitDataRx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) {
+	int ret = XBEE_ENONE;
+	
+	if (!pkt || !*pkt) {
+		ret = XBEE_EMISSINGPARAM;
+		goto die1;
+	}
+	
+	if ((*buf)->len < 5) {
+		ret = XBEE_ELENGTH;
+		goto die1;
+	}
+	
+	con->address.addr16_enabled = 1;
+	memcpy(con->address.addr16, &((*buf)->buf[1]), 2);
+	
+	(*pkt)->rssi = (*buf)->buf[3];
+	(*pkt)->options = (*buf)->buf[4];
+	
+	(*pkt)->datalen = (*buf)->len - 5;
+	if ((*pkt)->datalen > 1) {
+		void *p;
+		if (!(p = realloc((*pkt), sizeof(struct xbee_pkt) + (sizeof(unsigned char) * (*pkt)->datalen)))) {
+			ret = XBEE_ENOMEM;
+			goto die1;
+		}
+		(*pkt) = p;
+	}
+	if ((*pkt)->datalen) memcpy((*pkt)->data, &((*buf)->buf[5]), (*pkt)->datalen);
+	
+	goto done;
+die1:
+done:
+	return ret;
+}
 int xbee_s1_16bitDataTx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
 
 int xbee_s1_64bitIO(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
