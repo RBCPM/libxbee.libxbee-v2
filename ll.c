@@ -126,6 +126,7 @@ void *ll_get_head(void *list) {
   i = list;
   h = i->head;
   if (h->is_head && h->self == h) {
+		if (!h->head) return NULL;
 		ret = h->head->item;
 	}
   return ret;
@@ -138,6 +139,7 @@ void *ll_get_tail(void *list) {
   i = list;
   h = i->head;
   if (h->is_head && h->self == h) {
+		if (!h->tail) return NULL;
 		ret = h->tail->item;
 	}
   return ret;
