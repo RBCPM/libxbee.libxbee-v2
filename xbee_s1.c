@@ -143,7 +143,7 @@ int xbee_s1_DataTx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx
 			goto die2;
 		}
 		memcpy(&(nBuf->buf[2]), con->address.addr64, 8);
-		offset = 10;
+		offset = 8;
 	
 	/* 16-bit addressing */
 	} else if (nBuf->buf[0] == 0x01) {
@@ -152,22 +152,22 @@ int xbee_s1_DataTx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx
 			goto die2;
 		}
 		memcpy(&(nBuf->buf[2]), con->address.addr16, 2);
-		offset = 4;
+		offset = 2;
 	
 	} else {
 		ret = XBEE_EINVAL;
 		goto die2;
 	}
 	
-	if (con->options.disableAck)   nBuf->buf[offset] |= 0x01;
-	if (con->options.broadcastPAN) nBuf->buf[offset] |= 0x04;
+	if (con->options.disableAck)   nBuf->buf[offset + 2] |= 0x01;
+	if (con->options.broadcastPAN) nBuf->buf[offset + 2] |= 0x04;
 	
-	nBuf->len  = offset + 1 + (*buf)->len;
+	nBuf->len = offset + 2 + (*buf)->len;
 	if (nBuf->len > XBEE_MAX_PACKETLEN) {
 		ret = XBEE_ELENGTH;
 		goto die2;
 	}
-	memcpy(&(nBuf->buf[offset + 1]), (*buf)->buf, (*buf)->len);
+	memcpy(&(nBuf->buf[offset + 3]), (*buf)->buf, (*buf)->len);
 	
 	/* try (and ignore failure) to realloc buf to the correct length */
 	if ((p = realloc(nBuf, sizeof(struct bufData) + (sizeof(unsigned char) * (nBuf->len - 1)))) != NULL) nBuf = p;
@@ -335,11 +335,11 @@ static struct xbee_conType conTypes[] = {
 
 static struct xbee_pktHandler pktHandlers[] = {
 	ADD_HANDLER(0x08, xbee_sG_atRx),      /* local AT */
-	ADD_HANDLER(0x88, xbee_sG_localAtTx),
-	ADD_HANDLER(0x09, xbee_sG_localAtTx), /* queued */
+	ADD_HANDLER(0x88, xbee_sG_atTx),      /* local AT */
+	ADD_HANDLER(0x09, xbee_sG_atTx),      /* local AT - queued */
 
 	ADD_HANDLER(0x17, xbee_sG_atRx),      /* remote AT */
-	ADD_HANDLER(0x97, xbee_sG_remoteAtTx),
+	ADD_HANDLER(0x97, xbee_sG_atTx),      /* remote AT */
 
 	ADD_HANDLER(0x8A, xbee_sG_modemStatus),
 	ADD_HANDLER(0x89, xbee_s1_txStatus),

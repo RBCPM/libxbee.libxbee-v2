@@ -122,6 +122,77 @@ die1:
 done:
 	return ret;
 }
-int xbee_sG_localAtTx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
-
-int xbee_sG_remoteAtTx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
+int xbee_sG_atTx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) {
+	int ret = XBEE_ENONE;
+	struct bufData *nBuf;
+	int offset;
+	void *p;
+	
+	if (!xbee)         return XBEE_ENOXBEE;
+	if (!handler)      return XBEE_EMISSINGPARAM;
+	if (isRx)          return XBEE_EINVAL;
+	if (!buf || !*buf) return XBEE_EMISSINGPARAM;
+	if (!con)          return XBEE_EMISSINGPARAM;
+	if (!handler->conType || !handler->conType->txEnabled) return XBEE_EINVAL;
+	if ((*buf)->len < 2) return XBEE_ELENGTH; /* need at least the 2 AT characters! */
+	
+	if ((nBuf = calloc(1, sizeof(struct bufData) + (sizeof(unsigned char) * (XBEE_MAX_PACKETLEN - 1)))) == NULL) {
+		ret = XBEE_ENOMEM;
+		goto die1;
+	}
+	
+	nBuf->buf[0] = handler->conType->txID;
+	if (con->address.frameID_enabled) {
+		nBuf->buf[1] = con->address.frameID;
+	}
+	
+	/* local AT (0x09 = queued) */
+	if (nBuf->buf[0] == 0x08 ||
+	    nBuf->buf[0] == 0x09) {
+		offset = 0;
+	
+	/* remote AT */
+	} else if (nBuf->buf[0] == 0x17) {
+		if (con->address.addr64_enabled) {
+			memcpy(&(nBuf->buf[2]), con->address.addr64, 8);
+			nBuf->buf[10] = 0xFF;
+			nBuf->buf[11] = 0xFE;
+		} else if (con->address.addr16_enabled) {
+			/* 64-bit address is ignored if 16-bit address isn't 0xFFFE */
+			if (con->address.addr16[0] == 0xFF &&
+			    con->address.addr16[1] == 0xFE) {
+				ret = XBEE_EINVAL;
+				goto die2;
+			}
+			memcpy(&(nBuf->buf[10]), con->address.addr16, 2);
+		} else {
+			ret = XBEE_EINVAL;
+			goto die2;
+		}
+		if (con->options.applyChanges) nBuf->buf[12] |= 0x02;
+		offset = 11;
+	
+	} else {
+		ret = XBEE_EINVAL;
+		goto die2;
+	}
+	
+	nBuf->len = offset + 2 + (*buf)->len;
+	if (nBuf->len > XBEE_MAX_PACKETLEN) {
+		ret = XBEE_ELENGTH;
+		goto die2;
+	}
+	memcpy(&(nBuf->buf[offset + 2]), (*buf)->buf, (*buf)->len);
+	
+	/* try (and ignore failure) to realloc buf to the correct length */
+	if ((p = realloc(nBuf, sizeof(struct bufData) + (sizeof(unsigned char) * (nBuf->len - 1)))) != NULL) nBuf = p;
+	
+	*buf = nBuf;
+	
+	goto done;
+die2:
+	free(nBuf);
+die1:
+done:
+	return ret;
+}
