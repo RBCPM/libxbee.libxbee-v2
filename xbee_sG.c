@@ -38,7 +38,6 @@ struct xbee_mode *xbee_modes[] = {
 /* ######################################################################### */
 /* these are GENERIC XBee Series 1 & Series 2 compatible functions */
 
-#warning TODO - The Generic handlers
 int xbee_sG_modemStatus(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) {
 	int ret = XBEE_ENONE;
 	
