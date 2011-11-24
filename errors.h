@@ -38,6 +38,7 @@
 #define XBEE_EINVALBAUDRATE                                -14
 #define XBEE_ESETUP                                        -15
 #define XBEE_ELENGTH                                       -16
+#define XBEE_EINVAL                                        -17
 
 #endif /* __XBEE_ERRORS_H */
 

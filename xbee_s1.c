@@ -28,7 +28,10 @@
 #include "xbee_s1.h"
 #include "xbee_sG.h"
 
-#warning TODO - The Series 1 handlers
+#warning TODO - The Series 1 Tx handlers
+int xbee_s1_64bitDataTx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
+int xbee_s1_16bitDataTx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
+
 int xbee_s1_txStatus(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) {
 	int ret = XBEE_ENONE;
 	
@@ -53,7 +56,8 @@ done:
 	return ret;
 }
 
-int xbee_s1_64bitDataRx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) {
+int xbee_s1_DataRx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) {
+	int addrLen;
 	int ret = XBEE_ENONE;
 	
 	if (!pkt || !*pkt) {
@@ -61,18 +65,37 @@ int xbee_s1_64bitDataRx(struct xbee *xbee, struct xbee_pktHandler *handler, stru
 		goto die1;
 	}
 	
-	if ((*buf)->len < 11) {
+	if ((*buf)->len < 1) {
 		ret = XBEE_ELENGTH;
 		goto die1;
 	}
 	
-	con->address.addr64_enabled = 1;
-	memcpy(con->address.addr64, &((*buf)->buf[1]), 8);
+	if ((*buf)->buf[0] == 0x80) {
+		addrLen = 8;
+	} else if ((*buf)->buf[0] == 0x81) {
+		addrLen = 2;
+	} else {
+		ret = XBEE_EINVAL;
+		goto die1;
+	}
 	
-	(*pkt)->rssi = (*buf)->buf[9];
-	(*pkt)->options = (*buf)->buf[10];
+	if ((*buf)->len < (addrLen + 3)) {
+		ret = XBEE_ELENGTH;
+		goto die1;
+	}
 	
-	(*pkt)->datalen = (*buf)->len - 11;
+	if (addrLen == 8) {
+		con->address.addr64_enabled = 1;
+		memcpy(con->address.addr64, &((*buf)->buf[1]), addrLen);
+	} else {
+		con->address.addr16_enabled = 1;
+		memcpy(con->address.addr16, &((*buf)->buf[1]), addrLen);
+	}
+	
+	(*pkt)->rssi = (*buf)->buf[addrLen + 1];
+	(*pkt)->options = (*buf)->buf[addrLen + 2];
+	
+	(*pkt)->datalen = (*buf)->len - (addrLen + 3);
 	if ((*pkt)->datalen > 1) {
 		void *p;
 		if (!(p = realloc((*pkt), sizeof(struct xbee_pkt) + (sizeof(unsigned char) * (*pkt)->datalen)))) {
@@ -81,54 +104,137 @@ int xbee_s1_64bitDataRx(struct xbee *xbee, struct xbee_pktHandler *handler, stru
 		}
 		(*pkt) = p;
 	}
-	if ((*pkt)->datalen) memcpy((*pkt)->data, &((*buf)->buf[11]), (*pkt)->datalen);
+	if ((*pkt)->datalen) memcpy((*pkt)->data, &((*buf)->buf[addrLen + 3]), (*pkt)->datalen);
 	
 	goto done;
 die1:
 done:
 	return ret;
 }
-int xbee_s1_64bitDataTx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
 
-int xbee_s1_16bitDataRx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) {
+int xbee_s1_IO(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) {
+	int addrLen;
 	int ret = XBEE_ENONE;
+	struct xbee_pkt_ioData *ioData;
+	int sampleCount;
+	int i;
+	unsigned char *t;
 	
 	if (!pkt || !*pkt) {
 		ret = XBEE_EMISSINGPARAM;
 		goto die1;
 	}
 	
-	if ((*buf)->len < 5) {
+	if ((*buf)->len < 1) {
 		ret = XBEE_ELENGTH;
 		goto die1;
 	}
 	
-	con->address.addr16_enabled = 1;
-	memcpy(con->address.addr16, &((*buf)->buf[1]), 2);
-	
-	(*pkt)->rssi = (*buf)->buf[3];
-	(*pkt)->options = (*buf)->buf[4];
-	
-	(*pkt)->datalen = (*buf)->len - 5;
-	if ((*pkt)->datalen > 1) {
-		void *p;
-		if (!(p = realloc((*pkt), sizeof(struct xbee_pkt) + (sizeof(unsigned char) * (*pkt)->datalen)))) {
-			ret = XBEE_ENOMEM;
-			goto die1;
-		}
-		(*pkt) = p;
+	if ((*buf)->buf[0] == 0x82) {
+		addrLen = 8;
+	} else if ((*buf)->buf[0] == 0x83) {
+		addrLen = 2;
+	} else {
+		ret = XBEE_EINVAL;
+		goto die1;
 	}
-	if ((*pkt)->datalen) memcpy((*pkt)->data, &((*buf)->buf[5]), (*pkt)->datalen);
+	
+	if ((*buf)->len < (addrLen + 6)) {
+		ret = XBEE_ELENGTH;
+		goto die1;
+	}
+	
+	if (addrLen == 8) {
+		con->address.addr64_enabled = 1;
+		memcpy(con->address.addr64, &((*buf)->buf[1]), addrLen);
+	} else {
+		con->address.addr16_enabled = 1;
+		memcpy(con->address.addr16, &((*buf)->buf[1]), addrLen);
+	}
+	
+	(*pkt)->rssi = (*buf)->buf[addrLen + 1];
+	(*pkt)->options = (*buf)->buf[addrLen + 2];
+	
+	sampleCount = (*buf)->buf[addrLen + 3];
+	if ((ioData = calloc(1, sizeof(struct xbee_pkt_ioData) + (sizeof(struct xbee_pkt_ioSample) * (sampleCount-1)))) == NULL) {
+		ret = XBEE_ENOMEM;
+		goto die1;
+	}
+	(*pkt)->ioData = ioData;
+	
+	ioData->sampleCount = sampleCount;
+	
+	t = &((*buf)->buf[addrLen + 4]);
+	
+	ioData->a5_enabled = !!(t[0] & 0x40);
+	ioData->a4_enabled = !!(t[0] & 0x20);
+	ioData->a3_enabled = !!(t[0] & 0x10);
+	ioData->a2_enabled = !!(t[0] & 0x08);
+	ioData->a1_enabled = !!(t[0] & 0x04);
+	ioData->a0_enabled = !!(t[0] & 0x02);
+	ioData->d8_enabled = !!(t[0] & 0x01);
+	ioData->d7_enabled = !!(t[1] & 0x80);
+	ioData->d6_enabled = !!(t[1] & 0x40);
+	ioData->d5_enabled = !!(t[1] & 0x20);
+	ioData->d4_enabled = !!(t[1] & 0x10);
+	ioData->d3_enabled = !!(t[1] & 0x08);
+	ioData->d2_enabled = !!(t[1] & 0x04);
+	ioData->d1_enabled = !!(t[1] & 0x02);
+	ioData->d0_enabled = !!(t[1] & 0x01);
+	t += 2;
+	
+	for (i = 0; i < sampleCount; i++) {
+		if (ioData->d0_enabled ||
+				ioData->d1_enabled ||
+				ioData->d2_enabled ||
+				ioData->d3_enabled ||
+				ioData->d4_enabled ||
+				ioData->d5_enabled ||
+				ioData->d6_enabled ||
+				ioData->d7_enabled ||
+				ioData->d8_enabled) {
+			ioData->sample[i].d8 = !!(t[0] & 0x01);
+			ioData->sample[i].d7 = !!(t[1] & 0x80);
+			ioData->sample[i].d6 = !!(t[1] & 0x40);
+			ioData->sample[i].d5 = !!(t[1] & 0x20);
+			ioData->sample[i].d4 = !!(t[1] & 0x10);
+			ioData->sample[i].d3 = !!(t[1] & 0x08);
+			ioData->sample[i].d2 = !!(t[1] & 0x04);
+			ioData->sample[i].d1 = !!(t[1] & 0x02);
+			ioData->sample[i].d0 = !!(t[1] & 0x01);
+			t += 2;
+		}
+		if (ioData->a0_enabled) {
+			ioData->sample[i].a0 = ((t[0] << 8) & 0x3F) | (t[1] & 0xFF);
+			t += 2;
+		}
+		if (ioData->a1_enabled) {
+			ioData->sample[i].a1 = ((t[0] << 8) & 0x3F) | (t[1] & 0xFF);
+			t += 2;
+		}
+		if (ioData->a2_enabled) {
+			ioData->sample[i].a2 = ((t[0] << 8) & 0x3F) | (t[1] & 0xFF);
+			t += 2;
+		}
+		if (ioData->a3_enabled) {
+			ioData->sample[i].a3 = ((t[0] << 8) & 0x3F) | (t[1] & 0xFF);
+			t += 2;
+		}
+		if (ioData->a4_enabled) {
+			ioData->sample[i].a4 = ((t[0] << 8) & 0x3F) | (t[1] & 0xFF);
+			t += 2;
+		}
+		if (ioData->a5_enabled) {
+			ioData->sample[i].a5 = ((t[0] << 8) & 0x3F) | (t[1] & 0xFF);
+			t += 2;
+		}
+	}
 	
 	goto done;
 die1:
 done:
 	return ret;
 }
-int xbee_s1_16bitDataTx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
-
-int xbee_s1_64bitIO(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
-int xbee_s1_16bitIO(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
 
 /* ######################################################################### */
 
@@ -161,14 +267,14 @@ static struct xbee_pktHandler pktHandlers[] = {
 	ADD_HANDLER(0x8A, xbee_sG_modemStatus),
 	ADD_HANDLER(0x89, xbee_s1_txStatus),
 	
-	ADD_HANDLER(0x80, xbee_s1_64bitDataRx),
+	ADD_HANDLER(0x80, xbee_s1_DataRx),
 	ADD_HANDLER(0x00, xbee_s1_64bitDataTx),
 	
-	ADD_HANDLER(0x81, xbee_s1_16bitDataRx),
+	ADD_HANDLER(0x81, xbee_s1_DataRx),
 	ADD_HANDLER(0x01, xbee_s1_16bitDataTx),
 	
-	ADD_HANDLER(0x82, xbee_s1_64bitIO),
-	ADD_HANDLER(0x83, xbee_s1_16bitIO),
+	ADD_HANDLER(0x82, xbee_s1_IO),
+	ADD_HANDLER(0x83, xbee_s1_IO),
 	
 	ADD_HANDLER_TERMINATOR()
 };

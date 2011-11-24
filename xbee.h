@@ -26,10 +26,50 @@
 
 struct xbee;
 
+struct xbee_pkt_ioSample {
+	unsigned char d0 : 1;
+	unsigned char d1 : 1;
+	unsigned char d2 : 1;
+	unsigned char d3 : 1;
+	unsigned char d4 : 1;
+	unsigned char d5 : 1;
+	unsigned char d6 : 1;
+	unsigned char d7 : 1;
+	unsigned char d8 : 1;
+	unsigned short a0;
+	unsigned short a1;
+	unsigned short a2;
+	unsigned short a3;
+	unsigned short a4;
+	unsigned short a5;
+};
+struct xbee_pkt_ioData {
+	unsigned char d0_enabled : 1;
+	unsigned char d1_enabled : 1;
+	unsigned char d2_enabled : 1;
+	unsigned char d3_enabled : 1;
+	unsigned char d4_enabled : 1;
+	unsigned char d5_enabled : 1;
+	unsigned char d6_enabled : 1;
+	unsigned char d7_enabled : 1;
+	unsigned char d8_enabled : 1;
+	unsigned char a0_enabled : 1;
+	unsigned char a1_enabled : 1;
+	unsigned char a2_enabled : 1;
+	unsigned char a3_enabled : 1;
+	unsigned char a4_enabled : 1;
+	unsigned char a5_enabled : 1;
+
+	unsigned char sampleCount;
+	struct xbee_pkt_ioSample sample[1];
+};
+
 struct xbee_pkt {
 	unsigned char status;
 	unsigned char options;
 	unsigned char rssi;
+
+	struct xbee_pkt_ioData *ioData;
 
 	int datalen;
 	unsigned char data[1];
@@ -37,6 +77,7 @@ struct xbee_pkt {
 
 /* --- xbee.c --- */
 int xbee_setup(struct xbee **retXbee);
+void xbee_freePkt(struct xbee_pkt *pkt);
 
 /* --- mode.c --- */
 char **xbee_getModes(void);

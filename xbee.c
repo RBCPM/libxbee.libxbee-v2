@@ -97,3 +97,9 @@ int _xbee_threadStart(struct xbee *xbee, pthread_t *thread, void*(*startFunction
 	}
 	return 0;
 }
+
+void xbee_freePkt(struct xbee_pkt *pkt) {
+	if (!pkt) return;
+	if (pkt->ioData) free(pkt->ioData);
+	free(pkt);
+}
