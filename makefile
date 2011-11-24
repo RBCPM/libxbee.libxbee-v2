@@ -34,7 +34,7 @@ $(LIBOUT).so: $(BUILDDIR)/$(LIBOUT).o
 	$(GCC) -shared -Wl,-soname,$(LIBOUT).so.$(LIBMAJ) $(CLINKS) $(filter %.o,$^) -o $@
 
 #$(LIBOUT).o: $(BUILDDIR)/$(LIBOUT).o
-#	$(LD) -T $(LIBOUT).ld $(filter %.o,$^) -o $@
+#	$(LD) -r -T $(LIBOUT).ld $(filter %.o,$^) -o $@
 	
 $(BUILDDIR)/$(LIBOUT).o: $(addprefix $(BUILDDIR)/,$(addsuffix .o,$(SRCS)))
 	$(LD) -r $(filter %.o,$^) -o $@

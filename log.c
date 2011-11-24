@@ -23,16 +23,17 @@
 
 #include "log.h"
 #include "xsys.h"
+#include "xbee.h"
 
 /* defaults to stderr */
-FILE *xbee_logf;
-int xbee_logfSet = 0;
-int xbee_logReady = 0;
-xsys_mutex xbee_logMutex;
+static FILE *xbee_logf;
+static int xbee_logfSet = 0;
+static int xbee_logReady = 0;
+static xsys_mutex xbee_logMutex;
 #define XBEE_LOG_BUFFERLEN 1024
-char xbee_logBuffer[XBEE_LOG_BUFFERLEN];
+static char xbee_logBuffer[XBEE_LOG_BUFFERLEN];
 
-int xbee_logPrepare(void) {
+static int xbee_logPrepare(void) {
 	if (xsys_mutex_init(&xbee_logMutex)) return 1;
 	if (!xbee_logfSet) {
 		xbee_logf = stderr;
@@ -43,7 +44,9 @@ int xbee_logPrepare(void) {
 }
 
 void xbee_logSetTarget(FILE *f) {
+	xsys_mutex_lock(&xbee_logMutex);
 	xbee_logf = f;
+	xsys_mutex_unlock(&xbee_logMutex);
 }
 
 void _xbee_log(const char *file, int line, const char *function, char *format, ...) {
