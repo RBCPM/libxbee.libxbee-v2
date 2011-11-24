@@ -98,7 +98,7 @@ int xbee_s1_DataRx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx
 	(*pkt)->datalen = (*buf)->len - (addrLen + 3);
 	if ((*pkt)->datalen > 1) {
 		void *p;
-		if ((p = realloc((*pkt), sizeof(struct xbee_pkt) - sizeof(struct xbee_pkt_ioData) + (sizeof(unsigned char) * ((*pkt)->datalen) - 1))) == NULL) {
+		if ((p = realloc((*pkt), (sizeof(struct xbee_pkt) - sizeof(struct xbee_pkt_ioData)) + (sizeof(unsigned char) * ((*pkt)->datalen) - 1))) == NULL) {
 			ret = XBEE_ENOMEM;
 			goto die1;
 		}
@@ -338,8 +338,8 @@ static struct xbee_pktHandler pktHandlers[] = {
 	ADD_HANDLER(0x88, xbee_sG_atTx),      /* local AT */
 	ADD_HANDLER(0x09, xbee_sG_atTx),      /* local AT - queued */
 
-	ADD_HANDLER(0x17, xbee_sG_atRx),      /* remote AT */
-	ADD_HANDLER(0x97, xbee_sG_atTx),      /* remote AT */
+	ADD_HANDLER(0x97, xbee_sG_atRx),      /* remote AT */
+	ADD_HANDLER(0x17, xbee_sG_atTx),      /* remote AT */
 
 	ADD_HANDLER(0x8A, xbee_sG_modemStatus),
 	ADD_HANDLER(0x89, xbee_s1_txStatus),
