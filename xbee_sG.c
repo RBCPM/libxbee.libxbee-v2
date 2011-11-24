@@ -42,10 +42,12 @@ struct xbee_mode *xbee_modes[] = {
 int xbee_sG_modemStatus(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) {
 	int ret = XBEE_ENONE;
 	
-	if (!pkt || !*pkt) {
-		ret = XBEE_EMISSINGPARAM;
-		goto die1;
-	}
+	if (!xbee)         return XBEE_ENOXBEE;
+	if (!handler)      return XBEE_EMISSINGPARAM;
+	if (!isRx)         return XBEE_EINVAL;
+	if (!buf || !*buf) return XBEE_EMISSINGPARAM;
+	if (!con)          return XBEE_EMISSINGPARAM;
+	if (!pkt || !*pkt) return XBEE_EMISSINGPARAM;
 	
 	if ((*buf)->len != 2) {
 		ret = XBEE_ELENGTH;
@@ -60,9 +62,66 @@ done:
 	return ret;
 }
 
-int xbee_sG_localAtRx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
+int xbee_sG_atRx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) {
+	int ret = XBEE_ENONE;
+	int offset;
+	
+	if (!xbee)         return XBEE_ENOXBEE;
+	if (!handler)      return XBEE_EMISSINGPARAM;
+	if (!isRx)         return XBEE_EINVAL;
+	if (!buf || !*buf) return XBEE_EMISSINGPARAM;
+	if (!con)          return XBEE_EMISSINGPARAM;
+	if (!pkt || !*pkt) return XBEE_EMISSINGPARAM;
+	
+	if ((*buf)->len < 1) {
+		ret = XBEE_ELENGTH;
+		goto die1;
+	}
+	
+	if ((*buf)->buf[0] != 0x88) {
+	}
+	
+	if ((*buf)->buf[0] == 0x88) {
+		offset = 0;
+	} else if ((*buf)->buf[0] == 0x97) {
+		offset = 10;
+		con->address.addr64_enabled = 1;
+		memcpy(con->address.addr64, &((*buf)->buf[2]), 8);
+		con->address.addr16_enabled = 1;
+		memcpy(con->address.addr16, &((*buf)->buf[10]), 2);
+	} else {
+		ret = XBEE_EINVAL;
+		goto die1;
+	}
+	
+	if ((*buf)->len < 5) {
+		ret = XBEE_ELENGTH;
+		goto die1;
+	}
+	
+	con->address.frameID_enabled = 1;
+	con->address.frameID = (*buf)->buf[1];
+	
+	(*pkt)->atCommand[0] = (*buf)->buf[offset + 2];
+	(*pkt)->atCommand[1] = (*buf)->buf[offset + 3];
+	
+	(*pkt)->status = (*buf)->buf[offset + 4];
+	
+	(*pkt)->datalen = (*buf)->len - (offset + 5);
+	if ((*pkt)->datalen > 1) {
+		void *p;
+		if ((p = realloc((*pkt), sizeof(struct xbee_pkt) - sizeof(struct xbee_pkt_ioData) + (sizeof(unsigned char) * ((*pkt)->datalen) - 1))) == NULL) {
+			ret = XBEE_ENOMEM;
+			goto die1;
+		}
+	}
+	if ((*pkt)->datalen) memcpy((*pkt)->data, &((*buf)->buf[offset + 5]), (*pkt)->datalen);
+	
+	goto done;
+die1:
+done:
+	return ret;
+}
 int xbee_sG_localAtTx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
-int xbee_sG_localAtQueue(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
 
-int xbee_sG_remoteAtRx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
 int xbee_sG_remoteAtTx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }

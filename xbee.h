@@ -73,7 +73,9 @@ struct xbee_pkt {
 	unsigned char ioData_valid : 1;
 
 	int datalen;
-
+	
+	unsigned char atCommand[2];
+	
 	/* use EITHER data, or ioData, check the *_valid flags (up) */
 	unsigned char data[1];
 	struct xbee_pkt_ioData ioData;

@@ -98,7 +98,7 @@ int xbee_s1_DataRx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx
 	(*pkt)->datalen = (*buf)->len - (addrLen + 3);
 	if ((*pkt)->datalen > 1) {
 		void *p;
-		if (!(p = realloc((*pkt), sizeof(struct xbee_pkt) - sizeof(struct xbee_pkt_ioData) + (sizeof(unsigned char) * ((*pkt)->datalen) - 1)))) {
+		if ((p = realloc((*pkt), sizeof(struct xbee_pkt) - sizeof(struct xbee_pkt_ioData) + (sizeof(unsigned char) * ((*pkt)->datalen) - 1))) == NULL) {
 			ret = XBEE_ENOMEM;
 			goto die1;
 		}
@@ -334,24 +334,24 @@ static struct xbee_conType conTypes[] = {
 };
 
 static struct xbee_pktHandler pktHandlers[] = {
-	ADD_HANDLER(0x08, xbee_sG_localAtRx),
+	ADD_HANDLER(0x08, xbee_sG_atRx),      /* local AT */
 	ADD_HANDLER(0x88, xbee_sG_localAtTx),
-	ADD_HANDLER(0x09, xbee_sG_localAtQueue),
+	ADD_HANDLER(0x09, xbee_sG_localAtTx), /* queued */
 
-	ADD_HANDLER(0x17, xbee_sG_remoteAtRx),
+	ADD_HANDLER(0x17, xbee_sG_atRx),      /* remote AT */
 	ADD_HANDLER(0x97, xbee_sG_remoteAtTx),
 
 	ADD_HANDLER(0x8A, xbee_sG_modemStatus),
 	ADD_HANDLER(0x89, xbee_s1_txStatus),
 	
-	ADD_HANDLER(0x80, xbee_s1_DataRx), /* 64-bit */
-	ADD_HANDLER(0x00, xbee_s1_DataTx), /* 64-bit */
+	ADD_HANDLER(0x80, xbee_s1_DataRx),    /* 64-bit */
+	ADD_HANDLER(0x00, xbee_s1_DataTx),    /* 64-bit */
 	
-	ADD_HANDLER(0x81, xbee_s1_DataRx), /* 16-bit */
-	ADD_HANDLER(0x01, xbee_s1_DataTx), /* 16-bit */
+	ADD_HANDLER(0x81, xbee_s1_DataRx),    /* 16-bit */
+	ADD_HANDLER(0x01, xbee_s1_DataTx),    /* 16-bit */
 	
-	ADD_HANDLER(0x82, xbee_s1_IO),     /* 64-bit */
-	ADD_HANDLER(0x83, xbee_s1_IO),     /* 16-bit */
+	ADD_HANDLER(0x82, xbee_s1_IO),        /* 64-bit */
+	ADD_HANDLER(0x83, xbee_s1_IO),        /* 16-bit */
 	
 	ADD_HANDLER_TERMINATOR()
 };

@@ -29,17 +29,17 @@
 #include "xbee_sG.h"
 
 #warning TODO - The Series 2 handlers
-int xbee_s2_txStatus(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
+int xbee_s2_txStatus(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return XBEE_EUNKNOWN; }
 
-int xbee_s2_dataRx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
-int xbee_s2_dataTx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
+int xbee_s2_dataRx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return XBEE_EUNKNOWN; }
+int xbee_s2_dataTx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return XBEE_EUNKNOWN; }
 
-int xbee_s2_explicitRx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
-int xbee_s2_explicitTx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
+int xbee_s2_explicitRx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return XBEE_EUNKNOWN; }
+int xbee_s2_explicitTx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return XBEE_EUNKNOWN; }
 
-int xbee_s2_IO(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
-int xbee_s2_sensor(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
-int xbee_s2_identify(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
+int xbee_s2_IO(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return XBEE_EUNKNOWN; }
+int xbee_s2_sensor(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return XBEE_EUNKNOWN; }
+int xbee_s2_identify(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return XBEE_EUNKNOWN; }
 
 /* ######################################################################### */
 
@@ -62,12 +62,12 @@ static struct xbee_conType conTypes[] = {
 };
 
 static struct xbee_pktHandler pktHandlers[] = {
+	ADD_HANDLER(0x08, xbee_sG_atRx),      /* local AT */
 	ADD_HANDLER(0x88, xbee_sG_localAtTx),
-	ADD_HANDLER(0x08, xbee_sG_localAtRx),
-	ADD_HANDLER(0x09, xbee_sG_localAtQueue),
+	ADD_HANDLER(0x09, xbee_sG_localAtTx), /* queued */
 
+	ADD_HANDLER(0x17, xbee_sG_atRx),      /* remote AT - see page 62 of http://attie.co.uk/file/XBee2.5.pdf - hmm... */
 	ADD_HANDLER(0x97, xbee_sG_remoteAtTx),
-	ADD_HANDLER(0x17, xbee_sG_remoteAtRx), /* see page 62 of http://attie.co.uk/file/XBee2.5.pdf... hmm... */
 
 	ADD_HANDLER(0x8A, xbee_sG_modemStatus),
 	ADD_HANDLER(0x8B, xbee_s2_txStatus),
