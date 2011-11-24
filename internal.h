@@ -21,9 +21,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <pthread.h>
-#include <semaphore.h>
-
+#include "xsys.h"
 #include "xbee.h"
 #include "ll.h"
 
@@ -55,16 +53,6 @@ struct xbee {
 
 /* ######################################################################### */
 
-struct xbee_conAddress {
-	unsigned char addr16_enabled;
-	unsigned char addr16[2];
-	
-	unsigned char addr64_enabled;
-	unsigned char addr64[8];
-	
-	unsigned char frameID_enabled;
-	unsigned char frameID;
-};
 struct xbee_conOptions {
 	unsigned char disableAck   : 1;
 	unsigned char broadcastPAN : 1;
@@ -77,6 +65,8 @@ struct xbee_con {
 	struct xbee_conAddress address;
 	
 	struct xbee_conOptions options;
+	
+	void(*callback)(void *con, struct xbee_pkt *pkt);
 	
 	int rxPackets;
 	int txPackets;

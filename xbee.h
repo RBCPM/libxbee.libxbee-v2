@@ -81,6 +81,17 @@ struct xbee_pkt {
 	struct xbee_pkt_ioData ioData;
 };
 
+struct xbee_conAddress {
+	unsigned char addr16_enabled;
+	unsigned char addr16[2];
+	
+	unsigned char addr64_enabled;
+	unsigned char addr64[8];
+	
+	unsigned char frameID_enabled;
+	unsigned char frameID;
+};
+
 /* --- xbee.c --- */
 int xbee_setup(char *path, int baudrate, FILE *logTarget, struct xbee **retXbee);
 void xbee_freePkt(struct xbee_pkt *pkt);
@@ -92,6 +103,11 @@ int xbee_setMode(struct xbee *xbee, char *name);
 
 /* --- conn.c --- */
 int xbee_conTypeIdFromName(struct xbee *xbee, char *name, unsigned char *id);
+void *xbee_newcon(struct xbee *xbee, unsigned char id, struct xbee_conAddress *address);
+int xbee_senddata(struct xbee *xbee, void *con, char *data, ...);
+struct xbee_pkt *xbee_getdata(struct xbee *xbee, void *con);
+int xbee_endcon(struct xbee *xbee, void *con);
+int xbee_conAttachCallback(struct xbee *xbee, void *con, void(*callback)(void *con, struct xbee_pkt *pkt));
 
 /* --- log.c --- */
 void xbee_logSetTarget(FILE *f);

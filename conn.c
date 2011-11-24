@@ -22,6 +22,7 @@
 #include <string.h>
 
 #include "internal.h"
+#include "errors.h"
 #include "conn.h"
 
 struct xbee_con *xbee_conFromAddress(struct xbee *xbee, unsigned char id, struct xbee_conAddress *address) {
@@ -94,4 +95,25 @@ struct xbee_conType *xbee_conTypeFromID(struct xbee_conType *conTypes, unsigned 
 		}
 	}
 	return NULL;
+}
+
+#warning TODO - implement these functions
+void *xbee_newcon(struct xbee *xbee, unsigned char id, struct xbee_conAddress *address) {
+	return NULL;
+}
+
+int xbee_senddata(struct xbee *xbee, void *con, char *data, ...) {
+	return XBEE_EUNKNOWN;
+}
+
+struct xbee_pkt *xbee_getdata(struct xbee *xbee, void *con) {
+	return NULL;
+}
+
+int xbee_endcon(struct xbee *xbee, void *con) {
+	return XBEE_EUNKNOWN;
+}
+
+int xbee_conAttachCallback(struct xbee *xbee, void *con, void(*callback)(void *con, struct xbee_pkt *pkt)) {
+	return XBEE_EUNKNOWN;
 }
