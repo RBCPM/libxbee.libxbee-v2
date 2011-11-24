@@ -27,6 +27,8 @@
 #include "xbee.h"
 #include "ll.h"
 
+extern struct xbee *xbee_default;
+
 /* ######################################################################### */
 
 struct xbee_device {

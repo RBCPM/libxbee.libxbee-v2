@@ -29,7 +29,10 @@
 #include "xbee_sG.h"
 
 char *xbee_getMode(struct xbee *xbee) {
-	if (!xbee) return NULL;
+	if (!xbee) {
+		if (!xbee_default) return NULL;
+		xbee = xbee_default;
+	}
 	if (!xbee->mode) return NULL;
 	return xbee->mode->name;
 }
@@ -62,7 +65,10 @@ int xbee_setMode(struct xbee *xbee, char *name) {
 	struct xbee_mode *mode;
 	struct xbee_conType *conType;
 	int i;
-	if (!xbee) return 1;
+	if (!xbee) {
+		if (!xbee_default) return 1;
+		xbee = xbee_default;
+	}
 	if (!name) return 1;
 
 	/* check that the mode specified is in our list of avaliable modes (xbee_sG.c) */

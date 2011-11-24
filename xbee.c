@@ -27,21 +27,30 @@
 #include "internal.h"
 #include "xsys.h"
 #include "io.h"
+#include "ll.h"
 #include "errors.h"
 #include "log.h"
 #include "rx.h"
 #include "tx.h"
 
+struct xbee *xbee_default = NULL;
+static struct ll_head xbee_list;
+static int xbee_initialized = 0;
+
 int xbee_setup(struct xbee **retXbee) {
 	struct xbee *xbee;
 	int ret;
+	
+	if (!xbee_initialized) {
+		ll_init(&xbee_list);
+		xbee_initialized = 1;
+	}
 	
 	ret = 0;
 	if ((xbee = calloc(1, sizeof(struct xbee))) == NULL) {
 		ret = XBEE_ENOMEM;
 		goto die1;
 	}
-	
 	
 	if (xbee_io_open(xbee)) goto die2;
 	
@@ -65,7 +74,9 @@ int xbee_setup(struct xbee **retXbee) {
 		goto die6;
 	}
 	
-	*retXbee = xbee;
+	if (retXbee) *retXbee = xbee;
+	default_xbee = xbee;
+	xbee_add_tail(&xbee_list, xbee);
 	goto done;
 die6:
 	ll_destroy(&xbee->txList, free);
