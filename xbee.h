@@ -61,18 +61,22 @@ struct xbee_pkt_ioData {
 	unsigned char a5_enabled : 1;
 
 	unsigned char sampleCount;
+	unsigned char sampleIndex;
 	struct xbee_pkt_ioSample sample[1];
 };
-
 struct xbee_pkt {
 	unsigned char status;
 	unsigned char options;
 	unsigned char rssi;
 
-	struct xbee_pkt_ioData *ioData;
+	unsigned char data_valid   : 1;
+	unsigned char ioData_valid : 1;
 
 	int datalen;
+
+	/* use EITHER data, or ioData, check the *_valid flags (up) */
 	unsigned char data[1];
+	struct xbee_pkt_ioData ioData;
 };
 
 /* --- xbee.c --- */

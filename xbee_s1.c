@@ -104,6 +104,7 @@ int xbee_s1_DataRx(struct xbee *xbee, struct xbee_pktHandler *handler, struct bu
 		}
 		(*pkt) = p;
 	}
+	(*pkt)->data_valid = 1;
 	if ((*pkt)->datalen) memcpy((*pkt)->data, &((*buf)->buf[addrLen + 3]), (*pkt)->datalen);
 	
 	goto done;
@@ -113,9 +114,9 @@ done:
 }
 
 int xbee_s1_IO(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) {
+	void *p;
 	int addrLen;
 	int ret = XBEE_ENONE;
-	struct xbee_pkt_ioData *ioData;
 	int sampleCount;
 	int i;
 	unsigned char *t;
@@ -156,76 +157,79 @@ int xbee_s1_IO(struct xbee *xbee, struct xbee_pktHandler *handler, struct bufDat
 	(*pkt)->options = (*buf)->buf[addrLen + 2];
 	
 	sampleCount = (*buf)->buf[addrLen + 3];
-	if ((ioData = calloc(1, sizeof(struct xbee_pkt_ioData) + (sizeof(struct xbee_pkt_ioSample) * (sampleCount-1)))) == NULL) {
-		ret = XBEE_ENOMEM;
-		goto die1;
+	if (sampleCount > 1) {
+		if ((p = realloc(*pkt, sizeof(struct xbee_pkt) + (sizeof(struct xbee_pkt_ioSample) * (sampleCount - 1)))) == NULL) {
+			ret = XBEE_ENOMEM;
+			goto die1;
+		}
+		*pkt = p;
 	}
-	(*pkt)->ioData = ioData;
+	(*pkt)->ioData_valid = 1;
 	
-	ioData->sampleCount = sampleCount;
+	(*pkt)->ioData.sampleCount = sampleCount;
 	
 	t = &((*buf)->buf[addrLen + 4]);
 	
-	ioData->a5_enabled = !!(t[0] & 0x40);
-	ioData->a4_enabled = !!(t[0] & 0x20);
-	ioData->a3_enabled = !!(t[0] & 0x10);
-	ioData->a2_enabled = !!(t[0] & 0x08);
-	ioData->a1_enabled = !!(t[0] & 0x04);
-	ioData->a0_enabled = !!(t[0] & 0x02);
-	ioData->d8_enabled = !!(t[0] & 0x01);
-	ioData->d7_enabled = !!(t[1] & 0x80);
-	ioData->d6_enabled = !!(t[1] & 0x40);
-	ioData->d5_enabled = !!(t[1] & 0x20);
-	ioData->d4_enabled = !!(t[1] & 0x10);
-	ioData->d3_enabled = !!(t[1] & 0x08);
-	ioData->d2_enabled = !!(t[1] & 0x04);
-	ioData->d1_enabled = !!(t[1] & 0x02);
-	ioData->d0_enabled = !!(t[1] & 0x01);
+	(*pkt)->ioData.a5_enabled = !!(t[0] & 0x40);
+	(*pkt)->ioData.a4_enabled = !!(t[0] & 0x20);
+	(*pkt)->ioData.a3_enabled = !!(t[0] & 0x10);
+	(*pkt)->ioData.a2_enabled = !!(t[0] & 0x08);
+	(*pkt)->ioData.a1_enabled = !!(t[0] & 0x04);
+	(*pkt)->ioData.a0_enabled = !!(t[0] & 0x02);
+	(*pkt)->ioData.d8_enabled = !!(t[0] & 0x01);
+	(*pkt)->ioData.d7_enabled = !!(t[1] & 0x80);
+	(*pkt)->ioData.d6_enabled = !!(t[1] & 0x40);
+	(*pkt)->ioData.d5_enabled = !!(t[1] & 0x20);
+	(*pkt)->ioData.d4_enabled = !!(t[1] & 0x10);
+	(*pkt)->ioData.d3_enabled = !!(t[1] & 0x08);
+	(*pkt)->ioData.d2_enabled = !!(t[1] & 0x04);
+	(*pkt)->ioData.d1_enabled = !!(t[1] & 0x02);
+	(*pkt)->ioData.d0_enabled = !!(t[1] & 0x01);
 	t += 2;
 	
 	for (i = 0; i < sampleCount; i++) {
-		if (ioData->d0_enabled ||
-				ioData->d1_enabled ||
-				ioData->d2_enabled ||
-				ioData->d3_enabled ||
-				ioData->d4_enabled ||
-				ioData->d5_enabled ||
-				ioData->d6_enabled ||
-				ioData->d7_enabled ||
-				ioData->d8_enabled) {
-			ioData->sample[i].d8 = !!(t[0] & 0x01);
-			ioData->sample[i].d7 = !!(t[1] & 0x80);
-			ioData->sample[i].d6 = !!(t[1] & 0x40);
-			ioData->sample[i].d5 = !!(t[1] & 0x20);
-			ioData->sample[i].d4 = !!(t[1] & 0x10);
-			ioData->sample[i].d3 = !!(t[1] & 0x08);
-			ioData->sample[i].d2 = !!(t[1] & 0x04);
-			ioData->sample[i].d1 = !!(t[1] & 0x02);
-			ioData->sample[i].d0 = !!(t[1] & 0x01);
+		if ((*pkt)->ioData.d0_enabled ||
+				(*pkt)->ioData.d1_enabled ||
+				(*pkt)->ioData.d2_enabled ||
+				(*pkt)->ioData.d3_enabled ||
+				(*pkt)->ioData.d4_enabled ||
+				(*pkt)->ioData.d5_enabled ||
+				(*pkt)->ioData.d6_enabled ||
+				(*pkt)->ioData.d7_enabled ||
+				(*pkt)->ioData.d8_enabled) {
+			(*pkt)->ioData.sample[i].d8 = !!(t[0] & 0x01);
+			(*pkt)->ioData.sample[i].d7 = !!(t[1] & 0x80);
+			(*pkt)->ioData.sample[i].d6 = !!(t[1] & 0x40);
+			(*pkt)->ioData.sample[i].d5 = !!(t[1] & 0x20);
+			(*pkt)->ioData.sample[i].d4 = !!(t[1] & 0x10);
+			(*pkt)->ioData.sample[i].d3 = !!(t[1] & 0x08);
+			(*pkt)->ioData.sample[i].d2 = !!(t[1] & 0x04);
+			(*pkt)->ioData.sample[i].d1 = !!(t[1] & 0x02);
+			(*pkt)->ioData.sample[i].d0 = !!(t[1] & 0x01);
 			t += 2;
 		}
-		if (ioData->a0_enabled) {
-			ioData->sample[i].a0 = ((t[0] << 8) & 0x3F) | (t[1] & 0xFF);
+		if ((*pkt)->ioData.a0_enabled) {
+			(*pkt)->ioData.sample[i].a0 = ((t[0] << 8) & 0x3F) | (t[1] & 0xFF);
 			t += 2;
 		}
-		if (ioData->a1_enabled) {
-			ioData->sample[i].a1 = ((t[0] << 8) & 0x3F) | (t[1] & 0xFF);
+		if ((*pkt)->ioData.a1_enabled) {
+			(*pkt)->ioData.sample[i].a1 = ((t[0] << 8) & 0x3F) | (t[1] & 0xFF);
 			t += 2;
 		}
-		if (ioData->a2_enabled) {
-			ioData->sample[i].a2 = ((t[0] << 8) & 0x3F) | (t[1] & 0xFF);
+		if ((*pkt)->ioData.a2_enabled) {
+			(*pkt)->ioData.sample[i].a2 = ((t[0] << 8) & 0x3F) | (t[1] & 0xFF);
 			t += 2;
 		}
-		if (ioData->a3_enabled) {
-			ioData->sample[i].a3 = ((t[0] << 8) & 0x3F) | (t[1] & 0xFF);
+		if ((*pkt)->ioData.a3_enabled) {
+			(*pkt)->ioData.sample[i].a3 = ((t[0] << 8) & 0x3F) | (t[1] & 0xFF);
 			t += 2;
 		}
-		if (ioData->a4_enabled) {
-			ioData->sample[i].a4 = ((t[0] << 8) & 0x3F) | (t[1] & 0xFF);
+		if ((*pkt)->ioData.a4_enabled) {
+			(*pkt)->ioData.sample[i].a4 = ((t[0] << 8) & 0x3F) | (t[1] & 0xFF);
 			t += 2;
 		}
-		if (ioData->a5_enabled) {
-			ioData->sample[i].a5 = ((t[0] << 8) & 0x3F) | (t[1] & 0xFF);
+		if ((*pkt)->ioData.a5_enabled) {
+			(*pkt)->ioData.sample[i].a5 = ((t[0] << 8) & 0x3F) | (t[1] & 0xFF);
 			t += 2;
 		}
 	}
