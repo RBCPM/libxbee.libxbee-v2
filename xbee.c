@@ -38,13 +38,11 @@ struct xbee *xbee_default = NULL;
 static struct ll_head xbee_list;
 static int xbee_initialized = 0;
 
-int xbee_setup(struct xbee **retXbee) {
+int xbee_setup(char *path, int baudrate, FILE *logTarget, struct xbee **retXbee) {
 	struct xbee *xbee;
 	int ret = XBEE_ENONE;
 	
-	/* to become parameters: */
-	char *path = "/dev/ttyUSB1";
-	int baudrate = 57600;
+	xbee_logSetTarget(logTarget);
 	
 	if (!xbee_initialized) {
 		ll_init(&xbee_list);

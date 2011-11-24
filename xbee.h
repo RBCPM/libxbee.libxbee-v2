@@ -82,7 +82,7 @@ struct xbee_pkt {
 };
 
 /* --- xbee.c --- */
-int xbee_setup(struct xbee **retXbee);
+int xbee_setup(char *path, int baudrate, FILE *logTarget, struct xbee **retXbee);
 void xbee_freePkt(struct xbee_pkt *pkt);
 
 /* --- mode.c --- */
