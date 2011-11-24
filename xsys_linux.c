@@ -140,6 +140,7 @@ int xsys_setupSerial(int fd, FILE *stream, int baudrate) {
   tc.c_lflag &= ~ IEXTEN;           /* disable input processing */
   /* control characters */
   memset(tc.c_cc,0,sizeof(tc.c_cc));
+	tc.c_cc[VMIN] = 1;                /* wait for at least 1 character */
 	/* set i/o baud rate */
   if (cfsetspeed(&tc, chosenbaud)) {
 		xbee_perror("cfsetspeed()");

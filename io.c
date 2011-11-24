@@ -117,7 +117,7 @@ int xbee_io_getRawByte(FILE *f, unsigned char *cOut) {
 	*cOut = 0;
 
 	do {
-		if ((ret = xsys_select(f, NULL)) == -1) {
+		/*if ((ret = xsys_select(f, NULL)) == -1) {
 			xbee_perror("xbee_select()");
 			if (errno == EINTR) {
 				ret = XBEE_ESELECTINTERRUPTED;
@@ -125,7 +125,7 @@ int xbee_io_getRawByte(FILE *f, unsigned char *cOut) {
 				ret = XBEE_ESELECT;
 			}
 			goto done;
-		}
+		}*/
 	
 		if (xsys_fread(&c, 1, 1, f) == 0) {
 			/* for some reason nothing was read... */
