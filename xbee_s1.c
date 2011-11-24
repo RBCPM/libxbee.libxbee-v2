@@ -28,17 +28,15 @@
 #include "xbee_s1.h"
 #include "xbee_sG.h"
 
-#warning TODO - The Series 1 Tx handlers
-int xbee_s1_64bitDataTx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
-int xbee_s1_16bitDataTx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return 0; }
-
 int xbee_s1_txStatus(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) {
 	int ret = XBEE_ENONE;
 	
-	if (!pkt || !*pkt) {
-		ret = XBEE_EMISSINGPARAM;
-		goto die1;
-	}
+	if (!xbee)         return XBEE_ENOXBEE;
+	if (!handler)      return XBEE_EMISSINGPARAM;
+	if (!isRx)         return XBEE_EINVAL;
+	if (!buf || !*buf) return XBEE_EMISSINGPARAM;
+	if (!con)          return XBEE_EMISSINGPARAM;
+	if (!pkt || !*pkt) return XBEE_EMISSINGPARAM;
 	
 	if ((*buf)->len != 3) {
 		ret = XBEE_ELENGTH;
@@ -60,10 +58,12 @@ int xbee_s1_DataRx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx
 	int addrLen;
 	int ret = XBEE_ENONE;
 	
-	if (!pkt || !*pkt) {
-		ret = XBEE_EMISSINGPARAM;
-		goto die1;
-	}
+	if (!xbee)         return XBEE_ENOXBEE;
+	if (!handler)      return XBEE_EMISSINGPARAM;
+	if (!isRx)         return XBEE_EINVAL;
+	if (!buf || !*buf) return XBEE_EMISSINGPARAM;
+	if (!con)          return XBEE_EMISSINGPARAM;
+	if (!pkt || !*pkt) return XBEE_EMISSINGPARAM;
 	
 	if ((*buf)->len < 1) {
 		ret = XBEE_ELENGTH;
@@ -98,7 +98,7 @@ int xbee_s1_DataRx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx
 	(*pkt)->datalen = (*buf)->len - (addrLen + 3);
 	if ((*pkt)->datalen > 1) {
 		void *p;
-		if (!(p = realloc((*pkt), sizeof(struct xbee_pkt) + (sizeof(unsigned char) * (*pkt)->datalen)))) {
+		if (!(p = realloc((*pkt), sizeof(struct xbee_pkt) - sizeof(struct xbee_pkt_ioData) + (sizeof(unsigned char) * ((*pkt)->datalen) - 1)))) {
 			ret = XBEE_ENOMEM;
 			goto die1;
 		}
@@ -113,18 +113,90 @@ done:
 	return ret;
 }
 
+int xbee_s1_DataTx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) {
+	int ret = XBEE_ENONE;
+	struct bufData *nBuf;
+	int offset;
+	void *p;
+	
+	if (!xbee)         return XBEE_ENOXBEE;
+	if (!handler)      return XBEE_EMISSINGPARAM;
+	if (isRx)          return XBEE_EINVAL;
+	if (!buf || !*buf) return XBEE_EMISSINGPARAM;
+	if (!con)          return XBEE_EMISSINGPARAM;
+	if (!handler->conType || !handler->conType->txEnabled) return XBEE_EINVAL;
+	
+	if ((nBuf = calloc(1, sizeof(struct bufData) + (sizeof(unsigned char) * (XBEE_MAX_PACKETLEN - 1)))) == NULL) {
+		ret = XBEE_ENOMEM;
+		goto die1;
+	}
+	
+	nBuf->buf[0] = handler->conType->txID;
+	if (con->address.frameID_enabled) {
+		nBuf->buf[1] = con->address.frameID;
+	}
+	
+	/* 64-bit addressing */
+	if (nBuf->buf[0] == 0x00) {
+		if (!con->address.addr64_enabled) {
+			ret = XBEE_EINVAL;
+			goto die2;
+		}
+		memcpy(&(nBuf->buf[2]), con->address.addr64, 8);
+		offset = 10;
+	
+	/* 16-bit addressing */
+	} else if (nBuf->buf[0] == 0x01) {
+		if (!con->address.addr16_enabled) {
+			ret = XBEE_EINVAL;
+			goto die2;
+		}
+		memcpy(&(nBuf->buf[2]), con->address.addr16, 2);
+		offset = 4;
+	
+	} else {
+		ret = XBEE_EINVAL;
+		goto die2;
+	}
+	
+	if (con->options.disableAck)   nBuf->buf[offset] |= 0x01;
+	if (con->options.broadcastPAN) nBuf->buf[offset] |= 0x04;
+	
+	nBuf->len  = offset + 1 + (*buf)->len;
+	if (nBuf->len > XBEE_MAX_PACKETLEN) {
+		ret = XBEE_ELENGTH;
+		goto die2;
+	}
+	memcpy(&(nBuf->buf[offset + 1]), (*buf)->buf, (*buf)->len);
+	
+	/* try (and ignore failure) to realloc buf to the correct length */
+	if ((p = realloc(nBuf, sizeof(struct bufData) + (sizeof(unsigned char) * (nBuf->len - 1)))) != NULL) nBuf = p;
+	
+	*buf = nBuf;
+	
+	goto done;
+die2:
+	free(nBuf);
+die1:
+done:
+	return ret;
+}
+
 int xbee_s1_IO(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) {
 	void *p;
 	int addrLen;
+	int gotD;
 	int ret = XBEE_ENONE;
 	int sampleCount;
 	int i;
 	unsigned char *t;
 	
-	if (!pkt || !*pkt) {
-		ret = XBEE_EMISSINGPARAM;
-		goto die1;
-	}
+	if (!xbee)         return XBEE_ENOXBEE;
+	if (!handler)      return XBEE_EMISSINGPARAM;
+	if (!isRx)         return XBEE_EINVAL;
+	if (!buf || !*buf) return XBEE_EMISSINGPARAM;
+	if (!con)          return XBEE_EMISSINGPARAM;
+	if (!pkt || !*pkt) return XBEE_EMISSINGPARAM;
 	
 	if ((*buf)->len < 1) {
 		ret = XBEE_ELENGTH;
@@ -185,18 +257,19 @@ int xbee_s1_IO(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, st
 	(*pkt)->ioData.d2_enabled = !!(t[1] & 0x04);
 	(*pkt)->ioData.d1_enabled = !!(t[1] & 0x02);
 	(*pkt)->ioData.d0_enabled = !!(t[1] & 0x01);
+	gotD = !!((*pkt)->ioData.d8_enabled ||
+	          (*pkt)->ioData.d7_enabled ||
+	          (*pkt)->ioData.d6_enabled ||
+	          (*pkt)->ioData.d5_enabled ||
+	          (*pkt)->ioData.d4_enabled ||
+	          (*pkt)->ioData.d3_enabled ||
+	          (*pkt)->ioData.d2_enabled ||
+	          (*pkt)->ioData.d1_enabled ||
+	          (*pkt)->ioData.d0_enabled);
 	t += 2;
 	
 	for (i = 0; i < sampleCount; i++) {
-		if ((*pkt)->ioData.d0_enabled ||
-				(*pkt)->ioData.d1_enabled ||
-				(*pkt)->ioData.d2_enabled ||
-				(*pkt)->ioData.d3_enabled ||
-				(*pkt)->ioData.d4_enabled ||
-				(*pkt)->ioData.d5_enabled ||
-				(*pkt)->ioData.d6_enabled ||
-				(*pkt)->ioData.d7_enabled ||
-				(*pkt)->ioData.d8_enabled) {
+		if (gotD) {
 			(*pkt)->ioData.sample[i].d8 = !!(t[0] & 0x01);
 			(*pkt)->ioData.sample[i].d7 = !!(t[1] & 0x80);
 			(*pkt)->ioData.sample[i].d6 = !!(t[1] & 0x40);
@@ -272,13 +345,13 @@ static struct xbee_pktHandler pktHandlers[] = {
 	ADD_HANDLER(0x89, xbee_s1_txStatus),
 	
 	ADD_HANDLER(0x80, xbee_s1_DataRx), /* 64-bit */
-	ADD_HANDLER(0x00, xbee_s1_64bitDataTx),
+	ADD_HANDLER(0x00, xbee_s1_DataTx), /* 64-bit */
 	
 	ADD_HANDLER(0x81, xbee_s1_DataRx), /* 16-bit */
-	ADD_HANDLER(0x01, xbee_s1_16bitDataTx),
+	ADD_HANDLER(0x01, xbee_s1_DataTx), /* 16-bit */
 	
-	ADD_HANDLER(0x82, xbee_s1_IO), /* 64-bit */
-	ADD_HANDLER(0x83, xbee_s1_IO), /* 16-bit */
+	ADD_HANDLER(0x82, xbee_s1_IO),     /* 64-bit */
+	ADD_HANDLER(0x83, xbee_s1_IO),     /* 16-bit */
 	
 	ADD_HANDLER_TERMINATOR()
 };

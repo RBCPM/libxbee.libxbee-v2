@@ -174,13 +174,13 @@ int _xbee_rx(struct xbee *xbee) {
 		if (!buf) {
 			/* there are a number of occasions where we don't need to allocate new memory,
 			   we just re-use the previous memory (e.g. checksum fails) */
-			if (!(buf = calloc(1, sizeof(struct bufData) + (sizeof(unsigned char) * (XBEE_RX_BUFLEN - 1))))) {
+			if (!(buf = calloc(1, sizeof(struct bufData) + (sizeof(unsigned char) * (XBEE_MAX_PACKETLEN - 1))))) {
 				ret = XBEE_ENOMEM;
 				goto die1;
 			}
 		}
 		
-		for (pos = -3; pos < 0 || (pos < len && pos < XBEE_RX_BUFLEN); pos++) {
+		for (pos = -3; pos < 0 || (pos < len && pos < XBEE_MAX_PACKETLEN); pos++) {
 #warning TODO - possible performance improvement by reading multiple bytes
 			if ((ret = xbee_io_getEscapedByte(xbee->device.f, &c)) != 0) {
 				if (ret == XBEE_EEOF) {
@@ -247,7 +247,7 @@ int _xbee_rx(struct xbee *xbee) {
 
 		if ((ret = _xbee_rxHandler(xbee, &pktHandlers[pos], buf)) != 0) {
 			xbee_log("Failed to handle packet... _xbee_rxHandler() returned %d", ret);
-			continue;
+			if (p) free(buf);
 		}
 		
 		/* trigger a new calloc() */

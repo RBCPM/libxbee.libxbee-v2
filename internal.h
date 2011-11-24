@@ -63,11 +63,17 @@ struct xbee_conAddress {
 	unsigned char frameID_enabled;
 	unsigned char frameID;
 };
+struct xbee_conOptions {
+	unsigned char disableAck : 1;
+	unsigned char broadcastPAN : 1;
+};
 
 struct xbee_con {
 	struct xbee_conType *conType;
 	
 	struct xbee_conAddress address;
+	
+	struct xbee_conOptions options;
 	
 	int rxPackets;
 	int txPackets;
@@ -75,6 +81,7 @@ struct xbee_con {
 	struct ll_head rxList; /* data is struct xbee_pkt */
 };
 
+#define XBEE_MAX_PACKETLEN 128
 struct bufData {
 	int len;
 	unsigned char buf[1];
@@ -86,13 +93,13 @@ struct bufData {
 		isRx      is TRUE when the handler is called as an Rx handler, false for Tx
     buf       is a double pointer so that:
                 Rx functions may take charge of the packet (setting *buf = NULL will prevent libxbee from free'ing buf)
-                Tx functions may return the constructed packet
+                Tx functions are given any data to transmit (free'd by the caller), and return the constructed packet (alloc'ed by the handler)
     con       is used to identify the destination address
                 Rx is ONLY used for the address, returns the addressing info to _xbee_rxHandlerThread() so it can be added to the correct connection
                 Tx is a valid pointer, the information is used while constructing the thread
 		pkt				is used to convey the packet information (is ** so that realloc may be called)
 								Rx allows the handler to return the populated packet struct
-								Tx potentially allows the user to 'hand write' a packet
+								Tx is NULL
 */
 struct xbee_pktHandler;
 typedef int(*xbee_pktHandlerFunc)(struct xbee *xbee,
@@ -146,6 +153,7 @@ struct xbee_mode {
 
 /* ######################################################################### */
 
+/* --- xbee.c --- */
 #define xbee_threadStart(a, b, c) _xbee_threadStart((a), (b), (void*(*)(void*))(c), (#c))
 int _xbee_threadStart(struct xbee *xbee, pthread_t *thread, void*(*startFunction)(void*), char *startFuncName);
 
