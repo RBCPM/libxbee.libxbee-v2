@@ -26,7 +26,9 @@
 #include "xbee.h"
 
 /* defaults to stderr */
-static FILE *xbee_logf;
+#define XBEE_LOG_DEFAULT_TARGET stderr
+
+static FILE *xbee_logf = NULL;
 static int xbee_logfSet = 0;
 static int xbee_logReady = 0;
 static xsys_mutex xbee_logMutex;
@@ -36,7 +38,7 @@ static char xbee_logBuffer[XBEE_LOG_BUFFERLEN];
 static int xbee_logPrepare(void) {
 	if (xsys_mutex_init(&xbee_logMutex)) return 1;
 	if (!xbee_logfSet) {
-		xbee_logf = stderr;
+		xbee_logf = XBEE_LOG_DEFAULT_TARGET;
 		xbee_logfSet = 1;
 	}
 	xbee_logReady = 1;
@@ -44,6 +46,7 @@ static int xbee_logPrepare(void) {
 }
 
 void xbee_logSetTarget(FILE *f) {
+	if (!xbee_logReady) if (xbee_logPrepare()) return;
 	xsys_mutex_lock(&xbee_logMutex);
 	xbee_logf = f;
 	xsys_mutex_unlock(&xbee_logMutex);
@@ -51,7 +54,7 @@ void xbee_logSetTarget(FILE *f) {
 
 void _xbee_log(const char *file, int line, const char *function, char *format, ...) {
   va_list ap;
-	if (xbee_logReady) if (xbee_logPrepare()) return;
+	if (!xbee_logReady) if (xbee_logPrepare()) return;
 	if (!xbee_logf) return;
 	
 	xsys_mutex_lock(&xbee_logMutex);
@@ -67,7 +70,7 @@ void _xbee_log(const char *file, int line, const char *function, char *format, .
 void _xbee_perror(const char *file, int line, const char *function, char *format, ...) {
   va_list ap;
 	int i, lerrno;
-	if (xbee_logReady) if (xbee_logPrepare()) return;
+	if (!xbee_logReady) if (xbee_logPrepare()) return;
 	if (!xbee_logf) return;
 	
 	/* errno could change while we are waiting for the mutex... */
@@ -92,7 +95,7 @@ void _xbee_perror(const char *file, int line, const char *function, char *format
 
 void _xbee_logstderr(const char *file, int line, const char *function, char *format, ...) {
   va_list ap;
-	if (xbee_logReady) if (xbee_logPrepare()) return;
+	if (!xbee_logReady) if (xbee_logPrepare()) return;
 	if (!xbee_logf) return;
 	
 	xsys_mutex_lock(&xbee_logMutex);
