@@ -24,6 +24,8 @@
 
 #include "internal.h"
 #include "mode.h"
+#include "log.h"
+#include "ll.h"
 
 #include "conn.h"
 #include "xbee_sG.h"
@@ -78,11 +80,16 @@ int xbee_setMode(struct xbee *xbee, char *name) {
 	if (!xbee_modes[i]) return 1;
 	mode = xbee_modes[i];
 	
+	xbee_log("Set mode to '%s'", name);
+	
 	/* match all handlers to thier connection */
 	for (i = 0; mode->pktHandlers[i].handler; i++) {
 		if ((conType = xbee_conTypeFromID(mode->conTypes, mode->pktHandlers[i].id)) == NULL) return 1;
+		ll_init(&conType->conList);
 		mode->pktHandlers[i].conType = conType;
 	}
+	
+	xbee->mode = mode;
 	
 	return 0;
 }
