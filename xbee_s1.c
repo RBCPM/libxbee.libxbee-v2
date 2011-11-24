@@ -267,14 +267,14 @@ static struct xbee_pktHandler pktHandlers[] = {
 	ADD_HANDLER(0x8A, xbee_sG_modemStatus),
 	ADD_HANDLER(0x89, xbee_s1_txStatus),
 	
-	ADD_HANDLER(0x80, xbee_s1_DataRx),
+	ADD_HANDLER(0x80, xbee_s1_DataRx), /* 64-bit */
 	ADD_HANDLER(0x00, xbee_s1_64bitDataTx),
 	
-	ADD_HANDLER(0x81, xbee_s1_DataRx),
+	ADD_HANDLER(0x81, xbee_s1_DataRx), /* 16-bit */
 	ADD_HANDLER(0x01, xbee_s1_16bitDataTx),
 	
-	ADD_HANDLER(0x82, xbee_s1_IO),
-	ADD_HANDLER(0x83, xbee_s1_IO),
+	ADD_HANDLER(0x82, xbee_s1_IO), /* 64-bit */
+	ADD_HANDLER(0x83, xbee_s1_IO), /* 16-bit */
 	
 	ADD_HANDLER_TERMINATOR()
 };
