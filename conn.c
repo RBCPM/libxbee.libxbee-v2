@@ -67,7 +67,7 @@ struct xbee_con *xbee_conFromAddress(struct xbee *xbee, unsigned char id, struct
 int xbee_conTypeIdFromName(struct xbee *xbee, char *name, unsigned char *id) {
 	int i;
 	if (!xbee) {
-		if (!xbee_default) return NULL;
+		if (!xbee_default) return 1;
 		xbee = xbee_default;
 	}
 	if (!name) return 1;
