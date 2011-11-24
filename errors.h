@@ -32,13 +32,14 @@
 #define XBEE_EIO                                            -8
 #define XBEE_ESEMAPHORE                                     -9
 #define XBEE_ELINKEDLIST                                   -10
-#define XBEE_EPTHREAD                                      -11
+#define XBEE_ETHREAD                                       -11
 #define XBEE_ENOXBEE                                       -12
 #define XBEE_EMISSINGPARAM                                 -13
 #define XBEE_EINVALBAUDRATE                                -14
 #define XBEE_ESETUP                                        -15
 #define XBEE_ELENGTH                                       -16
 #define XBEE_EINVAL                                        -17
+#define XBEE_EBUSY                                         -18
 
 #endif /* __XBEE_ERRORS_H */
 

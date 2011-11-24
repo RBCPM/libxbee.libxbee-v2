@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include "xbee.h"
 #include "internal.h"
@@ -46,7 +47,7 @@ int xbee_setup(struct xbee **retXbee) {
 	
 	if (xbee_threadStart(xbee, &(xbee->rxThread), xbee_rx)) {
 		xbee_perror("xbee_threadStart(xbee_rx)");
-		ret = XBEE_EPTHREAD;
+		ret = XBEE_ETHREAD;
 		goto die3;
 	}
 	
@@ -60,7 +61,7 @@ int xbee_setup(struct xbee **retXbee) {
 	}
 	if (xbee_threadStart(xbee, &(xbee->txThread), xbee_tx)) {
 		xbee_perror("xbee_threadStart(xbee_tx)");
-		ret = XBEE_EPTHREAD;
+		ret = XBEE_ETHREAD;
 		goto die6;
 	}
 	
@@ -86,14 +87,27 @@ done:
 
 int _xbee_threadStart(struct xbee *xbee, pthread_t *thread, void*(*startFunction)(void*), char *startFuncName) {
 	int i;
-	if (!xbee) return 1;
+	int ret;
+	if (!xbee)          return XBEE_ENOXBEE;
+	if (!thread)        return XBEE_EMISSINGPARAM;
+	if (!startFunction) return XBEE_EMISSINGPARAM;
+	if (!startFuncName) return XBEE_EMISSINGPARAM;
 	
-	if (!xsys_thread_join(*thread, (void**)&i)) {
-		xbee_log("%s has previously ended and returned %d... restarting...", startFuncName, i);
+	if (!(ret = xsys_thread_tryjoin(*thread, (void**)&i))) {
+		xbee_log("%s() has previously ended and returned %d... restarting...", startFuncName, i);
+	} else {
+		if (ret == EBUSY) {
+			xbee_log("%s() is still running...", startFuncName);
+			return XBEE_EBUSY;
+		} else if (ret == EINVAL ||
+		           ret == EDEADLK) {
+			return XBEE_ETHREAD;
+		}
+		/* if ret == ESRCH then this thread hasn't been started yet! */
 	}
 	
 	if (xsys_thread_create(thread, startFunction, (void*)xbee)) {
-		return 1;
+		return XBEE_ETHREAD;
 	}
 	return 0;
 }

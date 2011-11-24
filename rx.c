@@ -134,7 +134,7 @@ int _xbee_rxHandler(struct xbee *xbee, struct xbee_pktHandler *pktHandler, struc
 	if (!data->threadStarted || !data->threadRunning) {
 		data->threadRunning = 0;
 		if (xsys_thread_create(&data->thread, (void*(*)(void*))_xbee_rxHandlerThread, (void*)pktHandler)) {
-			ret = XBEE_EPTHREAD;
+			ret = XBEE_ETHREAD;
 			goto die4;
 		}
 		data->threadStarted = 1;
