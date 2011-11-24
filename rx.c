@@ -77,15 +77,21 @@ int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
 			}
 		}
 		
-		buf = ll_get_head(&data->list);
+		buf = ll_ext_head(&data->list);
 		if (!buf) {
 			xbee_log("No buffer!");
 			continue;
 		}
 		
+		xbee_log("New %d byte packet! @ %p", buf->len, buf);
+		
 		memset(&con, 0, sizeof(struct xbee_con));
 		if ((ret = pktHandler->handler(data->xbee, pktHandler, 1, &buf, &con, &pkt)) != 0) {
 			xbee_log("Failed to handle packet... pktHandler->handler() returned %d", ret);
+			goto skip;
+		}
+		if (!pkt) {
+			xbee_log("pktHandler->handler() failed to return a packet!");
 			goto skip;
 		}
 		
@@ -99,6 +105,8 @@ int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
 		/* flag pkt for a new allocation */
 		pkt = NULL;
 skip:
+		if (pkt) free(pkt);
+		pkt = NULL;
 		if (buf) free(buf);
 	}
 	
@@ -203,7 +211,7 @@ int _xbee_rx(struct xbee *xbee) {
 			}
 			switch (pos) {
 				case -3:
-					if (c != 0x7E) pos = -2; /* restart if we don't have the start of frame */
+					if (c != 0x7E) pos--;    /* restart if we don't have the start of frame */
 					continue;
 				case -2:
 					len = c << 8;            /* length high byte */
@@ -211,6 +219,7 @@ int _xbee_rx(struct xbee *xbee) {
 				case -1:
 					len |= c;                /* length low byte */
 					buf->len = len;
+					len++;
 					chksum = 0;              /* wipe the checksum */
 					break;
 				default:
@@ -221,14 +230,16 @@ int _xbee_rx(struct xbee *xbee) {
 		
     /* check the checksum */
     if ((chksum & 0xFF) != 0xFF) {
-    	xbee_log("Invalid checksum detected... %d byte packet discarded", len);
+			int i;
+    	xbee_log("Invalid checksum detected... %d byte packet discarded", buf->len);
+			for (i = 0; i < len; i++) {
+				xbee_log("%3d: 0x%02X",i, buf->buf[i]);
+			}
     	continue;
     }
-		/* snip the checksum off the end */
-		len--;
 		
-		if (!xbee->mode || !xbee->mode->pktHandlers) {
-			xbee_log("No packet handler! Please use xbee_setMode()");
+		if (!xbee->mode) {
+			xbee_log("libxbee's mode has not been set, please use xbee_setMode()");
 			continue;
 		}
 		pktHandlers = xbee->mode->pktHandlers;
@@ -240,10 +251,10 @@ int _xbee_rx(struct xbee *xbee) {
 			xbee_log("Unknown packet received / no packet handler (0x%02X)", buf[0]);
 			continue;
 		}
-		xbee_log("Received packet (0x%02X - '%s')", buf[0], pktHandlers[pos].handlerName);
+		xbee_log("Received packet (0x%02X - '%s')", buf->buf[0], pktHandlers[pos].handlerName);
 		
 		/* try (and ignore failure) to realloc buf to the correct length */
-		if ((p = realloc(buf, sizeof(struct bufData) + (sizeof(unsigned char) * (len - 1)))) != NULL) buf = p;
+		if ((p = realloc(buf, sizeof(struct bufData) + (sizeof(unsigned char) * (buf->len - 1)))) != NULL) buf = p;
 
 		if ((ret = _xbee_rxHandler(xbee, &pktHandlers[pos], buf)) != 0) {
 			xbee_log("Failed to handle packet... _xbee_rxHandler() returned %d", ret);

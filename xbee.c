@@ -20,6 +20,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <errno.h>
 
@@ -39,55 +40,72 @@ static int xbee_initialized = 0;
 
 int xbee_setup(struct xbee **retXbee) {
 	struct xbee *xbee;
-	int ret;
+	int ret = XBEE_ENONE;
+	
+	/* to become parameters: */
+	char *path = "/dev/ttyUSB1";
+	int baudrate = 57600;
 	
 	if (!xbee_initialized) {
 		ll_init(&xbee_list);
 		xbee_initialized = 1;
 	}
 	
-	ret = 0;
 	if ((xbee = calloc(1, sizeof(struct xbee))) == NULL) {
 		ret = XBEE_ENOMEM;
 		goto die1;
 	}
 	
-	if (xbee_io_open(xbee)) goto die2;
+	if ((xbee->device.path = calloc(1, sizeof(char) * (strlen(path) + 1))) == NULL) {
+		ret = XBEE_ENOMEM;
+		goto die2;
+	}
+	strcpy(xbee->device.path,"/dev/ttyUSB1");
+	xbee->device.baudrate = baudrate;
+	
+	if (xbee_io_open(xbee)) {
+		ret = XBEE_EIO;
+		goto die3;
+	}
+	
+	xbee->running = 1;
 	
 	if (xbee_threadStart(xbee, &(xbee->rxThread), xbee_rx)) {
 		xbee_perror("xbee_threadStart(xbee_rx)");
 		ret = XBEE_ETHREAD;
-		goto die3;
+		goto die4;
 	}
 	
 	if (xsys_sem_init(&xbee->txSem)) {
 		ret = XBEE_ESEMAPHORE;
-		goto die4;
+		goto die5;
 	}
 	if (ll_init(&xbee->txList)) {
 		ret = XBEE_ELINKEDLIST;
-		goto die5;
+		goto die6;
 	}
 	if (xbee_threadStart(xbee, &(xbee->txThread), xbee_tx)) {
 		xbee_perror("xbee_threadStart(xbee_tx)");
 		ret = XBEE_ETHREAD;
-		goto die6;
+		goto die7;
 	}
 	
 	if (retXbee) *retXbee = xbee;
-	default_xbee = xbee;
-	xbee_add_tail(&xbee_list, xbee);
+	xbee_default = xbee;
+	ll_add_tail(&xbee_list, xbee);
 	goto done;
-die6:
+die7:
 	ll_destroy(&xbee->txList, free);
-die5:
+die6:
 	xsys_sem_destroy(&xbee->txSem);
-die4:
+die5:
 	if (!xsys_thread_cancel(xbee->rxThread)) {
 		xsys_thread_join(xbee->rxThread, NULL);
 	}
-die3:
+die4:
 	xbee_io_close(xbee);
+die3:
+	free(xbee->device.path);
 die2:
 	free(xbee);
 die1:
@@ -104,22 +122,25 @@ int _xbee_threadStart(struct xbee *xbee, pthread_t *thread, void*(*startFunction
 	if (!startFunction) return XBEE_EMISSINGPARAM;
 	if (!startFuncName) return XBEE_EMISSINGPARAM;
 	
-	if (!(ret = xsys_thread_tryjoin(*thread, (void**)&i))) {
-		xbee_log("%s() has previously ended and returned %d... restarting...", startFuncName, i);
-	} else {
-		if (ret == EBUSY) {
-			xbee_log("%s() is still running...", startFuncName);
-			return XBEE_EBUSY;
-		} else if (ret == EINVAL ||
-		           ret == EDEADLK) {
-			return XBEE_ETHREAD;
+	if ((*thread) != 0) {
+		if (!(ret = xsys_thread_tryjoin(*thread, (void**)&i))) {
+			xbee_log("%s() has previously ended and returned %d... restarting...", startFuncName, i);
+		} else {
+			if (ret == EBUSY) {
+				xbee_log("%s() is still running...", startFuncName);
+				return XBEE_EBUSY;
+			} else if (ret == EINVAL ||
+								 ret == EDEADLK) {
+				return XBEE_ETHREAD;
+			}
+			/* if ret == ESRCH then this thread hasn't been started yet! */
 		}
-		/* if ret == ESRCH then this thread hasn't been started yet! */
 	}
 	
 	if (xsys_thread_create(thread, startFunction, (void*)xbee)) {
 		return XBEE_ETHREAD;
 	}
+	xbee_log("Started thread! %s()", startFuncName);
 	return 0;
 }
 
