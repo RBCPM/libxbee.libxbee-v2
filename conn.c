@@ -75,9 +75,8 @@ int xbee_conTypeIdFromName(struct xbee *xbee, char *name, unsigned char *id) {
 	if (!xbee->mode->conTypes) return 1;
 	
 	for (i = 0; xbee->mode->conTypes[i].name; i++) {
-		if (xbee->mode->conTypes[i].txEnabled &&
-				!strcasecmp(name, xbee->mode->conTypes[i].name)) {
-			if (id) *id = xbee->mode->conTypes[i].txID;
+		if (!strcasecmp(name, xbee->mode->conTypes[i].name)) {
+			if (id) *id = i;
 			return 0;
 		}
 	}
