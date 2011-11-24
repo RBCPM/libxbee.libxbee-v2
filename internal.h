@@ -83,19 +83,21 @@ struct bufData {
 /* functions are given:
     xbee      the 'master' libxbee struct
     handler   is the handler (used to get packet ID, conType, and potentially recursive calling)
+		isRx      is TRUE when the handler is called as an Rx handler, false for Tx
     buf       is a double pointer so that:
                 Rx functions may take charge of the packet (setting *buf = NULL will prevent libxbee from free'ing buf)
-                Tx functions may return the packet
+                Tx functions may return the constructed packet
     con       is used to identify the destination address
                 Rx is ONLY used for the address, returns the addressing info to _xbee_rxHandlerThread() so it can be added to the correct connection
-                Tx is a valid pointer
-		pkt				is used to convey the packet information
-								Rx allows the handler to return the populated packet struct (is ** so that realloc may be called)
-								Tx allows the user to 'hand write' a packet
+                Tx is a valid pointer, the information is used while constructing the thread
+		pkt				is used to convey the packet information (is ** so that realloc may be called)
+								Rx allows the handler to return the populated packet struct
+								Tx potentially allows the user to 'hand write' a packet
 */
 struct xbee_pktHandler;
 typedef int(*xbee_pktHandlerFunc)(struct xbee *xbee,
                                   struct xbee_pktHandler *handler,
+                                  char isRx,
                                   struct bufData **buf,
                                   struct xbee_con *con,
                                   struct xbee_pkt **pkt);

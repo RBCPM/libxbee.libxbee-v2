@@ -84,7 +84,7 @@ int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
 		}
 		
 		memset(&con, 0, sizeof(struct xbee_con));
-		if ((ret = pktHandler->handler(data->xbee, pktHandler, &buf, &con, &pkt)) != 0) {
+		if ((ret = pktHandler->handler(data->xbee, pktHandler, 1, &buf, &con, &pkt)) != 0) {
 			xbee_log("Failed to handle packet... pktHandler->handler() returned %d", ret);
 			goto skip;
 		}
