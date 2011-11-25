@@ -182,25 +182,24 @@ int xbee_io_writeRawByte(FILE *f, unsigned char c) {
 	int retries = XBEE_IO_RETRIES;
 	
 	do {
-		if (xsys_fwrite(&c, 1, 1, f) == 0) {
-			/* for some reason nothing was written... */
-			if (xsys_ferror(f)) {
-				char *s;
-				if (xsys_feof(f)) {
-					xbee_logstderr(1,"EOF detected...");
-					ret = XBEE_EEOF;
-					goto done;
-				}
-				if (!(s = strerror(errno))) {
-					xbee_logstderr(1,"Unknown error detected (%d)",errno);
-				} else {
-					xbee_logstderr(1,"Error detected (%s)",s);
-				}
-				usleep(1000);
+		if (xsys_fwrite(&c, 1, 1, f)) break;
+		
+		/* for some reason nothing was written... */
+		if (xsys_feof(f)) {
+			xbee_logstderr(1,"EOF detected...");
+			ret = XBEE_EEOF;
+			goto done;
+		} else if (xsys_ferror(f)) {
+			char *s;
+			if (!(s = strerror(errno))) {
+				xbee_logstderr(1,"Unknown error detected (%d)",errno);
 			} else {
-				/* no error? weird... try again */
-				usleep(100);
+				xbee_logstderr(1,"Error detected (%s)",s);
 			}
+			usleep(1000);
+		} else {
+			/* no error? weird... try again */
+			usleep(100);
 		}
 	} while (--retries);
 	
@@ -215,9 +214,6 @@ done:
 }
 
 int xbee_io_writeEscapedByte(FILE *f, unsigned char c) {
-	int fd;
-	fd = fileno(f);
-	
 	if (c == 0x7E ||
 			c == 0x7D ||
 			c == 0x11 ||
