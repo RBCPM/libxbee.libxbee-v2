@@ -30,7 +30,7 @@ clean:
 	mkdir $(BUILDDIR)
 
 $(LIBOUT).so: $(BUILDDIR)/$(LIBOUT).o
-	$(GCC) -shared -Wl,-soname,$(LIBOUT).so.$(LIBMAJ) $(CLINKS) $(filter %.o,$^) -o $@
+	$(GCC) -shared -Wl,-soname,$(LIBOUT).so.$(LIBMAJ).$(LIBMIN) $(CLINKS) $(filter %.o,$^) -o $@
 
 $(BUILDDIR)/$(LIBOUT).o: $(addprefix $(BUILDDIR)/,$(addsuffix .o,$(SRCS)))
 	$(LD) -r $(filter %.o,$^) -o $@

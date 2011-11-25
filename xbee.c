@@ -135,6 +135,7 @@ EXPORT void xbee_shutdown(struct xbee *xbee) {
 	xbee->running = 0;
 	xbee->device.ready = 0;
 	xbee_log(2,"Shutting down libxbee...");
+	ll_ext_item(&xbee_list, xbee);
 	
 	xbee_log(5,"- Terminating down txThread...");
 	xsys_thread_cancel(xbee->txThread);
@@ -192,6 +193,8 @@ EXPORT void xbee_shutdown(struct xbee *xbee) {
 			
 			xbee_log(5, "---- Cleanup rxData->sem...");
 			xsys_sem_destroy(&pktHandler->rxData->sem);
+			
+			free(pktHandler->rxData);
 		}
 	}
 	
@@ -203,6 +206,8 @@ EXPORT void xbee_shutdown(struct xbee *xbee) {
 	xsys_close(xbee->device.fd);
 	free(xbee->device.path);
 	
+	xbee_log(5,"- Unlink and free instance");
+	free(xbee);
 	xbee_log(2,"Shutdown complete");
 	
 	return;
