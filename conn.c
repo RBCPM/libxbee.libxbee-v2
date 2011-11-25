@@ -292,7 +292,6 @@ EXPORT int xbee_senddata(struct xbee *xbee, struct xbee_con *con, char *format, 
 	}
 	free(oBuf);
 	
-	xbee_log(0,"buf=%p",buf);
 	ll_add_tail(&xbee->txList, buf);
 	xsys_sem_post(&xbee->txSem);
 	
