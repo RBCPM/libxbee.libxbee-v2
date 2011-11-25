@@ -155,13 +155,25 @@ done:
 	return ret;
 }
 
+EXPORT struct xbee_pkt *xbee_getdata(struct xbee *xbee, void *con) {
+	int i;
+	if (!xbee) {
+		if (!xbee_default) return XBEE_ENOXBEE;
+		xbee = xbee_default;
+	}
+	if (!con) return XBEE_EMISSINGPARAM;
+	
+	for (i = 0; xbee->mode->conTypes[i].name; i++) {
+		if (ll_get_item(&(xbee->mode->conTypes[i].conList), con)) break;
+	}
+	if (!xbee->mode->conTypes[i].name) return NULL;
+	
+	return (struct xbee_pkt*)ll_ext_head(&(((struct xbee_con*)con)->rxList));
+}
+
 #warning TODO - implement these functions
 EXPORT int xbee_senddata(struct xbee *xbee, void *con, char *data, ...) {
 	return XBEE_EUNKNOWN;
-}
-
-EXPORT struct xbee_pkt *xbee_getdata(struct xbee *xbee, void *con) {
-	return NULL;
 }
 
 EXPORT int xbee_endcon(struct xbee *xbee, void *con) {
