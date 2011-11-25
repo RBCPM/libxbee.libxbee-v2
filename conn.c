@@ -212,7 +212,7 @@ EXPORT int xbee_endcon(struct xbee *xbee, struct xbee_con *con) {
 	if (!con) return XBEE_EMISSINGPARAM;
 	
 	if (xbee_conValidate(xbee, con, &conType)) return XBEE_EINVAL;
-	if (ll_ext_item(&(conType->conList), con)) return XBEE_EUNKNOWN;
+	if (ll_ext_item(&(conType->conList), con)) return XBEE_EINVAL;
 	
 	/* you aren't allowed at the packets this way if a callback is enabled... */
 	if (con->callback) return XBEE_EINVAL;
@@ -235,7 +235,7 @@ EXPORT int xbee_conAttachCallback(struct xbee *xbee, struct xbee_con *con, void(
 	if (!con) return XBEE_EMISSINGPARAM;
 	
 	if (xbee_conValidate(xbee, con, &conType)) return XBEE_EINVAL;
-	if (!ll_get_item(&(conType->conList), con)) return XBEE_EUNKNOWN;
+	if (!ll_get_item(&(conType->conList), con)) return XBEE_EINVAL;
 	
 	if (prevCallback) *prevCallback = con->callback;
 	con->callback = callback;
@@ -249,7 +249,49 @@ EXPORT int xbee_conAttachCallback(struct xbee *xbee, struct xbee_con *con, void(
 	return XBEE_ENONE;
 }
 
-#warning TODO - implement these functions
-EXPORT int xbee_senddata(struct xbee *xbee, struct xbee_con *con, char *data, ...) {
-	return XBEE_EUNKNOWN;
+EXPORT int xbee_senddata(struct xbee *xbee, struct xbee_con *con, char *format, ...) {
+  va_list ap;
+	int ret = XBEE_ENONE;
+	struct bufData *buf, *oBuf;
+	struct xbee_conType *conType;
+	if (!xbee) {
+		if (!xbee_default) return XBEE_ENOXBEE;
+		xbee = xbee_default;
+	}
+	if (!con) return XBEE_EMISSINGPARAM;
+	
+	if (xbee_conValidate(xbee, con, &conType)) return XBEE_EINVAL;
+	if (!ll_get_item(&(conType->conList), con)) return XBEE_EINVAL;
+	if (!conType->txHandler) return XBEE_ECANTTX;
+	
+	if ((buf = calloc(1, sizeof(struct bufData) + (sizeof(unsigned char) * (XBEE_MAX_PACKETLEN - 1)))) == NULL) {
+		ret = XBEE_ENOMEM;
+		goto die1;
+	}
+	oBuf = buf;
+	
+	va_start(ap, format);
+	buf->len = vsnprintf((char*)buf->buf, XBEE_MAX_PACKETLEN, format, ap);
+	va_end(ap);
+	
+	if ((ret = conType->txHandler->handler(xbee, conType->txHandler, 0, &buf, con, NULL)) != XBEE_ENONE) goto die2;
+	
+	/* a bit of sanity checking... */
+	if (!buf ||
+	    buf == oBuf) {
+		ret = XBEE_EUNKNOWN;
+		goto die2;
+	}
+	free(oBuf);
+	
+	xbee_log(0,"buf=%p",buf);
+	ll_add_tail(&xbee->txList, buf);
+	xsys_sem_post(&xbee->txSem);
+	
+	goto done;
+die2:
+	free(buf);
+die1:
+done:
+	return ret;
 }

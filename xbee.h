@@ -105,7 +105,7 @@ int xbee_setMode(struct xbee *xbee, char *name);
 /* --- conn.c --- */
 int xbee_conTypeIdFromName(struct xbee *xbee, char *name, unsigned char *id);
 int xbee_newcon(struct xbee *xbee, struct xbee_con **retCon, unsigned char id, struct xbee_conAddress *address);
-int xbee_senddata(struct xbee *xbee, struct xbee_con *con, char *data, ...);
+int xbee_senddata(struct xbee *xbee, struct xbee_con *con, char *format, ...);
 struct xbee_pkt *xbee_getdata(struct xbee *xbee, struct xbee_con *con);
 int xbee_endcon(struct xbee *xbee, struct xbee_con *con);
 int xbee_conAttachCallback(struct xbee *xbee, struct xbee_con *con, void(*callback)(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt **pkt), void **prevCallback);

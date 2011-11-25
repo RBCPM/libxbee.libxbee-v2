@@ -36,14 +36,15 @@ int _xbee_tx(struct xbee *xbee) {
 	if (!xbee) return XBEE_ENOXBEE;
 	
 	while (xbee->running) {
-		xsys_sem_wait(&xbee->txSem);
-		
-		buf = ll_get_head(&xbee->txList);
-		if (!buf) continue;
+		buf = ll_ext_head(&xbee->txList);
+		if (!buf) {
+			xsys_sem_wait(&xbee->txSem);
+			continue;
+		}
 		
 		chksum = 0;
 		
-		xbee_io_writeEscapedByte(xbee->device.f, 0x7E);
+		xbee_io_writeRawByte(xbee->device.f, 0x7E);
 		xbee_io_writeEscapedByte(xbee->device.f, ((buf->len >> 8) & 0xFF));
 		xbee_io_writeEscapedByte(xbee->device.f, ( buf->len       & 0xFF));
 		

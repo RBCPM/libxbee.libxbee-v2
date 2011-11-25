@@ -66,7 +66,7 @@ struct xbee_con {
 	
 	struct xbee_conOptions options;
 	
-	void(*callback)(struct xbee *xbee, void *con, struct xbee_pkt **pkt);
+	void(*callback)(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt **pkt);
 	xsys_thread callbackThread;
 	char callbackStarted;
 	char callbackRunning;
