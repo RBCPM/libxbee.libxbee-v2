@@ -38,7 +38,7 @@ int xbee_io_open(struct xbee *xbee) {
 	ret = XBEE_ENONE;
 	
 	/* open the device */
-	if ((fd = xsys_open(xbee->device.path, O_RDWR | O_NOCTTY)) == -1) {
+	if ((fd = xsys_open(xbee->device.path, O_RDWR | O_NOCTTY | O_NONBLOCK)) == -1) {
 		xbee_perror(1,"xsys_open()");
 		ret = XBEE_EOPENFAILED;
 		goto die1;
@@ -116,7 +116,7 @@ int xbee_io_getRawByte(FILE *f, unsigned char *cOut) {
 	*cOut = 0;
 
 	do {
-		/*if ((ret = xsys_select(f, NULL)) == -1) {
+		if ((ret = xsys_select(f, NULL)) == -1) {
 			xbee_perror(1,"xbee_select()");
 			if (errno == EINTR) {
 				ret = XBEE_ESELECTINTERRUPTED;
@@ -124,7 +124,7 @@ int xbee_io_getRawByte(FILE *f, unsigned char *cOut) {
 				ret = XBEE_ESELECT;
 			}
 			goto done;
-		}*/
+		}
 	
 		if (xsys_fread(&c, 1, 1, f) == 0) {
 			/* for some reason nothing was read... */
