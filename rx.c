@@ -114,6 +114,7 @@ int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
 		}
 		
 		ll_add_tail(&rxCon->rxList, pkt);
+		xbee_log(3,"%d packets in queue for connection @ %p", ll_count_items(&rxCon->rxList), rxCon);
 		
 		/* flag pkt for a new allocation */
 		pkt = NULL;
