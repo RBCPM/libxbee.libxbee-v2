@@ -137,7 +137,7 @@ int xbee_conValidate(struct xbee *xbee, struct xbee_con *con, struct xbee_conTyp
 	return XBEE_ENONE;
 }
 
-EXPORT int xbee_newcon(struct xbee *xbee, void **retCon, unsigned char id, struct xbee_conAddress *address) {
+EXPORT int xbee_newcon(struct xbee *xbee, struct xbee_con **retCon, unsigned char id, struct xbee_conAddress *address) {
 	int ret;
 	struct xbee_con *con;
 	struct xbee_conType *conType;
@@ -177,8 +177,7 @@ done:
 	return ret;
 }
 
-EXPORT struct xbee_pkt *xbee_getdata(struct xbee *xbee, void *con) {
-	struct xbee_con *iCon;
+EXPORT struct xbee_pkt *xbee_getdata(struct xbee *xbee, struct xbee_con *con) {
 	struct xbee_pkt *pkt;
 	if (!xbee) {
 		if (!xbee_default) return NULL;
@@ -187,18 +186,22 @@ EXPORT struct xbee_pkt *xbee_getdata(struct xbee *xbee, void *con) {
 	if (!con) return NULL;
 	
 	if (xbee_conValidate(xbee, con, NULL)) return NULL;
-	iCon = con;
 	
-	if ((pkt = (struct xbee_pkt*)ll_ext_head(&(iCon->rxList))) == NULL) {
+	/* you aren't allowed at the packets this way if a callback is enabled... */
+	if (con->callback) {
+		xbee_log(10,"Cannot return packet while callback is enabled for connection @ %p", con);
+		return NULL;
+	}
+	
+	if ((pkt = (struct xbee_pkt*)ll_ext_head(&(con->rxList))) == NULL) {
 		xbee_log(10,"No packets for connection @ %p", con);
 		return NULL;
 	}
-	xbee_log(2,"Gave a packet @ %p to the user from connection @ %p, %d remain...", pkt, con, ll_count_items(&(iCon->rxList)));
+	xbee_log(2,"Gave a packet @ %p to the user from connection @ %p, %d remain...", pkt, con, ll_count_items(&(con->rxList)));
 	return pkt;
 }
 
-EXPORT int xbee_endcon(struct xbee *xbee, void *con) {
-	struct xbee_con *iCon;
+EXPORT int xbee_endcon(struct xbee *xbee, struct xbee_con *con) {
 	struct xbee_conType *conType;
 	struct xbee_pkt *pkt;
 	int i;
@@ -210,22 +213,43 @@ EXPORT int xbee_endcon(struct xbee *xbee, void *con) {
 	
 	if (xbee_conValidate(xbee, con, &conType)) return XBEE_EINVAL;
 	if (ll_ext_item(&(conType->conList), con)) return XBEE_EUNKNOWN;
-	iCon = con;
 	
-	for (i = 0; (pkt = ll_ext_head(&(iCon->rxList))) != NULL; i++) {
+	/* you aren't allowed at the packets this way if a callback is enabled... */
+	if (con->callback) return XBEE_EINVAL;
+	
+	for (i = 0; (pkt = ll_ext_head(&(con->rxList))) != NULL; i++) {
 		xbee_freePkt(pkt);
 	}
 	xbee_log(2,"Ended '%s' connection @ %p (destroyed %d packets)", conType->name, con, i);
-	free(iCon);
+	free(con);
+	
+	return XBEE_ENONE;
+}
+
+EXPORT int xbee_conAttachCallback(struct xbee *xbee, struct xbee_con *con, void(*callback)(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt **pkt), void **prevCallback) {
+	struct xbee_conType *conType;
+	if (!xbee) {
+		if (!xbee_default) return XBEE_ENOXBEE;
+		xbee = xbee_default;
+	}
+	if (!con) return XBEE_EMISSINGPARAM;
+	
+	if (xbee_conValidate(xbee, con, &conType)) return XBEE_EINVAL;
+	if (!ll_get_item(&(conType->conList), con)) return XBEE_EUNKNOWN;
+	
+	if (prevCallback) *prevCallback = con->callback;
+	con->callback = callback;
+	
+	if (callback) {
+		xbee_log(5,"Attached callback to connection @ %p", con);
+	} else {
+		xbee_log(5,"Detached callback from connection @ %p", con);
+	}
 	
 	return XBEE_ENONE;
 }
 
 #warning TODO - implement these functions
-EXPORT int xbee_senddata(struct xbee *xbee, void *con, char *data, ...) {
-	return XBEE_EUNKNOWN;
-}
-
-EXPORT int xbee_conAttachCallback(struct xbee *xbee, void *con, void(*callback)(void *con, struct xbee_pkt *pkt)) {
+EXPORT int xbee_senddata(struct xbee *xbee, struct xbee_con *con, char *data, ...) {
 	return XBEE_EUNKNOWN;
 }

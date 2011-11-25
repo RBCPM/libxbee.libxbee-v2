@@ -41,6 +41,36 @@ struct rxData {
 	pthread_t thread;
 };
 
+struct xbee_callbackInfo {
+	struct xbee *xbee;
+	struct xbee_con *con;
+};
+
+/* ######################################################################### */
+
+int _xbee_rxCallbackThread(struct xbee_callbackInfo *info) {
+	struct xbee_pkt *pkt;
+	
+	/* prevent having to xsys_thread_join() */
+	xsys_thread_detach_self();
+	
+	info->con->callbackRunning = 1;
+	
+	while ((pkt = ll_ext_head(&(info->con->rxList))) != NULL) {
+		if (!info->con->callback) {
+			xbee_log(1,"Callback for connection @ %p disappeared... replacing the packet", info->con);
+			ll_add_head(&(info->con->rxList), pkt);
+			break;
+		}
+		info->con->callback(info->xbee, info->con, &pkt);
+		if (pkt) free(pkt);
+	}
+	
+	info->con->callbackRunning = 0;
+	
+	return 0;
+}
+
 int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
 	int ret;
 	struct rxData *data;
@@ -114,6 +144,24 @@ int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
 		}
 		
 		ll_add_tail(&rxCon->rxList, pkt);
+		
+		if (rxCon->callback && (!rxCon->callbackStarted || !rxCon->callbackRunning)) {
+			struct xbee_callbackInfo *info;
+			if ((info = calloc(1, sizeof(struct xbee_callbackInfo))) == NULL) {
+				xbee_log(-999,"Failed to start callback for connection @ %p... alloc() returned NULL", rxCon);
+			} else {
+				info->xbee = data->xbee;
+				info->con = rxCon;
+				
+				rxCon->callbackRunning = 0;
+				if (!xsys_thread_create(&rxCon->callbackThread, (void*(*)(void*))_xbee_rxCallbackThread, (void*)info)) {
+					rxCon->callbackStarted = 1;
+				} else {
+					xbee_log(-999,"Failed to start callback for connection @ %p... xsys_thread_create() returned error", rxCon);
+				}
+			}
+		}
+		
 		xbee_log(3,"%d packets in queue for connection @ %p", ll_count_items(&rxCon->rxList), rxCon);
 		
 		/* flag pkt for a new allocation */
