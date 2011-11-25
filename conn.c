@@ -19,15 +19,16 @@
 */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "internal.h"
-#include "errors.h"
 #include "conn.h"
+#include "errors.h"
+#include "ll.h"
 
-struct xbee_con *xbee_conFromAddress(struct xbee *xbee, struct xbee_conType *conType, struct xbee_conAddress *address) {
+struct xbee_con *xbee_conFromAddress(struct xbee_conType *conType, struct xbee_conAddress *address) {
 	struct xbee_con *con;
-	if (!xbee) return NULL;
 	if (!address) return NULL;
 	if (!conType || !conType->initialized) return NULL;
 	
@@ -47,16 +48,30 @@ struct xbee_con *xbee_conFromAddress(struct xbee *xbee, struct xbee_conType *con
 			if (address->frameID != con->address.frameID) continue;
 		}
 		if (address->addr64_enabled && con->address.addr64_enabled) {
+			xbee_log(10,"Testing 64-bit address: 0x%02X%02X%02X%02X 0x%02X%02X%02X%02X", address->addr64[0],
+			                                                                             address->addr64[1],
+			                                                                             address->addr64[2],
+			                                                                             address->addr64[3],
+			                                                                             address->addr64[4],
+			                                                                             address->addr64[5],
+			                                                                             address->addr64[6],
+			                                                                             address->addr64[7]);
+
 			/* if 64-bit address matches, accept, else decline (don't even accept matching 16-bit address */
 			if (!memcmp(address->addr64, con->address.addr64, 8)) {
+				xbee_log(10,"    Success!");
 				break;
 			} else {
 				continue;
 			}
 		}
 		if (address->addr16_enabled && con->address.addr16_enabled) {
+			xbee_log(10,"Testing 16-bit address: 0x%02X%02X",  address->addr16[0], address->addr16[1]);
 			/* if 16-bit address matches accept */
-			if (!memcmp(address->addr16, con->address.addr16, 2)) break;
+			if (!memcmp(address->addr16, con->address.addr16, 2)) {
+				xbee_log(10,"    Success!");
+				break;
+			}
 		}
 	} while ((con = ll_get_next(&conType->conList, con)) != NULL);
 	
@@ -69,9 +84,8 @@ int _xbee_conTypeIdFromName(struct xbee *xbee, char *name, unsigned char *id, in
 		if (!xbee_default) return 1;
 		xbee = xbee_default;
 	}
-	if (!name) return 1;
 	if (!xbee->mode) return 1;
-	if (!xbee->mode->conTypes) return 1;
+	if (!name) return 1;
 	
 	for (i = 0; xbee->mode->conTypes[i].name; i++) {
 		if (!ignoreInitialized && !xbee->mode->conTypes[i].initialized) continue;
@@ -103,11 +117,45 @@ struct xbee_conType *xbee_conTypeFromID(struct xbee_conType *conTypes, unsigned 
 	return _xbee_conTypeFromID(conTypes, id, 0);
 }
 
-#warning TODO - implement these functions
-EXPORT void *xbee_newcon(struct xbee *xbee, unsigned char id, struct xbee_conAddress *address) {
-	return NULL;
+EXPORT int xbee_newcon(struct xbee *xbee, void **retCon, unsigned char id, struct xbee_conAddress *address) {
+	int ret;
+	struct xbee_con *con;
+	struct xbee_conType *conType;
+	if (!xbee) {
+		if (!xbee_default) return XBEE_ENOXBEE;
+		xbee = xbee_default;
+	}
+	if (!xbee->mode) return XBEE_ENOMODE;
+	if (!retCon) return XBEE_EMISSINGPARAM;
+	if (!address) return XBEE_EMISSINGPARAM;
+	
+	if (id >= xbee->mode->conTypeCount) return XBEE_EINVAL;
+	conType = &(xbee->mode->conTypes[id]);
+	
+	ret = XBEE_ENONE;
+	if ((con = xbee_conFromAddress(conType, address)) != NULL) {
+		*retCon = con;
+		goto done;
+	}
+	
+	if ((con = calloc(1, sizeof(struct xbee_con))) == NULL) {
+		ret = XBEE_ENOMEM;
+		goto die1;
+	}
+	
+	con->conType = conType;
+	memcpy(&con->address, address, sizeof(struct xbee_conAddress));
+	ll_init(&con->rxList);
+	ll_add_tail(&(con->conType->conList), con);
+	*retCon = con;
+	
+	goto done;
+die1:
+done:
+	return ret;
 }
 
+#warning TODO - implement these functions
 EXPORT int xbee_senddata(struct xbee *xbee, void *con, char *data, ...) {
 	return XBEE_EUNKNOWN;
 }

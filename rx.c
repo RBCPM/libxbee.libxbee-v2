@@ -93,7 +93,22 @@ int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
 			goto skip;
 		}
 		
-		if ((rxCon = xbee_conFromAddress(data->xbee, pktHandler->conType, &con.address)) == NULL) {
+		if (con.address.addr16_enabled) {
+			xbee_log(4,"16-bit address: 0x%02X%02X", con.address.addr16[0], con.address.addr16[1]);
+		}
+		if (con.address.addr64_enabled) {
+			xbee_log(4,"64-bit address: 0x%02X%02X%02X%02X 0x%02X%02X%02X%02X", con.address.addr64[0],
+			                                                                    con.address.addr64[1],
+			                                                                    con.address.addr64[2],
+			                                                                    con.address.addr64[3],
+			                                                                    con.address.addr64[4],
+			                                                                    con.address.addr64[5],
+			                                                                    con.address.addr64[6],
+			                                                                    con.address.addr64[7]);
+		}
+		
+		
+		if ((rxCon = xbee_conFromAddress(pktHandler->conType, &con.address)) == NULL) {
 			xbee_log(1,"No connection for packet...");
 			goto skip;
 		}
@@ -250,14 +265,14 @@ int _xbee_rx(struct xbee *xbee) {
 			xbee_log(1,"Unknown packet received / no packet handler (0x%02X)", buf->buf[0]);
 			continue;
 		}
-		xbee_log(2,"Received %d byte packet (0x%02X - '%s') @ %p", buf->len, buf->buf[0], pktHandlers[pos].handlerName, buf);
+		xbee_log(2,"Received %d byte packet (0x%02X - '%s') @ %p", buf->len, buf->buf[0], pktHandlers[pos].conType->name, buf);
 		
 		/* try (and ignore failure) to realloc buf to the correct length */
 		if ((p = realloc(buf, sizeof(struct bufData) + (sizeof(unsigned char) * (buf->len - 1)))) != NULL) buf = p;
 
 		if ((ret = _xbee_rxHandler(xbee, &pktHandlers[pos], buf)) != 0) {
 			xbee_log(1,"Failed to handle packet... _xbee_rxHandler() returned %d", ret);
-			if (p) free(buf);
+			free(buf);
 		}
 		
 		/* trigger a new calloc() */

@@ -85,6 +85,10 @@ EXPORT int xbee_setMode(struct xbee *xbee, char *name) {
 	if (!xbee_modes[i]) return 1;
 	mode = (struct xbee_mode*)xbee_modes[i];
 	
+	if (!mode->conTypes ||
+			!mode->pktHandlers ||
+			!mode->name) return 1;
+	
 	xbee_log(1,"Set mode to '%s'", name);
 	
 	/* wipe all connection types */
@@ -145,6 +149,7 @@ EXPORT int xbee_setMode(struct xbee *xbee, char *name) {
 		}
 	}
 	if (c) xbee_log(2,"Found %d unused conTypes...", c);
+	mode->conTypeCount = i;
 	
 	xbee->mode = mode;
 	

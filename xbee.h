@@ -103,7 +103,7 @@ int xbee_setMode(struct xbee *xbee, char *name);
 
 /* --- conn.c --- */
 int xbee_conTypeIdFromName(struct xbee *xbee, char *name, unsigned char *id);
-void *xbee_newcon(struct xbee *xbee, unsigned char id, struct xbee_conAddress *address);
+int xbee_newcon(struct xbee *xbee, void **retCon, unsigned char id, struct xbee_conAddress *address);
 int xbee_senddata(struct xbee *xbee, void *con, char *data, ...);
 struct xbee_pkt *xbee_getdata(struct xbee *xbee, void *con);
 int xbee_endcon(struct xbee *xbee, void *con);

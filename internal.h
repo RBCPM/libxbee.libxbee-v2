@@ -146,6 +146,7 @@ struct xbee_mode {
 	struct xbee_pktHandler *pktHandlers;
 	struct xbee_conType *conTypes;
 	char *name;
+	int conTypeCount;
 };
 
 /* ######################################################################### */

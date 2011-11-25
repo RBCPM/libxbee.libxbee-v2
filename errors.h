@@ -40,6 +40,7 @@
 #define XBEE_ELENGTH                                       -16
 #define XBEE_EINVAL                                        -17
 #define XBEE_EBUSY                                         -18
+#define XBEE_ENOMODE                                       -19
 
 #endif /* __XBEE_ERRORS_H */
 

@@ -21,8 +21,8 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+struct xbee_con *xbee_conFromAddress(struct xbee_conType *conType, struct xbee_conAddress *address);
 int _xbee_conTypeIdFromName(struct xbee *xbee, char *name, unsigned char *id, int ignoreInitialized);
-struct xbee_con *xbee_conFromAddress(struct xbee *xbee, struct xbee_conType *conType, struct xbee_conAddress *address);
 struct xbee_conType *_xbee_conTypeFromID(struct xbee_conType *conTypes, unsigned char id, int ignoreInitialized);
 struct xbee_conType *xbee_conTypeFromID(struct xbee_conType *conTypes, unsigned char id);
 
