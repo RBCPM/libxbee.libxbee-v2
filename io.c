@@ -28,7 +28,6 @@
 #include "internal.h"
 #include "errors.h"
 #include "log.h"
-#include "xsys.h"
 #include "io.h"
 
 int xbee_io_open(struct xbee *xbee) {

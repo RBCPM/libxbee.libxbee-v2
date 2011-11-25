@@ -23,7 +23,6 @@
 #include <unistd.h>
 
 #include "internal.h"
-#include "xsys.h"
 #include "tx.h"
 #include "io.h"
 #include "errors.h"

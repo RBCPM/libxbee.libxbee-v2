@@ -30,7 +30,7 @@
 #include "conn.h"
 #include "xbee_sG.h"
 
-char *xbee_getMode(struct xbee *xbee) {
+EXPORT char *xbee_getMode(struct xbee *xbee) {
 	if (!xbee) {
 		if (!xbee_default) return NULL;
 		xbee = xbee_default;
@@ -39,7 +39,7 @@ char *xbee_getMode(struct xbee *xbee) {
 	return xbee->mode->name;
 }
 
-char **xbee_getModes(void) {
+EXPORT char **xbee_getModes(void) {
 	char **modes;
 	int i;
 	
@@ -63,7 +63,7 @@ done:
 	return modes;
 }
 
-int xbee_setMode(struct xbee *xbee, char *name) {
+EXPORT int xbee_setMode(struct xbee *xbee, char *name) {
 	struct xbee_mode *mode;
 	struct xbee_conType *conType;
 	int i;
@@ -78,7 +78,7 @@ int xbee_setMode(struct xbee *xbee, char *name) {
 		if (!strcasecmp(xbee_modes[i]->name, name)) break;
 	}
 	if (!xbee_modes[i]) return 1;
-	mode = xbee_modes[i];
+	mode = (struct xbee_mode*)xbee_modes[i];
 	
 	xbee_log("Set mode to '%s'", name);
 	

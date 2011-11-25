@@ -22,8 +22,7 @@
 #include <errno.h>
 
 #include "log.h"
-#include "xsys.h"
-#include "xbee.h"
+#include "internal.h"
 
 /* defaults to stderr */
 #define XBEE_LOG_DEFAULT_TARGET stderr
@@ -45,7 +44,7 @@ static int xbee_logPrepare(void) {
 	return 0;
 }
 
-void xbee_logSetTarget(FILE *f) {
+EXPORT void xbee_logSetTarget(FILE *f) {
 	if (!xbee_logReady) if (xbee_logPrepare()) return;
 	xsys_mutex_lock(&xbee_logMutex);
 	xbee_logf = f;

@@ -25,9 +25,6 @@
 #include <unistd.h>
 #include <sys/time.h>
 
-#include "errors.h"
-#include "log.h"
-
 #define __XBEE_XSYS_LOAD_H
 #if defined(__GNUC__) /* ------- */
 #include "xsys_linux.h"
@@ -37,6 +34,9 @@
 #error Unsupported OS
 #endif /* ---------------------- */
 #undef __XBEE_XSYS_LOAD_H
+
+#include "errors.h"
+#include "log.h"
 
 /* file I/O */
 int xsys_open(char *path, int flags);

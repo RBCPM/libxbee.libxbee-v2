@@ -34,4 +34,6 @@ typedef pthread_t         xsys_thread;
 typedef pthread_mutex_t   xsys_mutex;
 typedef sem_t             xsys_sem;
 
+#define EXPORT __attribute__((visibility ("default")))
+
 #endif /* __XBEE_XSYS_LINUX_H */

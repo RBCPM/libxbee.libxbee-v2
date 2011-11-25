@@ -24,7 +24,6 @@
 #include <string.h>
 
 #include "internal.h"
-#include "xsys.h"
 #include "rx.h"
 #include "conn.h"
 #include "errors.h"

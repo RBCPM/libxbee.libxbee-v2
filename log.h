@@ -24,8 +24,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#include "xbee.h"
-
 #define xbee_log(...) \
 	_xbee_log(__FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
 void _xbee_log(const char *file, int line, const char *function, char *format, ...);

@@ -11,7 +11,7 @@ LD:=ld
 GCC:=gcc
 
 DEBUG:=-g
-CFLAGS:=-Wall -Wstrict-prototypes -Wno-variadic-macros -c -fPIC $(DEBUG)
+CFLAGS:=-Wall -Wstrict-prototypes -Wno-variadic-macros -c -fPIC -fvisibility=hidden $(DEBUG)
 #CFLAGS+=-pedantic
 CLINKS:=$(addprefix -l,$(LIBS)) $(DEBUG)
 
@@ -29,13 +29,9 @@ clean:
 	rm -rdf $(BUILDDIR) $(LIBOUT).so
 	mkdir $(BUILDDIR)
 
-#$(LIBOUT).so: $(LIBOUT).o
 $(LIBOUT).so: $(BUILDDIR)/$(LIBOUT).o
 	$(GCC) -shared -Wl,-soname,$(LIBOUT).so.$(LIBMAJ) $(CLINKS) $(filter %.o,$^) -o $@
 
-#$(LIBOUT).o: $(BUILDDIR)/$(LIBOUT).o
-#	$(LD) -r -T $(LIBOUT).ld $(filter %.o,$^) -o $@
-	
 $(BUILDDIR)/$(LIBOUT).o: $(addprefix $(BUILDDIR)/,$(addsuffix .o,$(SRCS)))
 	$(LD) -r $(filter %.o,$^) -o $@
 

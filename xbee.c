@@ -24,9 +24,7 @@
 #include <unistd.h>
 #include <errno.h>
 
-#include "xbee.h"
 #include "internal.h"
-#include "xsys.h"
 #include "io.h"
 #include "ll.h"
 #include "errors.h"
@@ -38,7 +36,7 @@ struct xbee *xbee_default = NULL;
 static struct ll_head xbee_list;
 static int xbee_initialized = 0;
 
-int xbee_setup(char *path, int baudrate, FILE *logTarget, struct xbee **retXbee) {
+EXPORT int xbee_setup(char *path, int baudrate, FILE *logTarget, struct xbee **retXbee) {
 	struct xbee *xbee;
 	int ret = XBEE_ENONE;
 	
@@ -142,7 +140,7 @@ int _xbee_threadStart(struct xbee *xbee, pthread_t *thread, void*(*startFunction
 	return 0;
 }
 
-void xbee_freePkt(struct xbee_pkt *pkt) {
+EXPORT void xbee_freePkt(struct xbee_pkt *pkt) {
 	if (!pkt) return;
 	free(pkt);
 }
