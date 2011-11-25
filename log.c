@@ -57,6 +57,10 @@ EXPORT void xbee_logSetLevel(int level) {
 	xbee_logLevel = level;
 }
 
+int xbee_shouldLog(int minLevel) {
+	return !(xbeeLogLevel < minLevel);
+}
+
 void _xbee_log(const char *file, int line, const char *function, int minLevel, char *format, ...) {
   va_list ap;
 	if (!xbee_logReady) if (xbee_logPrepare()) return;

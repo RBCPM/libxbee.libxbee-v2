@@ -24,6 +24,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+int xbee_shouldLog(int minLevel);
+
 #define xbee_log(...) \
 	_xbee_log(__FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
 void _xbee_log(const char *file, int line, const char *function, int minLevel, char *format, ...);
