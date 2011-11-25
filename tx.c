@@ -65,7 +65,7 @@ int xbee_tx(struct xbee *xbee) {
 	
 #warning CHECK - does this do what I want it to?
 	/* prevent having to xsys_thread_join() */
-	pthread_detach(pthread_self());
+	xsys_thread_detach_self();
 	
 	if (!xbee) return 1;
 	

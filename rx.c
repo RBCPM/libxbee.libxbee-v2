@@ -51,7 +51,7 @@ int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
 	
 #warning CHECK - does this do what I want it to?
 	/* prevent having to xsys_thread_join() */
-	pthread_detach(pthread_self());
+	xsys_thread_detach_self();
 	
 	if (!pktHandler) return XBEE_EMISSINGPARAM;
 	data = pktHandler->rxData;
@@ -279,7 +279,7 @@ int xbee_rx(struct xbee *xbee) {
 	
 #warning CHECK - does this do what I want it to?
 	/* prevent having to xsys_thread_join() */
-	pthread_detach(pthread_self());
+	xsys_thread_detach_self();
 	
 	xbee->rxRunning = 1;
 	while (xbee->running) {

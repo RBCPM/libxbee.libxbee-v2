@@ -176,6 +176,9 @@ int xsys_thread_join(xsys_thread thread, void **retval) {
 int xsys_thread_tryjoin(xsys_thread thread, void **retval) {
 	return pthread_tryjoin_np((pthread_t)thread, retval);
 }
+int xsys_thread_detach_self(void) {
+	return pthread_detach(pthread_self());
+}
 
 
 /* ######################################################################### */
