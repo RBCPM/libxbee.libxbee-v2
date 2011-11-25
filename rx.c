@@ -49,7 +49,6 @@ int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
 	struct xbee_con con;
 	struct xbee_con *rxCon;
 	
-#warning CHECK - does this do what I want it to?
 	/* prevent having to xsys_thread_join() */
 	xsys_thread_detach_self();
 	
@@ -277,7 +276,6 @@ int xbee_rx(struct xbee *xbee) {
 	int ret;
 	if (!xbee) return 1;
 	
-#warning CHECK - does this do what I want it to?
 	/* prevent having to xsys_thread_join() */
 	xsys_thread_detach_self();
 	

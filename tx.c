@@ -63,7 +63,6 @@ int _xbee_tx(struct xbee *xbee) {
 int xbee_tx(struct xbee *xbee) {
 	int ret;
 	
-#warning CHECK - does this do what I want it to?
 	/* prevent having to xsys_thread_join() */
 	xsys_thread_detach_self();
 	
