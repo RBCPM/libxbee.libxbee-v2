@@ -41,6 +41,7 @@
 #define XBEE_EINVAL                                        -17
 #define XBEE_EBUSY                                         -18
 #define XBEE_ENOMODE                                       -19
+#define XBEE_EFAILED                                       -20
 
 #endif /* __XBEE_ERRORS_H */
 

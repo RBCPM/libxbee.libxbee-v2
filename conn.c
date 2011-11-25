@@ -117,6 +117,26 @@ struct xbee_conType *xbee_conTypeFromID(struct xbee_conType *conTypes, unsigned 
 	return _xbee_conTypeFromID(conTypes, id, 0);
 }
 
+int xbee_conValidate(struct xbee *xbee, struct xbee_con *con, struct xbee_conType **conType) {
+	int i;
+	if (!xbee) {
+		if (!xbee_default) return XBEE_ENOXBEE;
+		xbee = xbee_default;
+	}
+	if (!con) return XBEE_EMISSINGPARAM;
+	
+	for (i = 0; xbee->mode->conTypes[i].name; i++) {
+		if (ll_get_item(&(xbee->mode->conTypes[i].conList), con)) break;
+	}
+	if (!xbee->mode->conTypes[i].name) {
+		if (conType) *conType = NULL;
+		return XBEE_EFAILED;
+	}
+	
+	if (conType) *conType = &(xbee->mode->conTypes[i]);
+	return XBEE_ENONE;
+}
+
 EXPORT int xbee_newcon(struct xbee *xbee, void **retCon, unsigned char id, struct xbee_conAddress *address) {
 	int ret;
 	struct xbee_con *con;
@@ -149,6 +169,8 @@ EXPORT int xbee_newcon(struct xbee *xbee, void **retCon, unsigned char id, struc
 	ll_add_tail(&(con->conType->conList), con);
 	*retCon = con;
 	
+	xbee_log(2,"Created new '%s' connection @ %p", conType->name, con);
+	
 	goto done;
 die1:
 done:
@@ -156,6 +178,29 @@ done:
 }
 
 EXPORT struct xbee_pkt *xbee_getdata(struct xbee *xbee, void *con) {
+	struct xbee_con *iCon;
+	struct xbee_pkt *pkt;
+	if (!xbee) {
+		if (!xbee_default) return NULL;
+		xbee = xbee_default;
+	}
+	if (!con) return NULL;
+	
+	if (xbee_conValidate(xbee, con, NULL)) return NULL;
+	iCon = con;
+	
+	if ((pkt = (struct xbee_pkt*)ll_ext_head(&(iCon->rxList))) == NULL) {
+		xbee_log(10,"No packets for connection @ %p", con);
+		return NULL;
+	}
+	xbee_log(2,"Gave a packet @ %p to the user from connection @ %p, %d remain...", pkt, con, ll_count_items(&(iCon->rxList)));
+	return pkt;
+}
+
+EXPORT int xbee_endcon(struct xbee *xbee, void *con) {
+	struct xbee_con *iCon;
+	struct xbee_conType *conType;
+	struct xbee_pkt *pkt;
 	int i;
 	if (!xbee) {
 		if (!xbee_default) return XBEE_ENOXBEE;
@@ -163,20 +208,21 @@ EXPORT struct xbee_pkt *xbee_getdata(struct xbee *xbee, void *con) {
 	}
 	if (!con) return XBEE_EMISSINGPARAM;
 	
-	for (i = 0; xbee->mode->conTypes[i].name; i++) {
-		if (ll_get_item(&(xbee->mode->conTypes[i].conList), con)) break;
-	}
-	if (!xbee->mode->conTypes[i].name) return NULL;
+	if (xbee_conValidate(xbee, con, &conType)) return XBEE_EINVAL;
+	if (ll_ext_item(&(conType->conList), con)) return XBEE_EUNKNOWN;
+	iCon = con;
 	
-	return (struct xbee_pkt*)ll_ext_head(&(((struct xbee_con*)con)->rxList));
+	for (i = 0; (pkt = ll_ext_head(&(iCon->rxList))) != NULL; i++) {
+		xbee_freePkt(pkt);
+	}
+	xbee_log(2,"Ended '%s' connection @ %p (destroyed %d packets)", conType->name, con, i);
+	free(iCon);
+	
+	return XBEE_ENONE;
 }
 
 #warning TODO - implement these functions
 EXPORT int xbee_senddata(struct xbee *xbee, void *con, char *data, ...) {
-	return XBEE_EUNKNOWN;
-}
-
-EXPORT int xbee_endcon(struct xbee *xbee, void *con) {
 	return XBEE_EUNKNOWN;
 }
 
