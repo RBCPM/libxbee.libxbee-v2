@@ -43,6 +43,7 @@
 #define XBEE_ENOMODE                                       -19
 #define XBEE_EFAILED                                       -20
 #define XBEE_ECANTTX                                       -21
+#define XBEE_ENOTREADY                                     -22
 
 #endif /* __XBEE_ERRORS_H */
 

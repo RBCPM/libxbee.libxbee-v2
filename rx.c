@@ -31,16 +31,6 @@
 #include "io.h"
 #include "ll.h"
 
-struct rxData {
-	unsigned char threadStarted;
-	unsigned char threadRunning;
-	unsigned char threadShutdown;
-	struct xbee *xbee;
-	sem_t sem;
-	struct ll_head list;
-	pthread_t thread;
-};
-
 struct xbee_callbackInfo {
 	struct xbee *xbee;
 	struct xbee_con *con;
@@ -50,23 +40,29 @@ struct xbee_callbackInfo {
 
 int _xbee_rxCallbackThread(struct xbee_callbackInfo *info) {
 	struct xbee_pkt *pkt;
+	struct xbee *xbee;
+	struct xbee_con *con;
 	
 	/* prevent having to xsys_thread_join() */
 	xsys_thread_detach_self();
 	
-	info->con->callbackRunning = 1;
+	xbee = info->xbee;
+	con = info->con;
+	free(info);
 	
-	while ((pkt = ll_ext_head(&(info->con->rxList))) != NULL) {
-		if (!info->con->callback) {
-			xbee_log(1,"Callback for connection @ %p disappeared... replacing the packet", info->con);
-			ll_add_head(&(info->con->rxList), pkt);
+	con->callbackRunning = 1;
+	
+	while ((pkt = ll_ext_head(&(con->rxList))) != NULL) {
+		if (!con->callback) {
+			xbee_log(1,"Callback for connection @ %p disappeared... replacing the packet", con);
+			ll_add_head(&(con->rxList), pkt);
 			break;
 		}
-		info->con->callback(info->xbee, info->con, &pkt);
+		con->callback(xbee, con, &pkt);
 		if (pkt) free(pkt);
 	}
 	
-	info->con->callbackRunning = 0;
+	con->callbackRunning = 0;
 	
 	return 0;
 }
@@ -248,10 +244,10 @@ int _xbee_rx(struct xbee *xbee) {
 				ret = XBEE_ENOMEM;
 				goto die1;
 			}
+			xbee->rxBuf = (void*)buf;
 		}
 		
 		for (pos = -3; pos < 0 || (pos < len && pos < XBEE_MAX_PACKETLEN); pos++) {
-#warning TODO - possible performance improvement by reading multiple bytes
 			if ((ret = xbee_io_getEscapedByte(xbee->device.f, &c)) != 0) {
 				if (ret == XBEE_EEOF) {
 					if (--retries == 0) {
@@ -319,6 +315,7 @@ int _xbee_rx(struct xbee *xbee) {
 		/* try (and ignore failure) to realloc buf to the correct length */
 		if ((p = realloc(buf, sizeof(struct bufData) + (sizeof(unsigned char) * (buf->len - 1)))) != NULL) buf = p;
 
+		xbee->rxBuf = NULL;
 		if ((ret = _xbee_rxHandler(xbee, &pktHandlers[pos], buf)) != 0) {
 			xbee_log(1,"Failed to handle packet... _xbee_rxHandler() returned %d", ret);
 			free(buf);
@@ -339,9 +336,6 @@ done:
 int xbee_rx(struct xbee *xbee) {
 	int ret;
 	if (!xbee) return 1;
-	
-	/* prevent having to xsys_thread_join() */
-	xsys_thread_detach_self();
 	
 	xbee->rxRunning = 1;
 	while (xbee->running) {

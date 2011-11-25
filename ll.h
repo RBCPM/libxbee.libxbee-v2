@@ -21,13 +21,15 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "xsys.h"
+
 /* DO NOT RE-ORDER! */
 struct ll_head {
   struct ll_info *head;
   struct ll_info *tail;
   int is_head;
   struct ll_head *self;
-  pthread_mutex_t mutex;
+  xsys_mutex mutex;
 };
 
 /* DO NOT RE-ORDER! */

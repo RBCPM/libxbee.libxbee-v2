@@ -81,20 +81,21 @@ struct xbee_con *xbee_conFromAddress(struct xbee_conType *conType, struct xbee_c
 int _xbee_conTypeIdFromName(struct xbee *xbee, char *name, unsigned char *id, int ignoreInitialized) {
 	int i;
 	if (!xbee) {
-		if (!xbee_default) return 1;
+		if (!xbee_default) return XBEE_ENOXBEE;
 		xbee = xbee_default;
 	}
-	if (!xbee->mode) return 1;
-	if (!name) return 1;
+	if (!xbee_validate(xbee)) return XBEE_ENOXBEE;
+	if (!xbee->mode) return XBEE_EINVAL;
+	if (!name) return XBEE_EMISSINGPARAM;
 	
 	for (i = 0; xbee->mode->conTypes[i].name; i++) {
 		if (!ignoreInitialized && !xbee->mode->conTypes[i].initialized) continue;
 		if (!strcasecmp(name, xbee->mode->conTypes[i].name)) {
 			if (id) *id = i;
-			return 0;
+			return XBEE_ENONE;
 		}
 	}
-	return 1;
+	return XBEE_EUNKNOWN;
 }
 EXPORT int xbee_conTypeIdFromName(struct xbee *xbee, char *name, unsigned char *id) {
 	return _xbee_conTypeIdFromName(xbee, name, id, 0);
@@ -123,6 +124,7 @@ int xbee_conValidate(struct xbee *xbee, struct xbee_con *con, struct xbee_conTyp
 		if (!xbee_default) return XBEE_ENOXBEE;
 		xbee = xbee_default;
 	}
+	if (!xbee_validate(xbee)) return XBEE_ENOXBEE;
 	if (!con) return XBEE_EMISSINGPARAM;
 	
 	for (i = 0; xbee->mode->conTypes[i].name; i++) {
@@ -145,6 +147,7 @@ EXPORT int xbee_newcon(struct xbee *xbee, struct xbee_con **retCon, unsigned cha
 		if (!xbee_default) return XBEE_ENOXBEE;
 		xbee = xbee_default;
 	}
+	if (!xbee_validate(xbee)) return XBEE_ENOXBEE;
 	if (!xbee->mode) return XBEE_ENOMODE;
 	if (!retCon) return XBEE_EMISSINGPARAM;
 	if (!address) return XBEE_EMISSINGPARAM;
@@ -183,6 +186,7 @@ EXPORT struct xbee_pkt *xbee_getdata(struct xbee *xbee, struct xbee_con *con) {
 		if (!xbee_default) return NULL;
 		xbee = xbee_default;
 	}
+	if (!xbee_validate(xbee)) return NULL;
 	if (!con) return NULL;
 	
 	if (xbee_conValidate(xbee, con, NULL)) return NULL;
@@ -209,13 +213,15 @@ EXPORT int xbee_endcon(struct xbee *xbee, struct xbee_con *con) {
 		if (!xbee_default) return XBEE_ENOXBEE;
 		xbee = xbee_default;
 	}
+	if (!xbee_validate(xbee)) return XBEE_ENOXBEE;
 	if (!con) return XBEE_EMISSINGPARAM;
 	
 	if (xbee_conValidate(xbee, con, &conType)) return XBEE_EINVAL;
 	if (ll_ext_item(&(conType->conList), con)) return XBEE_EINVAL;
 	
-	/* you aren't allowed at the packets this way if a callback is enabled... */
-	if (con->callback) return XBEE_EINVAL;
+	if (con->callbackRunning) {
+		xsys_thread_cancel(con->callbackThread);
+	}
 	
 	for (i = 0; (pkt = ll_ext_head(&(con->rxList))) != NULL; i++) {
 		xbee_freePkt(pkt);
@@ -232,6 +238,7 @@ EXPORT int xbee_conAttachCallback(struct xbee *xbee, struct xbee_con *con, void(
 		if (!xbee_default) return XBEE_ENOXBEE;
 		xbee = xbee_default;
 	}
+	if (!xbee_validate(xbee)) return XBEE_ENOXBEE;
 	if (!con) return XBEE_EMISSINGPARAM;
 	
 	if (xbee_conValidate(xbee, con, &conType)) return XBEE_EINVAL;
@@ -258,6 +265,7 @@ EXPORT int xbee_senddata(struct xbee *xbee, struct xbee_con *con, char *format, 
 		if (!xbee_default) return XBEE_ENOXBEE;
 		xbee = xbee_default;
 	}
+	if (!xbee_validate(xbee)) return XBEE_ENOXBEE;
 	if (!con) return XBEE_EMISSINGPARAM;
 	
 	if (xbee_conValidate(xbee, con, &conType)) return XBEE_EINVAL;

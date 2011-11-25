@@ -35,6 +35,7 @@ EXPORT char *xbee_getMode(struct xbee *xbee) {
 		if (!xbee_default) return NULL;
 		xbee = xbee_default;
 	}
+	if (!xbee_validate(xbee)) return NULL;
 	if (!xbee->mode) return NULL;
 	return xbee->mode->name;
 }
@@ -72,6 +73,7 @@ EXPORT int xbee_setMode(struct xbee *xbee, char *name) {
 		if (!xbee_default) return 1;
 		xbee = xbee_default;
 	}
+	if (!xbee_validate(xbee)) return 1;
 	if (!name) return 1;
 	
 	if (xbee->mode) {

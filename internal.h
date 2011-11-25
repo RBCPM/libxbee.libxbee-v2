@@ -43,11 +43,12 @@ struct xbee {
 	struct xbee_mode *mode;
 	
 	struct ll_head txList; /* data is struct bufData containing 'Frame Data' (no start delim, length or checksum) */
-	pthread_t txThread;
-	sem_t txSem;
+	xsys_thread txThread;
+	xsys_sem txSem;
 	int txRunning;
 	
-	pthread_t rxThread;
+	xsys_thread rxThread;
+	void *rxBuf;
 	int rxRunning;
 };
 
@@ -111,12 +112,23 @@ typedef int(*xbee_pktHandlerFunc)(struct xbee *xbee,
 #define ADD_HANDLER_TERMINATOR() \
 	{ 0, NULL, NULL, NULL, NULL }
 
+
+struct rxData {
+	unsigned char threadStarted;
+	unsigned char threadRunning;
+	unsigned char threadShutdown;
+	struct xbee *xbee;
+	xsys_sem sem;
+	struct ll_head list; /* data is struct bufData */
+	xsys_thread thread;
+};
+
 /* a NULL handler indicates the end of the list */
 struct xbee_pktHandler  {
 	unsigned char id;
 	char *handlerName; /* used for debug output, identifies handler function */
 	xbee_pktHandlerFunc handler;
-	void *rxData; /* used by listen thread (listen.c) */
+	struct rxData *rxData; /* used by listen thread (rx.c) */
 	struct xbee_conType *conType;
 	char initialized;
 };
@@ -156,7 +168,7 @@ struct xbee_mode {
 
 /* --- xbee.c --- */
 #define xbee_threadStart(a, b, c) _xbee_threadStart((a), (b), (void*(*)(void*))(c), (#c))
-int _xbee_threadStart(struct xbee *xbee, pthread_t *thread, void*(*startFunction)(void*), char *startFuncName);
+int _xbee_threadStart(struct xbee *xbee, xsys_thread *thread, void*(*startFunction)(void*), char *startFuncName);
 
 #endif /* __XBEE_INTERNAL_H */
 

@@ -94,7 +94,9 @@ struct xbee_conAddress {
 };
 
 /* --- xbee.c --- */
+void *xbee_validate(struct xbee *xbee);
 int xbee_setup(char *path, int baudrate, struct xbee **retXbee);
+void xbee_shutdown(struct xbee *xbee);
 void xbee_freePkt(struct xbee_pkt *pkt);
 
 /* --- mode.c --- */

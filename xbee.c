@@ -36,6 +36,15 @@ struct xbee *xbee_default = NULL;
 static struct ll_head xbee_list;
 static int xbee_initialized = 0;
 
+void *xbee_validate(struct xbee *xbee) {
+	if (!xbee_initialized) {
+		ll_init(&xbee_list);
+		xbee_initialized = 1;
+	}
+	
+	return ll_get_item(&xbee_list, xbee);
+}
+
 EXPORT int xbee_setup(char *path, int baudrate, struct xbee **retXbee) {
 	struct xbee *xbee;
 	int ret = XBEE_ENONE;
@@ -108,7 +117,98 @@ done:
 	return ret;
 }
 
-int _xbee_threadStart(struct xbee *xbee, pthread_t *thread, void*(*startFunction)(void*), char *startFuncName) {
+EXPORT void xbee_shutdown(struct xbee *xbee) {
+	int i, o;
+	struct xbee_conType *conType;
+	struct xbee_pktHandler *pktHandler;
+	struct xbee_con *con;
+	struct xbee_pkt *pkt;
+	struct bufData *buf;
+	
+	if (!xbee) {
+		if (!xbee_default) return;
+		xbee = xbee_default;
+	}
+	
+	if (!xbee_validate(xbee)) return;
+	
+	xbee->running = 0;
+	xbee->device.ready = 0;
+	xbee_log(2,"Shutting down libxbee...");
+	
+	xbee_log(5,"- Terminating down txThread...");
+	xsys_thread_cancel(xbee->txThread);
+	xsys_thread_join(xbee->txThread,NULL);
+	
+	for (o = 0; (buf = ll_ext_head(&xbee->txList)) != NULL; o++) {
+		free(buf);
+	}
+	if (o) xbee_log(5,"-- Free'd %d packets",o);
+	xbee_log(5, "-- Cleanup txSem...");
+	xsys_sem_destroy(&xbee->txSem);
+	
+	xbee_log(5,"- Terminating down rxThread...");
+	xsys_thread_cancel(xbee->rxThread);
+	xsys_thread_join(xbee->rxThread,NULL);
+	
+	xbee_log(5,"- Cleaning up connections...");
+	for (i = 0; xbee->mode->conTypes[i].name; i++) {
+		conType = &(xbee->mode->conTypes[i]);
+		xbee_log(5,"-- Cleaning up connection type '%s'...", conType->name);
+		
+		while ((con = ll_ext_head(&conType->conList)) != NULL) {
+			xbee_log(5,"--- Cleaning up connection @ %p", con);
+			
+			if (con->callbackRunning) {
+				xbee_log(5,"---- Terminating callback thread...");
+				xsys_thread_cancel(con->callbackThread);
+			}
+			
+			for (o = 0; (pkt = ll_ext_head(&con->rxList)) != NULL; o++) {
+				xbee_freePkt(pkt);
+			}
+			if (o) xbee_log(5,"---- Free'd %d packets", o);
+		}
+	}
+	
+	xbee_log(5,"- Cleaning up packet handlers...");
+	for (i = 0; xbee->mode->pktHandlers[i].handler; i++) {
+		pktHandler = &(xbee->mode->pktHandlers[i]);
+		xbee_log(5,"-- Cleaning up handler '%s'...", pktHandler->handlerName);
+		
+		if (pktHandler->rxData) {
+			xbee_log(5,"--- Cleaning up rxData...");
+			
+			if (pktHandler->rxData->threadRunning) {
+				xbee_log(5,"---- Terminating up handler thread");
+				xsys_thread_cancel(pktHandler->rxData->thread);
+				
+			}
+			
+			for (o = 0; (buf = ll_ext_head(&pktHandler->rxData->list)) != NULL; o++) {
+				free(buf);
+			}
+			if (o) xbee_log(5,"---- Free'd %d packets",o);
+			
+			xbee_log(5, "---- Cleanup rxData->sem...");
+			xsys_sem_destroy(&pktHandler->rxData->sem);
+		}
+	}
+	
+	xbee_log(5,"- Cleanup rxBuf...");
+	free(xbee->rxBuf);
+	
+	xbee_log(5,"- Closing device handles...");
+	xsys_fclose(xbee->device.f);
+	xsys_close(xbee->device.fd);
+	free(xbee->device.path);
+	
+	xbee_log(2,"Shutdown complete");
+	
+	return;
+}
+
+int _xbee_threadStart(struct xbee *xbee, xsys_thread *thread, void*(*startFunction)(void*), char *startFuncName) {
 	int i;
 	int ret;
 	if (!xbee)          return XBEE_ENOXBEE;
