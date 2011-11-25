@@ -247,7 +247,7 @@ int _xbee_rx(struct xbee *xbee) {
 			if (pktHandlers[pos].id == buf->buf[0]) break;
 		}
 		if (!pktHandlers[pos].handler) {
-			xbee_log("Unknown packet received / no packet handler (0x%02X)", buf[0]);
+			xbee_log("Unknown packet received / no packet handler (0x%02X)", buf->buf[0]);
 			continue;
 		}
 		xbee_log("Received packet (0x%02X - '%s')", buf->buf[0], pktHandlers[pos].handlerName);

@@ -63,7 +63,7 @@ struct xbee_con *xbee_conFromAddress(struct xbee *xbee, struct xbee_conType *con
 	return con;
 }
 
-EXPORT int xbee_conTypeIdFromName(struct xbee *xbee, char *name, unsigned char *id) {
+int _xbee_conTypeIdFromName(struct xbee *xbee, char *name, unsigned char *id, int ignoreInitialized) {
 	int i;
 	if (!xbee) {
 		if (!xbee_default) return 1;
@@ -74,7 +74,7 @@ EXPORT int xbee_conTypeIdFromName(struct xbee *xbee, char *name, unsigned char *
 	if (!xbee->mode->conTypes) return 1;
 	
 	for (i = 0; xbee->mode->conTypes[i].name; i++) {
-		if (!xbee->mode->conTypes[i].initialized) continue;
+		if (!ignoreInitialized && !xbee->mode->conTypes[i].initialized) continue;
 		if (!strcasecmp(name, xbee->mode->conTypes[i].name)) {
 			if (id) *id = i;
 			return 0;
@@ -82,19 +82,25 @@ EXPORT int xbee_conTypeIdFromName(struct xbee *xbee, char *name, unsigned char *
 	}
 	return 1;
 }
+EXPORT int xbee_conTypeIdFromName(struct xbee *xbee, char *name, unsigned char *id) {
+	return _xbee_conTypeIdFromName(xbee, name, id, 0);
+}
 
-struct xbee_conType *xbee_conTypeFromID(struct xbee_conType *conTypes, unsigned char id) {
+struct xbee_conType *_xbee_conTypeFromID(struct xbee_conType *conTypes, unsigned char id, int ignoreInitialized) {
 	int i;
 	if (!conTypes) return NULL;
 	
 	for (i = 0; conTypes[i].name; i++) {
-		if (!conTypes[i].initialized) continue;
+		if (!ignoreInitialized && !conTypes[i].initialized) continue;
 		if ((conTypes[i].rxEnabled && conTypes[i].rxID == id) ||
 				(conTypes[i].txEnabled && conTypes[i].txID == id)) {
 			return &(conTypes[i]);
 		}
 	}
 	return NULL;
+}
+struct xbee_conType *xbee_conTypeFromID(struct xbee_conType *conTypes, unsigned char id) {
+	return _xbee_conTypeFromID(conTypes, id, 0);
 }
 
 #warning TODO - implement these functions

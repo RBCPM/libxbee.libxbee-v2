@@ -66,6 +66,7 @@ done:
 EXPORT int xbee_setMode(struct xbee *xbee, char *name) {
 	struct xbee_mode *mode;
 	struct xbee_conType *conType;
+	int isRx;
 	int i, o, c;
 	if (!xbee) {
 		if (!xbee_default) return 1;
@@ -104,14 +105,16 @@ EXPORT int xbee_setMode(struct xbee *xbee, char *name) {
 			xbee_log("Duplicate packet handler found! (0x%02X) - The first will be used", mode->pktHandlers[i].id);
 			continue;
 		}
-		if ((conType = xbee_conTypeFromID(mode->conTypes, mode->pktHandlers[i].id)) == NULL) {
+		if ((conType = _xbee_conTypeFromID(mode->conTypes, mode->pktHandlers[i].id,1)) == NULL) {
 			xbee_log("No conType found for packet handler (0x%02X)", mode->pktHandlers[i].id);
 			continue;
 		}
 		if (conType->rxEnabled && conType->rxID == mode->pktHandlers[i].id) {
 			conType->rxHandler = &(mode->pktHandlers[i]);
+			isRx = 1;
 		} else if (conType->txEnabled && conType->txID == mode->pktHandlers[i].id) {
 			conType->txHandler = &(mode->pktHandlers[i]);
+			isRx = 0;
 		} else {
 			xbee_log("Umm... why am I here?");
 			continue;
@@ -120,7 +123,7 @@ EXPORT int xbee_setMode(struct xbee *xbee, char *name) {
 		ll_init(&conType->conList);
 		mode->pktHandlers[i].conType = conType;
 		mode->pktHandlers[i].initialized = 1;
-		xbee_log("Activated packet handler for ID: 0x%02X", mode->pktHandlers[i].id);
+		xbee_log("Activated %s packet handler for ID: 0x%02X,  conType: %s", ((isRx)?"Rx":"Tx"), mode->pktHandlers[i].id, conType->name);
 		c++;
 	}
 	xbee_log("Successfully activated %d packet handlers", c);
