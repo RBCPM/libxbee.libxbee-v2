@@ -94,7 +94,7 @@ int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
 			goto skip;
 		}
 		
-		if ((rxCon = xbee_conFromAddress(data->xbee, pktHandler->id, &con.address)) == NULL) {
+		if ((rxCon = xbee_conFromAddress(data->xbee, pktHandler->conType, &con.address)) == NULL) {
 			xbee_log("No connection for packet...");
 			goto skip;
 		}

@@ -21,7 +21,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-struct xbee_con *xbee_conFromAddress(struct xbee *xbee, unsigned char id, struct xbee_conAddress *address);
+struct xbee_con *xbee_conFromAddress(struct xbee *xbee, struct xbee_conType *conType, struct xbee_conAddress *address);
 struct xbee_conType *xbee_conTypeFromID(struct xbee_conType *conTypes, unsigned char id);
 
 #endif /* __XBEE_CONN_H */

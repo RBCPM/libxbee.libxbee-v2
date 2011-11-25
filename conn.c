@@ -25,13 +25,11 @@
 #include "errors.h"
 #include "conn.h"
 
-struct xbee_con *xbee_conFromAddress(struct xbee *xbee, unsigned char id, struct xbee_conAddress *address) {
+struct xbee_con *xbee_conFromAddress(struct xbee *xbee, struct xbee_conType *conType, struct xbee_conAddress *address) {
 	struct xbee_con *con;
-	struct xbee_conType *conType;
 	if (!xbee) return NULL;
 	if (!address) return NULL;
-	
-	if ((conType = xbee_conTypeFromID(xbee->mode->conTypes, id)) == NULL) return NULL;
+	if (!conType) return NULL;
 	
 	con = ll_get_next(&conType->conList, NULL);
 	if (!con) return NULL;
