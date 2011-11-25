@@ -162,7 +162,7 @@ int xbee_s1_DataTx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx
 	if (con->options.disableAck)   nBuf->buf[offset + 2] |= 0x01;
 	if (con->options.broadcastPAN) nBuf->buf[offset + 2] |= 0x04;
 	
-	nBuf->len = offset + 2 + (*buf)->len;
+	nBuf->len = offset + 3 + (*buf)->len;
 	if (nBuf->len > XBEE_MAX_PACKETLEN) {
 		ret = XBEE_ELENGTH;
 		goto die2;
