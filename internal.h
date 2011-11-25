@@ -115,15 +115,16 @@ struct xbee_pktHandler  {
 	xbee_pktHandlerFunc handler;
 	void *rxData; /* used by listen thread (listen.c) */
 	struct xbee_conType *conType;
+	char initialized;
 };
 
 /* ADD_TYPE_RXTX(rxID, txID, name) */
 #define ADD_TYPE_RXTX(a, b, c) \
-	{ 1, (a), 1, (b), (c),  NULL }
+	{ 1, (a), 1, (b),  (c), NULL }
 #define ADD_TYPE_RX(a, b) \
-	{ 1, (a), 0,  0 , (b),  NULL }
+	{ 1, (a), 0,  0 ,  (b), NULL }
 #define ADD_TYPE_TX(a, b) \
-	{ 0,  0,  1, (a), (b),  NULL }
+	{ 0,  0,  1, (a),  (b), NULL }
 #define ADD_TYPE_TERMINATOR() \
 	{ 0,  0,  0,  0 , NULL, NULL }
 
@@ -135,7 +136,10 @@ struct xbee_conType {
 	unsigned char txID;
 	char *name;
 	void *data;
+	struct xbee_pktHandler *rxHandler;
+	struct xbee_pktHandler *txHandler;
 	struct ll_head conList; /* data is struct xbee_con */
+	char initialized;
 };
 
 struct xbee_mode {

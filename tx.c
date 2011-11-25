@@ -62,6 +62,11 @@ int _xbee_tx(struct xbee *xbee) {
 
 int xbee_tx(struct xbee *xbee) {
 	int ret;
+	
+#warning CHECK - does this do what I want it to?
+	/* prevent having to xsys_thread_join() */
+	pthread_detach(pthread_self());
+	
 	if (!xbee) return 1;
 	
 	xbee->txRunning = 1;

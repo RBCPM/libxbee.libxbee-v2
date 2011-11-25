@@ -29,7 +29,7 @@ struct xbee_con *xbee_conFromAddress(struct xbee *xbee, struct xbee_conType *con
 	struct xbee_con *con;
 	if (!xbee) return NULL;
 	if (!address) return NULL;
-	if (!conType) return NULL;
+	if (!conType || !conType->initialized) return NULL;
 	
 	con = ll_get_next(&conType->conList, NULL);
 	if (!con) return NULL;
@@ -74,6 +74,7 @@ EXPORT int xbee_conTypeIdFromName(struct xbee *xbee, char *name, unsigned char *
 	if (!xbee->mode->conTypes) return 1;
 	
 	for (i = 0; xbee->mode->conTypes[i].name; i++) {
+		if (!xbee->mode->conTypes[i].initialized) continue;
 		if (!strcasecmp(name, xbee->mode->conTypes[i].name)) {
 			if (id) *id = i;
 			return 0;
@@ -87,6 +88,7 @@ struct xbee_conType *xbee_conTypeFromID(struct xbee_conType *conTypes, unsigned 
 	if (!conTypes) return NULL;
 	
 	for (i = 0; conTypes[i].name; i++) {
+		if (!conTypes[i].initialized) continue;
 		if ((conTypes[i].rxEnabled && conTypes[i].rxID == id) ||
 				(conTypes[i].txEnabled && conTypes[i].txID == id)) {
 			return &(conTypes[i]);

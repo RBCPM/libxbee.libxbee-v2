@@ -244,6 +244,7 @@ int _xbee_rx(struct xbee *xbee) {
 		pktHandlers = xbee->mode->pktHandlers;
 		
 		for (pos = 0; pktHandlers[pos].handler; pos++) {
+			if (!pktHandlers[pos].initialized) continue;
 			if (pktHandlers[pos].id == buf->buf[0]) break;
 		}
 		if (!pktHandlers[pos].handler) {
@@ -275,6 +276,10 @@ done:
 int xbee_rx(struct xbee *xbee) {
 	int ret;
 	if (!xbee) return 1;
+	
+#warning CHECK - does this do what I want it to?
+	/* prevent having to xsys_thread_join() */
+	pthread_detach(pthread_self());
 	
 	xbee->rxRunning = 1;
 	while (xbee->running) {
