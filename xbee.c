@@ -36,11 +36,9 @@ struct xbee *xbee_default = NULL;
 static struct ll_head xbee_list;
 static int xbee_initialized = 0;
 
-EXPORT int xbee_setup(char *path, int baudrate, FILE *logTarget, struct xbee **retXbee) {
+EXPORT int xbee_setup(char *path, int baudrate, struct xbee **retXbee) {
 	struct xbee *xbee;
 	int ret = XBEE_ENONE;
-	
-	xbee_logSetTarget(logTarget);
 	
 	if (!xbee_initialized) {
 		ll_init(&xbee_list);
@@ -67,7 +65,7 @@ EXPORT int xbee_setup(char *path, int baudrate, FILE *logTarget, struct xbee **r
 	xbee->running = 1;
 	
 	if (xbee_threadStart(xbee, &(xbee->rxThread), xbee_rx)) {
-		xbee_perror("xbee_threadStart(xbee_rx)");
+		xbee_perror(1,"xbee_threadStart(xbee_rx)");
 		ret = XBEE_ETHREAD;
 		goto die4;
 	}
@@ -81,7 +79,7 @@ EXPORT int xbee_setup(char *path, int baudrate, FILE *logTarget, struct xbee **r
 		goto die6;
 	}
 	if (xbee_threadStart(xbee, &(xbee->txThread), xbee_tx)) {
-		xbee_perror("xbee_threadStart(xbee_tx)");
+		xbee_perror(1,"xbee_threadStart(xbee_tx)");
 		ret = XBEE_ETHREAD;
 		goto die7;
 	}
@@ -120,10 +118,10 @@ int _xbee_threadStart(struct xbee *xbee, pthread_t *thread, void*(*startFunction
 	
 	if ((*thread) != 0) {
 		if (!(ret = xsys_thread_tryjoin(*thread, (void**)&i))) {
-			xbee_log("%s() has previously ended and returned %d... restarting...", startFuncName, i);
+			xbee_log(1,"%s() has previously ended and returned %d... restarting...", startFuncName, i);
 		} else {
 			if (ret == EBUSY) {
-				xbee_log("%s() is still running...", startFuncName);
+				xbee_log(1,"%s() is still running...", startFuncName);
 				return XBEE_EBUSY;
 			} else if (ret == EINVAL ||
 								 ret == EDEADLK) {
@@ -136,7 +134,7 @@ int _xbee_threadStart(struct xbee *xbee, pthread_t *thread, void*(*startFunction
 	if (xsys_thread_create(thread, startFunction, (void*)xbee)) {
 		return XBEE_ETHREAD;
 	}
-	xbee_log("Started thread! %s()", startFuncName);
+	xbee_log(1,"Started thread! %s()", startFuncName);
 	return 0;
 }
 

@@ -71,7 +71,7 @@ int xbee_tx(struct xbee *xbee) {
 	xbee->txRunning = 1;
 	while (xbee->running) {
 		ret = _xbee_tx(xbee);
-		xbee_log("_xbee_tx() returned %d\n", ret);
+		xbee_log(1,"_xbee_tx() returned %d\n", ret);
 		if (!xbee->running) break;
 		usleep(XBEE_TX_RESTART_DELAY * 1000);
 	}

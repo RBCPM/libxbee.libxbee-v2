@@ -61,7 +61,7 @@ int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
 	pkt = NULL;
 	for (;!data->threadShutdown;) {
 		if (xsys_sem_wait(&data->sem)) {
-			xbee_perror("xsys_sem_wait()");
+			xbee_perror(1,"xsys_sem_wait()");
 			usleep(100000);
 			continue;
 		}
@@ -69,7 +69,7 @@ int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
 		if (!pkt) {
 			/* only allocate memory if nessesary (re-use where possible) */
 			if ((pkt = calloc(1, sizeof(struct xbee_pkt))) == NULL) {
-				xbee_perror("calloc()");
+				xbee_perror(1,"calloc()");
 				usleep(100000);
 				continue;
 			}
@@ -77,24 +77,24 @@ int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
 		
 		buf = ll_ext_head(&data->list);
 		if (!buf) {
-			xbee_log("No buffer!");
+			xbee_log(1,"No buffer!");
 			continue;
 		}
 		
-		xbee_log("New %d byte packet! @ %p", buf->len, buf);
+		xbee_log(2,"Processing packet @ %p", buf);
 		
 		memset(&con, 0, sizeof(struct xbee_con));
 		if ((ret = pktHandler->handler(data->xbee, pktHandler, 1, &buf, &con, &pkt)) != 0) {
-			xbee_log("Failed to handle packet... pktHandler->handler() returned %d", ret);
+			xbee_log(1,"Failed to handle packet... pktHandler->handler() returned %d", ret);
 			goto skip;
 		}
 		if (!pkt) {
-			xbee_log("pktHandler->handler() failed to return a packet!");
+			xbee_log(1,"pktHandler->handler() failed to return a packet!");
 			goto skip;
 		}
 		
 		if ((rxCon = xbee_conFromAddress(data->xbee, pktHandler->conType, &con.address)) == NULL) {
-			xbee_log("No connection for packet...");
+			xbee_log(1,"No connection for packet...");
 			goto skip;
 		}
 		
@@ -191,7 +191,7 @@ int _xbee_rx(struct xbee *xbee) {
 			if ((ret = xbee_io_getEscapedByte(xbee->device.f, &c)) != 0) {
 				if (ret == XBEE_EEOF) {
 					if (--retries == 0) {
-						xbee_log("Too many device failures (EOF)");
+						xbee_log(0,"Too many device failures (EOF)");
 						goto die2;
 					}
 					/* try closing and re-opening the device */
@@ -203,7 +203,7 @@ int _xbee_rx(struct xbee *xbee) {
 					usleep(10000);
 					continue;
 				}
-				xbee_perror("xbee_io_getEscapedByte()");
+				xbee_perror(1,"xbee_io_getEscapedByte()");
 				ret = XBEE_EIO;
 				goto die2;
 			}
@@ -229,15 +229,15 @@ int _xbee_rx(struct xbee *xbee) {
     /* check the checksum */
     if ((chksum & 0xFF) != 0xFF) {
 			int i;
-    	xbee_log("Invalid checksum detected... %d byte packet discarded", buf->len);
+    	xbee_log(0,"Invalid checksum detected... %d byte packet discarded", buf->len);
 			for (i = 0; i < len; i++) {
-				xbee_log("%3d: 0x%02X",i, buf->buf[i]);
+				xbee_log(1,"%3d: 0x%02X",i, buf->buf[i]);
 			}
     	continue;
     }
 		
 		if (!xbee->mode) {
-			xbee_log("libxbee's mode has not been set, please use xbee_setMode()");
+			xbee_log(-999,"libxbee's mode has not been set, please use xbee_setMode()");
 			continue;
 		}
 		pktHandlers = xbee->mode->pktHandlers;
@@ -247,16 +247,16 @@ int _xbee_rx(struct xbee *xbee) {
 			if (pktHandlers[pos].id == buf->buf[0]) break;
 		}
 		if (!pktHandlers[pos].handler) {
-			xbee_log("Unknown packet received / no packet handler (0x%02X)", buf->buf[0]);
+			xbee_log(1,"Unknown packet received / no packet handler (0x%02X)", buf->buf[0]);
 			continue;
 		}
-		xbee_log("Received packet (0x%02X - '%s')", buf->buf[0], pktHandlers[pos].handlerName);
+		xbee_log(2,"Received %d byte packet (0x%02X - '%s') @ %p", buf->len, buf->buf[0], pktHandlers[pos].handlerName, buf);
 		
 		/* try (and ignore failure) to realloc buf to the correct length */
 		if ((p = realloc(buf, sizeof(struct bufData) + (sizeof(unsigned char) * (buf->len - 1)))) != NULL) buf = p;
 
 		if ((ret = _xbee_rxHandler(xbee, &pktHandlers[pos], buf)) != 0) {
-			xbee_log("Failed to handle packet... _xbee_rxHandler() returned %d", ret);
+			xbee_log(1,"Failed to handle packet... _xbee_rxHandler() returned %d", ret);
 			if (p) free(buf);
 		}
 		
@@ -282,7 +282,7 @@ int xbee_rx(struct xbee *xbee) {
 	xbee->rxRunning = 1;
 	while (xbee->running) {
 		ret = _xbee_rx(xbee);
-		xbee_log("_xbee_rx() returned %d\n", ret);
+		xbee_log(1,"_xbee_rx() returned %d\n", ret);
 		if (!xbee->running) break;
 		usleep(XBEE_RX_RESTART_DELAY * 1000);
 	}

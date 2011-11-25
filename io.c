@@ -39,7 +39,7 @@ int xbee_io_open(struct xbee *xbee) {
 	
 	/* open the device */
 	if ((fd = xsys_open(xbee->device.path, O_RDWR | O_NOCTTY)) == -1) {
-		xbee_perror("xsys_open()");
+		xbee_perror(1,"xsys_open()");
 		ret = XBEE_EOPENFAILED;
 		goto die1;
 	}
@@ -50,7 +50,7 @@ int xbee_io_open(struct xbee *xbee) {
 	/* open the device as a buffered FILE */
 	if ((f = xsys_fdopen(fd, "r+")) == NULL) {
 		xsys_close(fd);
-		xbee_perror("xsys_fdopen()");
+		xbee_perror(1,"xsys_fdopen()");
 		ret = XBEE_EOPENFAILED;
 		goto die2;
 	}
@@ -64,11 +64,11 @@ int xbee_io_open(struct xbee *xbee) {
 	/* setup serial port (baud, control lines etc...) */
 	if ((ret = xsys_setupSerial(fd, f, xbee->device.baudrate)) != 0) {
 		if (ret == XBEE_ESETUP) {
-			xbee_perror("xsys_setupSerial()");
+			xbee_perror(1,"xsys_setupSerial()");
 		} else if (ret == XBEE_EINVALBAUDRATE) {
-			xbee_log("Invalid baud rate selected...");
+			xbee_log(0,"Invalid baud rate selected...");
 		} else {
-			xbee_log("xsys_setupSerial() failed");
+			xbee_log(0,"xsys_setupSerial() failed");
 		}
 		goto die3;
 	}
@@ -117,7 +117,7 @@ int xbee_io_getRawByte(FILE *f, unsigned char *cOut) {
 
 	do {
 		/*if ((ret = xsys_select(f, NULL)) == -1) {
-			xbee_perror("xbee_select()");
+			xbee_perror(1,"xbee_select()");
 			if (errno == EINTR) {
 				ret = XBEE_ESELECTINTERRUPTED;
 			} else {
@@ -131,14 +131,14 @@ int xbee_io_getRawByte(FILE *f, unsigned char *cOut) {
 			if (xsys_ferror(f)) {
 				char *s;
 				if (xsys_feof(f)) {
-					xbee_logstderr("EOF detected...");
+					xbee_logstderr(1,"EOF detected...");
 					ret = XBEE_EEOF;
 					goto done;
 				}
 				if (!(s = strerror(errno))) {
-					xbee_logstderr("Unknown error detected (%d)",errno);
+					xbee_logstderr(1,"Unknown error detected (%d)",errno);
 				} else {
-					xbee_logstderr("Error detected (%s)",s);
+					xbee_logstderr(1,"Error detected (%s)",s);
 				}
 				usleep(1000);
 			} else {
@@ -187,14 +187,14 @@ int xbee_io_writeRawByte(FILE *f, unsigned char c) {
 			if (xsys_ferror(f)) {
 				char *s;
 				if (xsys_feof(f)) {
-					xbee_logstderr("EOF detected...");
+					xbee_logstderr(1,"EOF detected...");
 					ret = XBEE_EEOF;
 					goto done;
 				}
 				if (!(s = strerror(errno))) {
-					xbee_logstderr("Unknown error detected (%d)",errno);
+					xbee_logstderr(1,"Unknown error detected (%d)",errno);
 				} else {
-					xbee_logstderr("Error detected (%s)",s);
+					xbee_logstderr(1,"Error detected (%s)",s);
 				}
 				usleep(1000);
 			} else {

@@ -103,13 +103,12 @@ int xsys_setupSerial(int fd, FILE *stream, int baudrate) {
   case 57600: chosenbaud = B57600;  break;
   case 115200:chosenbaud = B115200; break;
   default:
-    xbee_log("Invalid baud rate selected");
     return XBEE_EINVALBAUDRATE;
   };
 	
   /* setup the baud rate and other io attributes */
   if (tcgetattr(fd, &tc)) {
-		xbee_perror("tcgetattr()");
+		xbee_perror(1,"tcgetattr()");
 		return XBEE_ESETUP;
 	}
   /* input flags */
@@ -143,17 +142,17 @@ int xsys_setupSerial(int fd, FILE *stream, int baudrate) {
 	tc.c_cc[VMIN] = 1;                /* wait for at least 1 character */
 	/* set i/o baud rate */
   if (cfsetspeed(&tc, chosenbaud)) {
-		xbee_perror("cfsetspeed()");
+		xbee_perror(1,"cfsetspeed()");
 		return XBEE_ESETUP;
 	}
   if (tcsetattr(fd, TCSANOW, &tc)) {
-		xbee_perror("tcsetattr()");
+		xbee_perror(1,"tcsetattr()");
 		return XBEE_ESETUP;
 	}
 	
 	/* enable input & output transmission */
   if (tcflow(fd, TCOON | TCION)) {
-		xbee_perror("tcflow");
+		xbee_perror(1,"tcflow");
 		return XBEE_ESETUP;
 	}
 	

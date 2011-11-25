@@ -93,7 +93,7 @@ struct xbee_conAddress {
 };
 
 /* --- xbee.c --- */
-int xbee_setup(char *path, int baudrate, FILE *logTarget, struct xbee **retXbee);
+int xbee_setup(char *path, int baudrate, struct xbee **retXbee);
 void xbee_freePkt(struct xbee_pkt *pkt);
 
 /* --- mode.c --- */
@@ -111,6 +111,7 @@ int xbee_conAttachCallback(struct xbee *xbee, void *con, void(*callback)(void *c
 
 /* --- log.c --- */
 void xbee_logSetTarget(FILE *f);
+void xbee_logSetLevel(int level);
 
 #endif /* __XBEE_H */
 

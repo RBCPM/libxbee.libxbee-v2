@@ -85,7 +85,7 @@ EXPORT int xbee_setMode(struct xbee *xbee, char *name) {
 	if (!xbee_modes[i]) return 1;
 	mode = (struct xbee_mode*)xbee_modes[i];
 	
-	xbee_log("Set mode to '%s'", name);
+	xbee_log(1,"Set mode to '%s'", name);
 	
 	/* wipe all connection types */
 	for (i = 0; mode->conTypes[i].name; i++) {
@@ -102,11 +102,11 @@ EXPORT int xbee_setMode(struct xbee *xbee, char *name) {
 			if (mode->pktHandlers[o].id == mode->pktHandlers[i].id) break;
 		}
 		if (o != i) {
-			xbee_log("Duplicate packet handler found! (0x%02X) - The first will be used", mode->pktHandlers[i].id);
+			xbee_log(3,"Duplicate packet handler found! (0x%02X) - The first will be used", mode->pktHandlers[i].id);
 			continue;
 		}
 		if ((conType = _xbee_conTypeFromID(mode->conTypes, mode->pktHandlers[i].id,1)) == NULL) {
-			xbee_log("No conType found for packet handler (0x%02X)", mode->pktHandlers[i].id);
+			xbee_log(3,"No conType found for packet handler (0x%02X)", mode->pktHandlers[i].id);
 			continue;
 		}
 		if (conType->rxEnabled && conType->rxID == mode->pktHandlers[i].id) {
@@ -116,35 +116,35 @@ EXPORT int xbee_setMode(struct xbee *xbee, char *name) {
 			conType->txHandler = &(mode->pktHandlers[i]);
 			isRx = 0;
 		} else {
-			xbee_log("Umm... why am I here?");
+			xbee_log(1,"Umm... why am I here?");
 			continue;
 		}
 		conType->initialized = 1;
 		ll_init(&conType->conList);
 		mode->pktHandlers[i].conType = conType;
 		mode->pktHandlers[i].initialized = 1;
-		xbee_log("Activated %s packet handler for ID: 0x%02X,  conType: %s", ((isRx)?"Rx":"Tx"), mode->pktHandlers[i].id, conType->name);
+		xbee_log(3,"Activated %s packet handler for ID: 0x%02X,  conType: %s", ((isRx)?"Rx":"Tx"), mode->pktHandlers[i].id, conType->name);
 		c++;
 	}
-	xbee_log("Successfully activated %d packet handlers", c);
+	xbee_log(2,"Successfully activated %d packet handlers", c);
 	
 	/* check for unused conTypes */
 	c = 0;
 	for (i = 0; mode->conTypes[i].name; i++) {
 		if (!mode->conTypes[i].initialized) {
 			if (mode->conTypes[i].rxEnabled && mode->conTypes[i].txEnabled) {
-				xbee_log("Unused conType for Rx: 0x%02X,  Tx: 0x%02X,  Name: %s", mode->conTypes[i].rxID, mode->conTypes[i].txID, mode->conTypes[i].name);
+				xbee_log(3,"Unused conType for Rx: 0x%02X,  Tx: 0x%02X,  Name: %s", mode->conTypes[i].rxID, mode->conTypes[i].txID, mode->conTypes[i].name);
 			} else if (mode->conTypes[i].rxEnabled) {
-				xbee_log("Unused conType for Rx: 0x%02X,  Tx: ----,  Name: %s", mode->conTypes[i].rxID, mode->conTypes[i].name);
+				xbee_log(3,"Unused conType for Rx: 0x%02X,  Tx: ----,  Name: %s", mode->conTypes[i].rxID, mode->conTypes[i].name);
 			} else if (mode->conTypes[i].txEnabled) {
-				xbee_log("Unused conType for Rx: ----,  Tx: 0x%02X,  Name: %s", mode->conTypes[i].txID, mode->conTypes[i].name);
+				xbee_log(3,"Unused conType for Rx: ----,  Tx: 0x%02X,  Name: %s", mode->conTypes[i].txID, mode->conTypes[i].name);
 			} else {
-				xbee_log("Unused conType for Rx: ----,  Tx: ----,  Name: %s", mode->conTypes[i].name);
+				xbee_log(3,"Unused conType for Rx: ----,  Tx: ----,  Name: %s", mode->conTypes[i].name);
 			}
 			c++;
 		}
 	}
-	if (c) xbee_log("Found %d unused conTypes...", c);
+	if (c) xbee_log(2,"Found %d unused conTypes...", c);
 	
 	xbee->mode = mode;
 	
