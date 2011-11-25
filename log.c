@@ -58,7 +58,7 @@ EXPORT void xbee_logSetLevel(int level) {
 }
 
 int xbee_shouldLog(int minLevel) {
-	return !(xbeeLogLevel < minLevel);
+	return !(xbee_logLevel < minLevel);
 }
 
 void _xbee_log(const char *file, int line, const char *function, int minLevel, char *format, ...) {
@@ -70,7 +70,7 @@ void _xbee_log(const char *file, int line, const char *function, int minLevel, c
 	xsys_mutex_lock(&xbee_logMutex);
 	
   va_start(ap, format);
-  vsnprintf(xbee_logBuffer, XBEE_LOG_BUFFERLEN - 1, format, ap);
+  vsnprintf(xbee_logBuffer, XBEE_LOG_BUFFERLEN, format, ap);
   va_end(ap);
 	fprintf(xbee_logf, "%s:%d %s(): %s\n", file, line, function, xbee_logBuffer);
 	
@@ -90,7 +90,7 @@ void _xbee_perror(const char *file, int line, const char *function, int minLevel
 	xsys_mutex_lock(&xbee_logMutex);
 	
   va_start(ap, format);
-  vsnprintf(xbee_logBuffer, XBEE_LOG_BUFFERLEN - 1, format, ap);
+  vsnprintf(xbee_logBuffer, XBEE_LOG_BUFFERLEN, format, ap);
   va_end(ap);
 	
 	i = strlen(xbee_logBuffer);
@@ -113,7 +113,7 @@ void _xbee_logstderr(const char *file, int line, const char *function, int minLe
 	xsys_mutex_lock(&xbee_logMutex);
 	
   va_start(ap, format);
-  vsnprintf(xbee_logBuffer, XBEE_LOG_BUFFERLEN - 1, format, ap);
+  vsnprintf(xbee_logBuffer, XBEE_LOG_BUFFERLEN, format, ap);
   va_end(ap);
 	fprintf(xbee_logf, "%s:%d %s(): %s\n", file, line, function, xbee_logBuffer);
 	if (xbee_logf != stderr) fprintf(stderr, "%s:%d %s(): %s\n", file, line, function, xbee_logBuffer);
