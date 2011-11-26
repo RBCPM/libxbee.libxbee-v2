@@ -134,7 +134,7 @@ EXPORT void xbee_shutdown(struct xbee *xbee) {
 	xbee_log(2,"Shutting down libxbee...");
 	ll_ext_item(&xbee_list, xbee);
 	
-	xbee_log(5,"- Terminating down txThread...");
+	xbee_log(5,"- Terminating txThread...");
 	xsys_thread_cancel(xbee->txThread);
 	xsys_thread_join(xbee->txThread,NULL);
 	
@@ -145,7 +145,7 @@ EXPORT void xbee_shutdown(struct xbee *xbee) {
 	xbee_log(5, "-- Cleanup txSem...");
 	xsys_sem_destroy(&xbee->txSem);
 	
-	xbee_log(5,"- Terminating down rxThread...");
+	xbee_log(5,"- Terminating rxThread...");
 	xsys_thread_cancel(xbee->rxThread);
 	xsys_thread_join(xbee->rxThread,NULL);
 	

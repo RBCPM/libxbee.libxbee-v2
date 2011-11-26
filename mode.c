@@ -37,7 +37,6 @@ void xbee_cleanupMode(struct xbee *xbee) {
 	struct xbee_con *con;
 	struct xbee_pkt *pkt;
 	struct bufData *buf;
-	if (!xbee_validate(xbee)) return;
 	if (!xbee->mode) return;
 	xbee_log(5,"- Cleaning up connections...");
 	for (i = 0; xbee->mode->conTypes[i].name; i++) {
@@ -68,9 +67,8 @@ void xbee_cleanupMode(struct xbee *xbee) {
 			xbee_log(5,"--- Cleaning up rxData...");
 			
 			if (pktHandler->rxData->threadRunning) {
-				xbee_log(5,"---- Terminating up handler thread");
+				xbee_log(5,"---- Terminating handler thread");
 				xsys_thread_cancel(pktHandler->rxData->thread);
-				
 			}
 			
 			for (o = 0; (buf = ll_ext_head(&pktHandler->rxData->list)) != NULL; o++) {
