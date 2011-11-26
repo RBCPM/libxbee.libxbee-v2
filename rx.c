@@ -119,6 +119,9 @@ int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
 			goto skip;
 		}
 		
+		if (con.address.frameID_enabled) {
+			xbee_log(4,"Frame ID: 0x%02X", con.address.frameID);
+		}
 		if (con.address.addr16_enabled) {
 			xbee_log(4,"16-bit address: 0x%02X%02X", con.address.addr16[0], con.address.addr16[1]);
 		}

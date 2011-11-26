@@ -51,25 +51,30 @@ struct xbee_con *xbee_conFromAddress(struct xbee_conType *conType, struct xbee_c
 			if (!address->addr64_enabled && !address->addr16_enabled) break;
 		}
 		if (address->addr64_enabled && con->address.addr64_enabled) {
-			xbee_log(10,"Testing 64-bit address: 0x%02X%02X%02X%02X 0x%02X%02X%02X%02X", address->addr64[0],
-			                                                                             address->addr64[1],
-			                                                                             address->addr64[2],
-			                                                                             address->addr64[3],
-			                                                                             address->addr64[4],
-			                                                                             address->addr64[5],
-			                                                                             address->addr64[6],
-			                                                                             address->addr64[7]);
+			xbee_log(10,"Testing 64-bit address: 0x%02X%02X%02X%02X 0x%02X%02X%02X%02X", con->address.addr64[0],
+			                                                                             con->address.addr64[1],
+			                                                                             con->address.addr64[2],
+			                                                                             con->address.addr64[3],
+			                                                                             con->address.addr64[4],
+			                                                                             con->address.addr64[5],
+			                                                                             con->address.addr64[6],
+			                                                                             con->address.addr64[7]);
 
 			/* if 64-bit address matches, accept, else decline (don't even accept matching 16-bit address */
 			if (!memcmp(address->addr64, con->address.addr64, 8)) {
 				xbee_log(10,"    Success!");
 				break;
 			} else {
+				int i;
+				for (i = 0; i < 8; i++) {
+					printf("%d 0x%02X vs 0x%02X = %d\n",i,address->addr64[i],con->address.addr64[i],((address->addr64[i] == con->address.addr64[i])?1:0));
+				}
+				xbee_log(10,"    No match...");
 				continue;
 			}
 		}
 		if (address->addr16_enabled && con->address.addr16_enabled) {
-			xbee_log(10,"Testing 16-bit address: 0x%02X%02X",  address->addr16[0], address->addr16[1]);
+			xbee_log(10,"Testing 16-bit address: 0x%02X%02X",  con->address.addr16[0], con->address.addr16[1]);
 			/* if 16-bit address matches accept */
 			if (!memcmp(address->addr16, con->address.addr16, 2)) {
 				xbee_log(10,"    Success!");
