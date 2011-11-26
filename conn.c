@@ -46,6 +46,7 @@ struct xbee_con *xbee_conFromAddress(struct xbee_conType *conType, struct xbee_c
 		if (address->frameID_enabled && con->address.frameID_enabled) {
 			/* frameID must match */
 			if (address->frameID != con->address.frameID) continue;
+			if (!address->addr64_enabled && !address->addr16_enabled) break;
 		}
 		if (address->addr64_enabled && con->address.addr64_enabled) {
 			xbee_log(10,"Testing 64-bit address: 0x%02X%02X%02X%02X 0x%02X%02X%02X%02X", address->addr64[0],
