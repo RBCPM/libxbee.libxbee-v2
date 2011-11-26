@@ -27,6 +27,8 @@
 /* defaults to stderr */
 #define XBEE_LOG_DEFAULT_TARGET stderr
 
+#warning TODO - user access to log
+
 static FILE *xbee_logf = NULL;
 static int xbee_logLevel = 0;
 static int xbee_logfSet = 0;

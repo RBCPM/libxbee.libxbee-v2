@@ -27,6 +27,8 @@
 #include "errors.h"
 #include "ll.h"
 
+#warning TODO - xbee_conOptions(), xbee_conSleep(), xbee_conWake(), destroySelf, waitForAck, conUserData, xbee_nsenddata(), xbee_vsenddata()
+
 struct xbee_con *xbee_conFromAddress(struct xbee_conType *conType, struct xbee_conAddress *address) {
 	struct xbee_con *con;
 	if (!address) return NULL;
