@@ -107,11 +107,11 @@ int xbee_modeSet(struct xbee *xbee, char *name);
 
 /* --- conn.c --- */
 int xbee_conTypeIdFromName(struct xbee *xbee, char *name, unsigned char *id);
-int xbee_conNew(struct xbee *xbee, struct xbee_con **retCon, unsigned char id, struct xbee_conAddress *address);
+int xbee_conNew(struct xbee *xbee, struct xbee_con **retCon, unsigned char id, struct xbee_conAddress *address, void *userData);
 int xbee_conTx(struct xbee *xbee, struct xbee_con *con, char *format, ...);
 struct xbee_pkt *xbee_conRx(struct xbee *xbee, struct xbee_con *con);
-int xbee_conEnd(struct xbee *xbee, struct xbee_con *con);
-int xbee_conAttachCallback(struct xbee *xbee, struct xbee_con *con, void(*callback)(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt **pkt), void **prevCallback);
+int xbee_conEnd(struct xbee *xbee, struct xbee_con *con, void **userData);
+int xbee_conAttachCallback(struct xbee *xbee, struct xbee_con *con, void(*callback)(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt **pkt, void **userData), void **prevCallback);
 
 /* --- log.c --- */
 void xbee_logSetTarget(FILE *f);

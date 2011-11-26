@@ -27,7 +27,7 @@
 #include "errors.h"
 #include "ll.h"
 
-#warning TODO - xbee_conOptions(), xbee_conSleep(), xbee_conWake(), destroySelf, waitForAck, conUserData, xbee_nsenddata(), xbee_vsenddata()
+#warning TODO - xbee_conOptions(), xbee_conSleep(), xbee_conWake(), destroySelf, waitForAck, xbee_nsenddata(), xbee_vsenddata()
 
 struct xbee_con *xbee_conFromAddress(struct xbee_conType *conType, struct xbee_conAddress *address) {
 	struct xbee_con *con;
@@ -142,7 +142,7 @@ int xbee_conValidate(struct xbee *xbee, struct xbee_con *con, struct xbee_conTyp
 	return XBEE_ENONE;
 }
 
-EXPORT int xbee_conNew(struct xbee *xbee, struct xbee_con **retCon, unsigned char id, struct xbee_conAddress *address) {
+EXPORT int xbee_conNew(struct xbee *xbee, struct xbee_con **retCon, unsigned char id, struct xbee_conAddress *address, void *userData) {
 	int ret;
 	struct xbee_con *con;
 	struct xbee_conType *conType;
@@ -171,6 +171,7 @@ EXPORT int xbee_conNew(struct xbee *xbee, struct xbee_con **retCon, unsigned cha
 	
 	con->conType = conType;
 	memcpy(&con->address, address, sizeof(struct xbee_conAddress));
+	con->userData = userData;
 	ll_init(&con->rxList);
 	ll_add_tail(&(con->conType->conList), con);
 	*retCon = con;
@@ -208,7 +209,7 @@ EXPORT struct xbee_pkt *xbee_conRx(struct xbee *xbee, struct xbee_con *con) {
 	return pkt;
 }
 
-EXPORT int xbee_conEnd(struct xbee *xbee, struct xbee_con *con) {
+EXPORT int xbee_conEnd(struct xbee *xbee, struct xbee_con *con, void **userData) {
 	struct xbee_conType *conType;
 	struct xbee_pkt *pkt;
 	int i;
@@ -230,12 +231,15 @@ EXPORT int xbee_conEnd(struct xbee *xbee, struct xbee_con *con) {
 		xbee_pktFree(pkt);
 	}
 	xbee_log(2,"Ended '%s' connection @ %p (destroyed %d packets)", conType->name, con, i);
+
+	if (userData) *userData = con->userData;
+
 	free(con);
 	
 	return XBEE_ENONE;
 }
 
-EXPORT int xbee_conAttachCallback(struct xbee *xbee, struct xbee_con *con, void(*callback)(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt **pkt), void **prevCallback) {
+EXPORT int xbee_conAttachCallback(struct xbee *xbee, struct xbee_con *con, void(*callback)(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt **pkt, void **userData), void **prevCallback) {
 	struct xbee_conType *conType;
 	if (!xbee) {
 		if (!xbee_default) return XBEE_ENOXBEE;

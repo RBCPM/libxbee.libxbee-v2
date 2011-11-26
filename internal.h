@@ -67,10 +67,12 @@ struct xbee_con {
 	
 	struct xbee_conOptions options;
 	
-	void(*callback)(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt **pkt);
+	void(*callback)(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt **pkt, void **userData);
 	xsys_thread callbackThread;
 	char callbackStarted;
 	char callbackRunning;
+	
+	void *userData; /* for use by the developer, THEY ARE RESPONSIBLE FOR LEAKS! */
 	
 	int rxPackets;
 	int txPackets;

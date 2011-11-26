@@ -58,7 +58,7 @@ int _xbee_rxCallbackThread(struct xbee_callbackInfo *info) {
 			ll_add_head(&(con->rxList), pkt);
 			break;
 		}
-		con->callback(xbee, con, &pkt);
+		con->callback(xbee, con, &pkt, &con->userData);
 		if (pkt) free(pkt);
 	}
 	
