@@ -30,6 +30,62 @@
 #include "conn.h"
 #include "xbee_sG.h"
 
+void xbee_cleanupMode(struct xbee *xbee) {
+	int i, o;
+	struct xbee_conType *conType;
+	struct xbee_pktHandler *pktHandler;
+	struct xbee_con *con;
+	struct xbee_pkt *pkt;
+	struct bufData *buf;
+	if (!xbee_validate(xbee)) return;
+	if (!xbee->mode) return;
+	xbee_log(5,"- Cleaning up connections...");
+	for (i = 0; xbee->mode->conTypes[i].name; i++) {
+		conType = &(xbee->mode->conTypes[i]);
+		xbee_log(5,"-- Cleaning up connection type '%s'...", conType->name);
+		
+		while ((con = ll_ext_head(&conType->conList)) != NULL) {
+			xbee_log(5,"--- Cleaning up connection @ %p", con);
+			
+			if (con->callbackRunning) {
+				xbee_log(5,"---- Terminating callback thread...");
+				xsys_thread_cancel(con->callbackThread);
+			}
+			
+			for (o = 0; (pkt = ll_ext_head(&con->rxList)) != NULL; o++) {
+				xbee_freePkt(pkt);
+			}
+			if (o) xbee_log(5,"---- Free'd %d packets", o);
+		}
+	}
+
+	xbee_log(5,"- Cleaning up packet handlers...");
+	for (i = 0; xbee->mode->pktHandlers[i].handler; i++) {
+		pktHandler = &(xbee->mode->pktHandlers[i]);
+		xbee_log(5,"-- Cleaning up handler '%s'...", pktHandler->handlerName);
+		
+		if (pktHandler->rxData) {
+			xbee_log(5,"--- Cleaning up rxData...");
+			
+			if (pktHandler->rxData->threadRunning) {
+				xbee_log(5,"---- Terminating up handler thread");
+				xsys_thread_cancel(pktHandler->rxData->thread);
+				
+			}
+			
+			for (o = 0; (buf = ll_ext_head(&pktHandler->rxData->list)) != NULL; o++) {
+				free(buf);
+			}
+			if (o) xbee_log(5,"---- Free'd %d packets",o);
+			
+			xbee_log(5, "---- Cleanup rxData->sem...");
+			xsys_sem_destroy(&pktHandler->rxData->sem);
+			
+			free(pktHandler->rxData);
+		}
+	}
+}
+
 EXPORT char *xbee_getMode(struct xbee *xbee) {
 	if (!xbee) {
 		if (!xbee_default) return NULL;
@@ -76,9 +132,7 @@ EXPORT int xbee_setMode(struct xbee *xbee, char *name) {
 	if (!xbee_validate(xbee)) return 1;
 	if (!name) return 1;
 	
-	if (xbee->mode) {
-#warning TODO - cleanup current mode
-	}
+	xbee_cleanupMode(xbee);
 
 	/* check that the mode specified is in our list of avaliable modes (xbee_sG.c) */
 	for (i = 0; xbee_modes[i]; i++) {

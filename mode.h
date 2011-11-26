@@ -21,5 +21,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+void xbee_cleanupMode(struct xbee *xbee);
+
 #endif /* __XBEE_MODE_H */
 

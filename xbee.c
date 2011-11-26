@@ -25,6 +25,7 @@
 #include <errno.h>
 
 #include "internal.h"
+#include "mode.h"
 #include "io.h"
 #include "ll.h"
 #include "errors.h"
@@ -118,11 +119,7 @@ done:
 }
 
 EXPORT void xbee_shutdown(struct xbee *xbee) {
-	int i, o;
-	struct xbee_conType *conType;
-	struct xbee_pktHandler *pktHandler;
-	struct xbee_con *con;
-	struct xbee_pkt *pkt;
+	int o;
 	struct bufData *buf;
 	
 	if (!xbee) {
@@ -152,51 +149,7 @@ EXPORT void xbee_shutdown(struct xbee *xbee) {
 	xsys_thread_cancel(xbee->rxThread);
 	xsys_thread_join(xbee->rxThread,NULL);
 	
-	xbee_log(5,"- Cleaning up connections...");
-	for (i = 0; xbee->mode->conTypes[i].name; i++) {
-		conType = &(xbee->mode->conTypes[i]);
-		xbee_log(5,"-- Cleaning up connection type '%s'...", conType->name);
-		
-		while ((con = ll_ext_head(&conType->conList)) != NULL) {
-			xbee_log(5,"--- Cleaning up connection @ %p", con);
-			
-			if (con->callbackRunning) {
-				xbee_log(5,"---- Terminating callback thread...");
-				xsys_thread_cancel(con->callbackThread);
-			}
-			
-			for (o = 0; (pkt = ll_ext_head(&con->rxList)) != NULL; o++) {
-				xbee_freePkt(pkt);
-			}
-			if (o) xbee_log(5,"---- Free'd %d packets", o);
-		}
-	}
-	
-	xbee_log(5,"- Cleaning up packet handlers...");
-	for (i = 0; xbee->mode->pktHandlers[i].handler; i++) {
-		pktHandler = &(xbee->mode->pktHandlers[i]);
-		xbee_log(5,"-- Cleaning up handler '%s'...", pktHandler->handlerName);
-		
-		if (pktHandler->rxData) {
-			xbee_log(5,"--- Cleaning up rxData...");
-			
-			if (pktHandler->rxData->threadRunning) {
-				xbee_log(5,"---- Terminating up handler thread");
-				xsys_thread_cancel(pktHandler->rxData->thread);
-				
-			}
-			
-			for (o = 0; (buf = ll_ext_head(&pktHandler->rxData->list)) != NULL; o++) {
-				free(buf);
-			}
-			if (o) xbee_log(5,"---- Free'd %d packets",o);
-			
-			xbee_log(5, "---- Cleanup rxData->sem...");
-			xsys_sem_destroy(&pktHandler->rxData->sem);
-			
-			free(pktHandler->rxData);
-		}
-	}
+	xbee_cleanupMode(xbee);
 	
 	xbee_log(5,"- Cleanup rxBuf...");
 	free(xbee->rxBuf);
