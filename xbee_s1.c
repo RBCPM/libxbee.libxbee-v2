@@ -334,8 +334,8 @@ static struct xbee_conType conTypes[] = {
 };
 
 static struct xbee_pktHandler pktHandlers[] = {
-	ADD_HANDLER(0x08, xbee_sG_atRx),      /* local AT */
-	ADD_HANDLER(0x88, xbee_sG_atTx),      /* local AT */
+	ADD_HANDLER(0x88, xbee_sG_atRx),      /* local AT */
+	ADD_HANDLER(0x08, xbee_sG_atTx),      /* local AT */
 	ADD_HANDLER(0x09, xbee_sG_atTx),      /* local AT - queued */
 
 	ADD_HANDLER(0x97, xbee_sG_atRx),      /* remote AT */

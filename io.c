@@ -154,6 +154,7 @@ int xbee_io_getRawByte(FILE *f, unsigned char *cOut) {
 		ret = XBEE_EIORETRIES;
 	} else {
 		*cOut = c;
+		xbee_log(20,"READ: 0x%02X [%c]", c, ((c >= 32 && c <= 126)?c:' '));
 		ret = XBEE_ENONE;
 	}
 	
@@ -214,6 +215,7 @@ done:
 }
 
 int xbee_io_writeEscapedByte(FILE *f, unsigned char c) {
+	xbee_log(20,"WRITE: 0x%02X [%c]", c, ((c >= 32 && c <= 126)?c:' '));
 	if (c == 0x7E ||
 			c == 0x7D ||
 			c == 0x11 ||

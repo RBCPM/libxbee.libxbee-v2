@@ -242,7 +242,6 @@ EXPORT int xbee_conAttachCallback(struct xbee *xbee, struct xbee_con *con, void(
 	if (!con) return XBEE_EMISSINGPARAM;
 	
 	if (xbee_conValidate(xbee, con, &conType)) return XBEE_EINVAL;
-	if (!ll_get_item(&(conType->conList), con)) return XBEE_EINVAL;
 	
 	if (prevCallback) *prevCallback = con->callback;
 	con->callback = callback;
@@ -269,7 +268,6 @@ EXPORT int xbee_senddata(struct xbee *xbee, struct xbee_con *con, char *format, 
 	if (!con) return XBEE_EMISSINGPARAM;
 	
 	if (xbee_conValidate(xbee, con, &conType)) return XBEE_EINVAL;
-	if (!ll_get_item(&(conType->conList), con)) return XBEE_EINVAL;
 	if (!conType->txHandler) return XBEE_ECANTTX;
 	
 	if ((buf = calloc(1, sizeof(struct bufData) + (sizeof(unsigned char) * (XBEE_MAX_PACKETLEN - 1)))) == NULL) {
@@ -282,6 +280,7 @@ EXPORT int xbee_senddata(struct xbee *xbee, struct xbee_con *con, char *format, 
 	buf->len = vsnprintf((char*)buf->buf, XBEE_MAX_PACKETLEN, format, ap);
 	va_end(ap);
 	
+	xbee_log(6,"Executing handler (%s)...", conType->txHandler->handlerName);
 	if ((ret = conType->txHandler->handler(xbee, conType->txHandler, 0, &buf, con, NULL)) != XBEE_ENONE) goto die2;
 	
 	/* a bit of sanity checking... */
