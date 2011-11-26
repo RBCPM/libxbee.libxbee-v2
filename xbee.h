@@ -116,6 +116,11 @@ int xbee_conAttachCallback(struct xbee *xbee, struct xbee_con *con, void(*callba
 /* --- log.c --- */
 void xbee_logSetTarget(FILE *f);
 void xbee_logSetLevel(int level);
+#ifndef __XBEE_INTERNAL_H
+void _xbee_logDev(const char *file, int line, const char *function, int minLevel, char *format, ...);
+#define xbee_log(...) \
+	_xbee_logDev(__FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
+#endif /* __XBEE_INTERNAL_H */
 
 #endif /* __XBEE_H */
 

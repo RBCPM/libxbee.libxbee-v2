@@ -27,8 +27,6 @@
 /* defaults to stderr */
 #define XBEE_LOG_DEFAULT_TARGET stderr
 
-#warning TODO - user access to log
-
 static FILE *xbee_logf = NULL;
 static int xbee_logLevel = 0;
 static int xbee_logfSet = 0;
@@ -65,6 +63,27 @@ int xbee_shouldLog(int minLevel) {
 
 void _xbee_logWrite(FILE *stream, const char *file, int line, const char *function) {
 	fprintf(stream, "[%s:%d] %s(): %s\n", file, line, function, xbee_logBuffer);
+}
+
+void _xbee_logDevWrite(FILE *stream, const char *file, int line, const char *function) {
+	fprintf(stream, "DEV:[%s:%d] %s(): %s\n", file, line, function, xbee_logBuffer);
+}
+
+EXPORT void _xbee_logDev(const char *file, int line, const char *function, int minLevel, char *format, ...) {
+  va_list ap;
+	if (!xbee_logReady) if (xbee_logPrepare()) return;
+	if (!xbee_logf) return;
+	if (xbee_logLevel < minLevel) return;
+	
+	xsys_mutex_lock(&xbee_logMutex);
+	
+  va_start(ap, format);
+  vsnprintf(xbee_logBuffer, XBEE_LOG_BUFFERLEN, format, ap);
+  va_end(ap);
+	
+	_xbee_logDevWrite(xbee_logf, file, line, function);
+	
+	xsys_mutex_unlock(&xbee_logMutex);
 }
 
 void _xbee_log(const char *file, int line, const char *function, int minLevel, char *format, ...) {

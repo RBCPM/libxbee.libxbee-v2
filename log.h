@@ -26,17 +26,17 @@
 
 int xbee_shouldLog(int minLevel);
 
+void _xbee_log(const char *file, int line, const char *function, int minLevel, char *format, ...);
 #define xbee_log(...) \
 	_xbee_log(__FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
-void _xbee_log(const char *file, int line, const char *function, int minLevel, char *format, ...);
 
+void _xbee_perror(const char *file, int line, const char *function, int minLevel, char *format, ...);
 #define xbee_perror(...) \
 	_xbee_perror(__FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
-void _xbee_perror(const char *file, int line, const char *function, int minLevel, char *format, ...);
 
+void _xbee_logstderr(const char *file, int line, const char *function, int minLevel, char *format, ...);
 #define xbee_logstderr(...) \
 	_xbee_logstderr(__FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
-void _xbee_logstderr(const char *file, int line, const char *function, int minLevel, char *format, ...);
 
 #endif /* __XBEE_LOG_H */
 
