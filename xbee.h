@@ -97,19 +97,20 @@ struct xbee_conAddress {
 void *xbee_validate(struct xbee *xbee);
 int xbee_setup(char *path, int baudrate, struct xbee **retXbee);
 void xbee_shutdown(struct xbee *xbee);
-void xbee_freePkt(struct xbee_pkt *pkt);
+
+void xbee_pktFree(struct xbee_pkt *pkt);
 
 /* --- mode.c --- */
-char **xbee_getModes(void);
-char *xbee_getMode(struct xbee *xbee);
-int xbee_setMode(struct xbee *xbee, char *name);
+char **xbee_modeGetList(void);
+char *xbee_modeGet(struct xbee *xbee);
+int xbee_modeSet(struct xbee *xbee, char *name);
 
 /* --- conn.c --- */
 int xbee_conTypeIdFromName(struct xbee *xbee, char *name, unsigned char *id);
-int xbee_newcon(struct xbee *xbee, struct xbee_con **retCon, unsigned char id, struct xbee_conAddress *address);
-int xbee_senddata(struct xbee *xbee, struct xbee_con *con, char *format, ...);
-struct xbee_pkt *xbee_getdata(struct xbee *xbee, struct xbee_con *con);
-int xbee_endcon(struct xbee *xbee, struct xbee_con *con);
+int xbee_conNew(struct xbee *xbee, struct xbee_con **retCon, unsigned char id, struct xbee_conAddress *address);
+int xbee_conTx(struct xbee *xbee, struct xbee_con *con, char *format, ...);
+struct xbee_pkt *xbee_conRx(struct xbee *xbee, struct xbee_con *con);
+int xbee_conEnd(struct xbee *xbee, struct xbee_con *con);
 int xbee_conAttachCallback(struct xbee *xbee, struct xbee_con *con, void(*callback)(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt **pkt), void **prevCallback);
 
 /* --- log.c --- */

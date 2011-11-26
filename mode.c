@@ -52,7 +52,7 @@ void xbee_cleanupMode(struct xbee *xbee) {
 			}
 			
 			for (o = 0; (pkt = ll_ext_head(&con->rxList)) != NULL; o++) {
-				xbee_freePkt(pkt);
+				xbee_pktFree(pkt);
 			}
 			if (o) xbee_log(5,"---- Free'd %d packets", o);
 		}
@@ -84,7 +84,7 @@ void xbee_cleanupMode(struct xbee *xbee) {
 	}
 }
 
-EXPORT char *xbee_getMode(struct xbee *xbee) {
+EXPORT char *xbee_modeGet(struct xbee *xbee) {
 	if (!xbee) {
 		if (!xbee_default) return NULL;
 		xbee = xbee_default;
@@ -94,7 +94,7 @@ EXPORT char *xbee_getMode(struct xbee *xbee) {
 	return xbee->mode->name;
 }
 
-EXPORT char **xbee_getModes(void) {
+EXPORT char **xbee_modeGetList(void) {
 	char **modes;
 	int i;
 	
@@ -118,7 +118,7 @@ done:
 	return modes;
 }
 
-EXPORT int xbee_setMode(struct xbee *xbee, char *name) {
+EXPORT int xbee_modeSet(struct xbee *xbee, char *name) {
 	struct xbee_mode *mode;
 	struct xbee_conType *conType;
 	int isRx;

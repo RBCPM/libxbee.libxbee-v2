@@ -142,7 +142,7 @@ int xbee_conValidate(struct xbee *xbee, struct xbee_con *con, struct xbee_conTyp
 	return XBEE_ENONE;
 }
 
-EXPORT int xbee_newcon(struct xbee *xbee, struct xbee_con **retCon, unsigned char id, struct xbee_conAddress *address) {
+EXPORT int xbee_conNew(struct xbee *xbee, struct xbee_con **retCon, unsigned char id, struct xbee_conAddress *address) {
 	int ret;
 	struct xbee_con *con;
 	struct xbee_conType *conType;
@@ -183,7 +183,7 @@ done:
 	return ret;
 }
 
-EXPORT struct xbee_pkt *xbee_getdata(struct xbee *xbee, struct xbee_con *con) {
+EXPORT struct xbee_pkt *xbee_conRx(struct xbee *xbee, struct xbee_con *con) {
 	struct xbee_pkt *pkt;
 	if (!xbee) {
 		if (!xbee_default) return NULL;
@@ -208,7 +208,7 @@ EXPORT struct xbee_pkt *xbee_getdata(struct xbee *xbee, struct xbee_con *con) {
 	return pkt;
 }
 
-EXPORT int xbee_endcon(struct xbee *xbee, struct xbee_con *con) {
+EXPORT int xbee_conEnd(struct xbee *xbee, struct xbee_con *con) {
 	struct xbee_conType *conType;
 	struct xbee_pkt *pkt;
 	int i;
@@ -227,7 +227,7 @@ EXPORT int xbee_endcon(struct xbee *xbee, struct xbee_con *con) {
 	}
 	
 	for (i = 0; (pkt = ll_ext_head(&(con->rxList))) != NULL; i++) {
-		xbee_freePkt(pkt);
+		xbee_pktFree(pkt);
 	}
 	xbee_log(2,"Ended '%s' connection @ %p (destroyed %d packets)", conType->name, con, i);
 	free(con);
@@ -258,7 +258,7 @@ EXPORT int xbee_conAttachCallback(struct xbee *xbee, struct xbee_con *con, void(
 	return XBEE_ENONE;
 }
 
-EXPORT int xbee_senddata(struct xbee *xbee, struct xbee_con *con, char *format, ...) {
+EXPORT int xbee_conTx(struct xbee *xbee, struct xbee_con *con, char *format, ...) {
   va_list ap;
 	int ret = XBEE_ENONE;
 	struct bufData *buf, *oBuf;

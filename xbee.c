@@ -196,7 +196,7 @@ int _xbee_threadStart(struct xbee *xbee, xsys_thread *thread, void*(*startFuncti
 	return 0;
 }
 
-EXPORT void xbee_freePkt(struct xbee_pkt *pkt) {
+EXPORT void xbee_pktFree(struct xbee_pkt *pkt) {
 	if (!pkt) return;
 	free(pkt);
 }
