@@ -62,7 +62,7 @@ int xbee_shouldLog(int minLevel) {
 }
 
 void _xbee_logWrite(FILE *stream, const char *file, int line, const char *function) {
-	fprintf(stream, "%s:%d %s(): %s\n", file, line, function, xbee_logBuffer);
+	fprintf(stream, "[%s:%d] %s(): %s\n", file, line, function, xbee_logBuffer);
 }
 
 void _xbee_log(const char *file, int line, const char *function, int minLevel, char *format, ...) {
