@@ -6,6 +6,7 @@ LIBREV:=0
 BUILDDIR:=.build
 DESTDIR:=lib
 SRCS:=conn io ll log mode rx tx xbee xbee_s1 xbee_s2 xbee_sG xsys
+RELEASE_ITEMS:=lib/libxbee.so lib/libxbee.so.dbg lib/libxbee.a xbee.h
 LIBS:=rt pthread
 
 AR:=ar
@@ -21,7 +22,7 @@ CLINKS:=$(addprefix -l,$(LIBS)) $(DEBUG)
 
 ###############################################################################
 
-.PHONY: all clean new
+.PHONY: all clean new release
 .PRECIOUS: .%.dir $(BUILDDIR)/%.d
 
 OBJS:=$(addprefix $(BUILDDIR)/,$(addsuffix .o,$(SRCS)))
@@ -35,13 +36,17 @@ clean:
 	rm -rdf $(DESTDIR) .$(DESTDIR).dir
 
 
+release: all
+	tar -cjvf libxbee_v$(LIBMAJ).$(LIBMIN).$(LIBREV)_`date +%Y-%m-%d`_`git rev-parse --verify --short HEAD`.tar.gz $(RELEASE_ITEMS)
+
+
 %.dir:
 	mkdir -p $*
 	@touch .$@
 
 
 $(DESTDIR)/$(LIBOUT).so: $(DESTDIR)/$(LIBOUT).o
-	$(GCC) -shared -Wl,-soname,$(LIBOUT).so.$(LIBMAJ).$(LIBMIN) $(CLINKS) $(filter %.o,$^) -o $@
+	$(GCC) -shared -Wl,-soname,$(LIBOUT).so.$(LIBMAJ).$(LIBMIN).$(LIBREV) $(CLINKS) $(filter %.o,$^) -o $@
 	$(OBJCOPY) --only-keep-debug $@ $@.dbg
 	$(OBJCOPY) --add-gnu-debuglink=$@.dbg $@
 	$(OBJCOPY) --strip-debug $@
