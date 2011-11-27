@@ -27,7 +27,7 @@
 #include "errors.h"
 #include "ll.h"
 
-#warning TODO - xbee_conSleep(), xbee_conWake(), waitForAck, xbee_vsenddata()
+#warning TODO - xbee_conSleep(), xbee_conWake(), waitForAck
 
 
 int _xbee_conTypeIdFromName(struct xbee *xbee, char *name, unsigned char *id, int ignoreInitialized) {
@@ -217,12 +217,20 @@ EXPORT struct xbee_pkt *xbee_conRx(struct xbee *xbee, struct xbee_con *con) {
 
 EXPORT int xbee_conTx(struct xbee *xbee, struct xbee_con *con, char *format, ...) {
   va_list ap;
+	int ret;
+
+	va_start(ap, format);
+	ret = xbee_convTx(xbee, con, format, ap);
+	va_end(ap);
+
+	return ret;
+}
+
+EXPORT int xbee_convTx(struct xbee *xbee, struct xbee_con *con, char *format, va_list ap) {
 	char data[XBEE_MAX_PACKETLEN];
 	int length;
 
-	va_start(ap, format);
 	length = vsnprintf(data, XBEE_MAX_PACKETLEN, format, ap);
-	va_end(ap);
 
 	return xbee_connTx(xbee, con, data, length);
 }
