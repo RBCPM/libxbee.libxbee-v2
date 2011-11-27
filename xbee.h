@@ -25,7 +25,25 @@
 #include <stdarg.h>
 
 struct xbee;
+
+
+struct xbee_conAddress {
+	unsigned char addr16_enabled;
+	unsigned char addr16[2];
+	
+	unsigned char addr64_enabled;
+	unsigned char addr64[8];
+	
+	unsigned char frameID_enabled;
+	unsigned char frameID;
+};
+struct xbee_conOptions {
+	unsigned char disableAck   : 1;
+	unsigned char broadcastPAN : 1;
+	unsigned char applyChanges : 1;
+};
 struct xbee_con;
+
 
 struct xbee_pkt_ioSample {
 	unsigned char d0 : 1;
@@ -82,17 +100,6 @@ struct xbee_pkt {
 	struct xbee_pkt_ioData ioData;
 };
 
-struct xbee_conAddress {
-	unsigned char addr16_enabled;
-	unsigned char addr16[2];
-	
-	unsigned char addr64_enabled;
-	unsigned char addr64[8];
-	
-	unsigned char frameID_enabled;
-	unsigned char frameID;
-};
-
 /* --- xbee.c --- */
 void *xbee_validate(struct xbee *xbee);
 int xbee_setup(char *path, int baudrate, struct xbee **retXbee);
@@ -112,6 +119,7 @@ int xbee_conTx(struct xbee *xbee, struct xbee_con *con, char *format, ...);
 struct xbee_pkt *xbee_conRx(struct xbee *xbee, struct xbee_con *con);
 int xbee_conEnd(struct xbee *xbee, struct xbee_con *con, void **userData);
 int xbee_conAttachCallback(struct xbee *xbee, struct xbee_con *con, void(*callback)(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt **pkt, void **userData), void **prevCallback);
+int xbee_conOptions(struct xbee *xbee, struct xbee_con *con, struct xbee_conOptions *getOptions, struct xbee_conOptions *setOptions);
 
 /* --- log.c --- */
 void xbee_logSetTarget(FILE *f);

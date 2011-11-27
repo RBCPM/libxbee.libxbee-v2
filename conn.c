@@ -27,7 +27,7 @@
 #include "errors.h"
 #include "ll.h"
 
-#warning TODO - xbee_conOptions(), xbee_conSleep(), xbee_conWake(), waitForAck, xbee_nsenddata(), xbee_vsenddata()
+#warning TODO - xbee_conSleep(), xbee_conWake(), waitForAck, xbee_nsenddata(), xbee_vsenddata()
 
 struct xbee_con *xbee_conFromAddress(struct xbee_conType *conType, struct xbee_conAddress *address) {
 	struct xbee_con *con;
@@ -313,4 +313,20 @@ die2:
 die1:
 done:
 	return ret;
+}
+
+EXPORT int xbee_conOptions(struct xbee *xbee, struct xbee_con *con, struct xbee_conOptions *getOptions, struct xbee_conOptions *setOptions) {
+	if (!xbee) {
+		if (!xbee_default) return XBEE_ENOXBEE;
+		xbee = xbee_default;
+	}
+	if (!xbee_validate(xbee)) return XBEE_ENOXBEE;
+	if (!con) return XBEE_EMISSINGPARAM;
+	
+	if (xbee_conValidate(xbee, con, NULL)) return XBEE_EINVAL;
+
+	if (getOptions) memcpy(getOptions, &con->options, sizeof(struct xbee_conOptions));
+	if (setOptions) memcpy(&con->options, setOptions, sizeof(struct xbee_conOptions));
+
+	return XBEE_ENONE;
 }

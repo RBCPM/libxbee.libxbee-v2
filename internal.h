@@ -54,12 +54,6 @@ struct xbee {
 
 /* ######################################################################### */
 
-struct xbee_conOptions {
-	unsigned char disableAck   : 1;
-	unsigned char broadcastPAN : 1;
-	unsigned char applyChanges : 1;
-};
-
 struct xbee_con {
 	struct xbee_conType *conType;
 	
