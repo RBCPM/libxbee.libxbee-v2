@@ -45,7 +45,11 @@ int xbee_io_open(struct xbee *xbee) {
 	}
 	
 	/* lock the device */
-#warning TODO - lock the device
+	if (xsys_lockf(fd)) {
+		xbee_logstderr(1,"xsys_lockf(): failed to lock device");
+		ret = XBEE_EOPENFAILED;
+		goto die2;
+	}
 	
 	/* open the device as a buffered FILE */
 	if ((f = xsys_fdopen(fd, "r+")) == NULL) {

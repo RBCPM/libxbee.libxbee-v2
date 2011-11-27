@@ -40,6 +40,7 @@
 
 /* file I/O */
 int xsys_open(char *path, int flags);
+int xsys_lockf(int fd);
 int xsys_close(int fd);
 ssize_t xsys_read(int fd, void *buf, size_t count);
 ssize_t xsys_write(int fd, void *buf, size_t count);

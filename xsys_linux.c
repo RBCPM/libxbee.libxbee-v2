@@ -33,6 +33,18 @@
 int xsys_open(char *path, int flags) {
 	return open(path, flags);
 }
+int xsys_lockf(int fd) {
+	struct flock fl;
+	fl.l_type = F_WRLCK | F_RDLCK;
+	fl.l_whence = SEEK_SET;
+	fl.l_start = 0;
+	fl.l_len = 0;
+	fl.l_pid = getpid();
+	if (fcntl(fd, F_SETLK, &fl) == -1) {
+		return XBEE_EUNKNOWN;
+	}
+	return XBEE_ENONE;
+}
 int xsys_close(int fd) {
 	return close(fd);
 }
