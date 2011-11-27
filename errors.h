@@ -45,6 +45,7 @@
 #define XBEE_ECANTTX                                       -21
 #define XBEE_ENOTREADY                                     -22
 #define XBEE_ECALLBACK                                     -23
+#define XBEE_EUNESCAPED_START                              -24
 
 #endif /* __XBEE_ERRORS_H */
 

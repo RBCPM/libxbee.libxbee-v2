@@ -168,7 +168,9 @@ int xbee_io_getEscapedByte(FILE *f, unsigned char *cOut) {
 	*cOut = 0;
 
 	if ((ret = xbee_io_getRawByte(f, &c)) != 0) return ret;
-	if (c == 0x7D) {
+	if (c == 0x7E) {
+		ret = XBEE_EUNESCAPED_START;
+	} else if (c == 0x7D) {
 		if ((ret = xbee_io_getRawByte(f, &c)) != 0) return ret;
 		c ^= 0x20;
 	}

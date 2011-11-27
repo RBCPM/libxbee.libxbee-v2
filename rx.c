@@ -274,9 +274,13 @@ int _xbee_rx(struct xbee *xbee) {
 		
 		for (pos = -3; pos < 0 || (pos < len && pos < XBEE_MAX_PACKETLEN); pos++) {
 			if ((ret = xbee_io_getEscapedByte(xbee->device.f, &c)) != 0) {
-				if (ret == XBEE_EEOF) {
+				if (ret == XBEE_EUNESCAPED_START) {
+					if (pos > -3) xbee_log(3,"Unexpected start byte... restarting packet capture");
+					pos = -3;
+					continue;
+				} else if (ret == XBEE_EEOF) {
 					if (--retries == 0) {
-						xbee_log(0,"Too many device failures (EOF)");
+						xbee_log(1,"Too many device failures (EOF)");
 						goto die2;
 					}
 					/* try closing and re-opening the device */
@@ -314,7 +318,7 @@ int _xbee_rx(struct xbee *xbee) {
     /* check the checksum */
     if ((chksum & 0xFF) != 0xFF) {
 			int i;
-    	xbee_log(0,"Invalid checksum detected... %d byte packet discarded", buf->len);
+    	xbee_log(1,"Invalid checksum detected... %d byte packet discarded", buf->len);
 			for (i = 0; i < len; i++) {
 				xbee_log(1,"%3d: 0x%02X",i, buf->buf[i]);
 			}
