@@ -27,7 +27,7 @@
 #include "errors.h"
 #include "ll.h"
 
-#warning TODO - xbee_conOptions(), xbee_conSleep(), xbee_conWake(), destroySelf, waitForAck, xbee_nsenddata(), xbee_vsenddata()
+#warning TODO - xbee_conOptions(), xbee_conSleep(), xbee_conWake(), waitForAck, xbee_nsenddata(), xbee_vsenddata()
 
 struct xbee_con *xbee_conFromAddress(struct xbee_conType *conType, struct xbee_conAddress *address) {
 	struct xbee_con *con;
@@ -228,16 +228,17 @@ EXPORT int xbee_conEnd(struct xbee *xbee, struct xbee_con *con, void **userData)
 	if (xbee_conValidate(xbee, con, &conType)) return XBEE_EINVAL;
 	if (ll_ext_item(&(conType->conList), con)) return XBEE_EINVAL;
 	
-	if (con->callbackRunning) {
-		xsys_thread_cancel(con->callbackThread);
-	}
-	
 	for (i = 0; (pkt = ll_ext_head(&(con->rxList))) != NULL; i++) {
 		xbee_pktFree(pkt);
 	}
-	xbee_log(2,"Ended '%s' connection @ %p (destroyed %d packets)", conType->name, con, i);
+	xbee_log(2,"Ended '%s' connection @ %p (destroyed %d packet%s)", conType->name, con, i, (i!=1)?"s":"");
 
 	if (userData) *userData = con->userData;
+
+	if (con->callbackRunning) {
+		con->destroySelf = 1;
+		return XBEE_ECALLBACK;
+	}
 
 	free(con);
 	

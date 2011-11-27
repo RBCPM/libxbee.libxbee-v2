@@ -60,10 +60,15 @@ int _xbee_rxCallbackThread(struct xbee_callbackInfo *info) {
 		}
 		con->callback(xbee, con, &pkt, &con->userData);
 		if (pkt) free(pkt);
+		if (con->destroySelf) break;
 	}
-	
+
 	con->callbackRunning = 0;
-	
+
+	if (con->destroySelf) {
+		free(con);
+	}
+
 	return 0;
 }
 

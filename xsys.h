@@ -69,6 +69,7 @@ int xsys_thread_cancel(xsys_thread thread);
 int xsys_thread_join(xsys_thread thread, void **retval);
 int xsys_thread_tryjoin(xsys_thread thread, void **retval);
 int xsys_thread_detach_self(void);
+int xsys_thread_iAm(xsys_thread thread);
 
 
 /* mutexes */
