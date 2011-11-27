@@ -27,7 +27,7 @@
 #include "errors.h"
 #include "ll.h"
 
-#warning TODO - xbee_conSleep(), xbee_conWake(), waitForAck, xbee_nsenddata(), xbee_vsenddata()
+#warning TODO - xbee_conSleep(), xbee_conWake(), waitForAck, xbee_vsenddata()
 
 
 int _xbee_conTypeIdFromName(struct xbee *xbee, char *name, unsigned char *id, int ignoreInitialized) {
@@ -217,6 +217,17 @@ EXPORT struct xbee_pkt *xbee_conRx(struct xbee *xbee, struct xbee_con *con) {
 
 EXPORT int xbee_conTx(struct xbee *xbee, struct xbee_con *con, char *format, ...) {
   va_list ap;
+	char data[XBEE_MAX_PACKETLEN];
+	int length;
+
+	va_start(ap, format);
+	length = vsnprintf(data, XBEE_MAX_PACKETLEN, format, ap);
+	va_end(ap);
+
+	return xbee_connTx(xbee, con, data, length);
+}
+
+EXPORT int xbee_connTx(struct xbee *xbee, struct xbee_con *con, char *data, int length) {
 	int ret = XBEE_ENONE;
 	struct bufData *buf, *oBuf;
 	struct xbee_conType *conType;
@@ -230,15 +241,14 @@ EXPORT int xbee_conTx(struct xbee *xbee, struct xbee_con *con, char *format, ...
 	if (xbee_conValidate(xbee, con, &conType)) return XBEE_EINVAL;
 	if (!conType->txHandler) return XBEE_ECANTTX;
 	
-	if ((buf = calloc(1, sizeof(struct bufData) + (sizeof(unsigned char) * (XBEE_MAX_PACKETLEN - 1)))) == NULL) {
+	if ((buf = calloc(1, sizeof(struct bufData) + (sizeof(unsigned char) * (length - 1)))) == NULL) {
 		ret = XBEE_ENOMEM;
 		goto die1;
 	}
 	oBuf = buf;
 	
-	va_start(ap, format);
-	buf->len = vsnprintf((char*)buf->buf, XBEE_MAX_PACKETLEN, format, ap);
-	va_end(ap);
+	buf->len = length;
+	memcpy(buf->buf, data, length);
 	
 	xbee_log(6,"Executing handler (%s)...", conType->txHandler->handlerName);
 	if ((ret = conType->txHandler->handler(xbee, conType->txHandler, 0, &buf, con, NULL)) != XBEE_ENONE) goto die2;
