@@ -120,8 +120,11 @@ int xbee_conTx(struct xbee *xbee, struct xbee_con *con, char *format, ...);
 int xbee_convTx(struct xbee *xbee, struct xbee_con *con, char *format, va_list ap);
 int xbee_connTx(struct xbee *xbee, struct xbee_con *con, char *data, int length);
 int xbee_conEnd(struct xbee *xbee, struct xbee_con *con, void **userData);
+
 int xbee_conAttachCallback(struct xbee *xbee, struct xbee_con *con, void(*callback)(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt **pkt, void **userData), void **prevCallback);
 int xbee_conOptions(struct xbee *xbee, struct xbee_con *con, struct xbee_conOptions *getOptions, struct xbee_conOptions *setOptions);
+int xbee_conSleep(struct xbee *xbee, struct xbee_con *con, int wakeOnRx);
+int xbee_conWake(struct xbee *xbee, struct xbee_con *con);
 
 /* --- log.c --- */
 void xbee_logSetTarget(FILE *f);

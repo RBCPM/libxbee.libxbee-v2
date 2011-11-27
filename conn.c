@@ -27,7 +27,7 @@
 #include "errors.h"
 #include "ll.h"
 
-#warning TODO - xbee_conSleep(), xbee_conWake(), waitForAck
+#warning TODO - waitForAck
 
 
 int _xbee_conTypeIdFromName(struct xbee *xbee, char *name, unsigned char *id, int ignoreInitialized) {
@@ -71,7 +71,7 @@ struct xbee_conType *xbee_conTypeFromID(struct xbee_conType *conTypes, unsigned 
 }
 
 struct xbee_con *xbee_conFromAddress(struct xbee_conType *conType, struct xbee_conAddress *address) {
-	struct xbee_con *con;
+	struct xbee_con *con, *scon;
 	if (!address) return NULL;
 	if (!conType || !conType->initialized) return NULL;
 	
@@ -85,11 +85,12 @@ struct xbee_con *xbee_conFromAddress(struct xbee_conType *conType, struct xbee_c
 		return con;
 	}
 	
+	scon = NULL;
 	do {
 		if (address->frameID_enabled && con->address.frameID_enabled) {
 			/* frameID must match */
 			if (address->frameID != con->address.frameID) continue;
-			if (!address->addr64_enabled && !address->addr16_enabled) break;
+			if (!address->addr64_enabled && !address->addr16_enabled) goto got;
 		}
 		if (address->addr64_enabled && con->address.addr64_enabled) {
 			xbee_log(10,"Testing 64-bit address: 0x%02X%02X%02X%02X 0x%02X%02X%02X%02X", con->address.addr64[0],
@@ -104,7 +105,7 @@ struct xbee_con *xbee_conFromAddress(struct xbee_conType *conType, struct xbee_c
 			/* if 64-bit address matches, accept, else decline (don't even accept matching 16-bit address */
 			if (!memcmp(address->addr64, con->address.addr64, 8)) {
 				xbee_log(10,"    Success!");
-				break;
+				goto got;
 			} else {
 				int i;
 				for (i = 0; i < 8; i++) {
@@ -119,11 +120,16 @@ struct xbee_con *xbee_conFromAddress(struct xbee_conType *conType, struct xbee_c
 			/* if 16-bit address matches accept */
 			if (!memcmp(address->addr16, con->address.addr16, 2)) {
 				xbee_log(10,"    Success!");
-				break;
+				goto got;
 			}
 		}
+		continue;
+got:
+		if (!con->sleeping) break;
+		scon = con;
 	} while ((con = ll_get_next(&conType->conList, con)) != NULL);
 	
+	if (!con) return scon;
 	return con;
 }
 
@@ -165,7 +171,7 @@ EXPORT int xbee_conNew(struct xbee *xbee, struct xbee_con **retCon, unsigned cha
 	conType = &(xbee->mode->conTypes[id]);
 	
 	ret = XBEE_ENONE;
-	if ((con = xbee_conFromAddress(conType, address)) != NULL) {
+	if ((con = xbee_conFromAddress(conType, address)) != NULL && !con->sleeping) {
 		*retCon = con;
 		goto done;
 	}
@@ -346,6 +352,37 @@ EXPORT int xbee_conOptions(struct xbee *xbee, struct xbee_con *con, struct xbee_
 
 	if (getOptions) memcpy(getOptions, &con->options, sizeof(struct xbee_conOptions));
 	if (setOptions) memcpy(&con->options, setOptions, sizeof(struct xbee_conOptions));
+
+	return XBEE_ENONE;
+}
+
+EXPORT int xbee_conSleep(struct xbee *xbee, struct xbee_con *con, int wakeOnRx) {
+	if (!xbee) {
+		if (!xbee_default) return XBEE_ENOXBEE;
+		xbee = xbee_default;
+	}
+	if (!xbee_validate(xbee)) return XBEE_ENOXBEE;
+	if (!con) return XBEE_EMISSINGPARAM;
+
+	if (xbee_conValidate(xbee, con, NULL)) return XBEE_EINVAL;
+
+	con->sleeping = 1;
+	con->wakeOnRx = !!wakeOnRx;
+
+	return XBEE_ENONE;
+}
+
+EXPORT int xbee_conWake(struct xbee *xbee, struct xbee_con *con) {
+	if (!xbee) {
+		if (!xbee_default) return XBEE_ENOXBEE;
+		xbee = xbee_default;
+	}
+	if (!xbee_validate(xbee)) return XBEE_ENOXBEE;
+	if (!con) return XBEE_EMISSINGPARAM;
+
+	if (xbee_conValidate(xbee, con, NULL)) return XBEE_EINVAL;
+
+	con->sleeping = 0;
 
 	return XBEE_ENONE;
 }

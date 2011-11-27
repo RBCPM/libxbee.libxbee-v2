@@ -58,6 +58,16 @@ int _xbee_rxCallbackThread(struct xbee_callbackInfo *info) {
 			ll_add_head(&(con->rxList), pkt);
 			break;
 		}
+		xbee_log(1,"Running callback (func: %p, "
+		                             "xbee: %p, "
+		                             "con: %p, "
+		                             "pkt: %p, "
+		                             "userData: %p)",
+		                              con->callback,
+		                              xbee,
+		                              con,
+		                              pkt,
+		                              con->userData);
 		con->callback(xbee, con, &pkt, &con->userData);
 		if (pkt) free(pkt);
 		if (con->destroySelf) break;
@@ -141,10 +151,17 @@ int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
 			                                                                    con.address.addr64[7]);
 		}
 		
-		
 		if ((rxCon = xbee_conFromAddress(pktHandler->conType, &con.address)) == NULL) {
-			xbee_log(1,"No connection for packet...");
+			xbee_log(3,"No connection for packet...");
 			goto skip;
+		}
+		if (rxCon->sleeping) {
+			if (!rxCon->wakeOnRx) {
+				xbee_log(3,"Found a connection @ %p, but it's in a 'deep sleep'...", rxCon);
+				goto skip;
+			}
+			xbee_log(2,"Woke up connection @ %p", rxCon);
+			rxCon->sleeping = 0;
 		}
 		
 		ll_add_tail(&rxCon->rxList, pkt);

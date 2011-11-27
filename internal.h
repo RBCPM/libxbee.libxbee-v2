@@ -63,9 +63,12 @@ struct xbee_con {
 	
 	void(*callback)(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt **pkt, void **userData);
 	xsys_thread callbackThread;
+	
 	char callbackStarted : 1;
 	char callbackRunning : 1;
-	char destroySelf : 1;
+	char destroySelf     : 1;
+	char sleeping        : 1;
+	char wakeOnRx        : 1;
 	
 	void *userData; /* for use by the developer, THEY ARE RESPONSIBLE FOR LEAKS! */
 	
