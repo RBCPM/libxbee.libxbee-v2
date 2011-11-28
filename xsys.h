@@ -85,7 +85,7 @@ int xsys_mutex_unlock(xsys_mutex *mutex);
 int xsys_sem_init(xsys_sem *sem);
 int xsys_sem_destroy(xsys_sem *sem);
 int xsys_sem_wait(xsys_sem *sem);
-int xsys_sem_timedwait(xsys_sem *sem, int sTimeout, long nsTimeout);
+int xsys_sem_timedwait(xsys_sem *sem, time_t sec, long nsec);
 int xsys_sem_post(xsys_sem *sem);
 
 #endif /* __XBEE_XSYS_H */
