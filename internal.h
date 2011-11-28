@@ -39,7 +39,7 @@ struct xbee_device {
 struct xbee_frameIdInfo {
 	struct xbee_con *con;
 	xsys_sem sem;
-	unsigned char ack;
+	int ack;
 };
 struct xbee {
 	int running;
@@ -180,6 +180,6 @@ int _xbee_threadStart(struct xbee *xbee, xsys_thread *thread, void*(*startFuncti
 
 unsigned char xbee_frameIdGet(struct xbee *xbee, struct xbee_con *con);
 void xbee_frameIdGiveACK(struct xbee *xbee, unsigned char frameID, unsigned char ack);
-unsigned char xbee_frameIdGetACK(struct xbee *xbee, struct xbee_con *con, unsigned char frameID);
+int xbee_frameIdGetACK(struct xbee *xbee, struct xbee_con *con, unsigned char frameID);
 
 #endif /* __XBEE_INTERNAL_H */

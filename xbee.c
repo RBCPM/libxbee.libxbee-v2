@@ -237,9 +237,9 @@ void xbee_frameIdGiveACK(struct xbee *xbee, unsigned char frameID, unsigned char
 	xsys_sem_post(&info->sem);
 }
 
-unsigned char xbee_frameIdGetACK(struct xbee *xbee, struct xbee_con *con, unsigned char frameID) {
+int xbee_frameIdGetACK(struct xbee *xbee, struct xbee_con *con, unsigned char frameID) {
 	struct xbee_frameIdInfo *info;
-	unsigned char ret;
+	int ret;
 	if (!xbee)          return XBEE_ENOXBEE;
 	if (!con)           return XBEE_EMISSINGPARAM;
 	info = &(xbee->frameIDs[frameID]);
