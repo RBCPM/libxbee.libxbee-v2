@@ -55,6 +55,8 @@ void xbee_cleanupMode(struct xbee *xbee) {
 				xbee_pktFree(pkt);
 			}
 			if (o) xbee_log(5,"---- Free'd %d packets", o);
+			
+			xbee_conFree(xbee,con);
 		}
 	}
 

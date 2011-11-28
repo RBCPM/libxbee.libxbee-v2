@@ -226,6 +226,12 @@ int xsys_sem_destroy(xsys_sem *sem) {
 int xsys_sem_wait(xsys_sem *sem) {
 	return sem_wait((sem_t*)sem);
 }
+int xsys_sem_timedwait(xsys_sem *sem, int sTimeout, long nsTimeout) {
+	struct timespec to;
+	to.tv_sec = sTimeout;
+	to.tv_nsec = nsTimeout;
+	return sem_timedwait(sem, &to);
+}
 int xsys_sem_post(xsys_sem *sem) {
 	return sem_post((sem_t*)sem);
 }

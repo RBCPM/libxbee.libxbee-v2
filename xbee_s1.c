@@ -48,6 +48,8 @@ int xbee_s1_txStatus(struct xbee *xbee, struct xbee_pktHandler *handler, char is
 	
 	(*pkt)->status = (*buf)->buf[2];
 	
+	xbee_frameIdGiveACK(xbee, con->address.frameID, (*pkt)->status);
+	
 	goto done;
 die1:
 done:

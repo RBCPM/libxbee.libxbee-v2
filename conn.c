@@ -27,9 +27,6 @@
 #include "errors.h"
 #include "ll.h"
 
-#warning TODO - waitForAck
-
-
 int _xbee_conTypeIdFromName(struct xbee *xbee, char *name, unsigned char *id, int ignoreInitialized) {
 	int i;
 	if (!xbee) {
@@ -185,6 +182,8 @@ EXPORT int xbee_conNew(struct xbee *xbee, struct xbee_con **retCon, unsigned cha
 	memcpy(&con->address, address, sizeof(struct xbee_conAddress));
 	con->userData = userData;
 	ll_init(&con->rxList);
+	xsys_mutex_init(&con->txMutex);
+
 	ll_add_tail(&(con->conType->conList), con);
 	*retCon = con;
 	
@@ -243,6 +242,7 @@ EXPORT int xbee_convTx(struct xbee *xbee, struct xbee_con *con, char *format, va
 
 EXPORT int xbee_connTx(struct xbee *xbee, struct xbee_con *con, char *data, int length) {
 	int ret = XBEE_ENONE;
+	unsigned char frameID;
 	struct bufData *buf, *oBuf;
 	struct xbee_conType *conType;
 	if (!xbee) {
@@ -264,6 +264,14 @@ EXPORT int xbee_connTx(struct xbee *xbee, struct xbee_con *con, char *data, int 
 	buf->len = length;
 	memcpy(buf->buf, data, length);
 	
+	if (con->options.waitForAck) {
+		con->address.frameID_enabled = 1;
+		if ((frameID = xbee_frameIdGet(xbee, con)) == 0) {
+			xbee_log(3,"No avaliable frame IDs... we can't validate delivery");
+		}
+		con->address.frameID = frameID;
+	}
+	
 	xbee_log(6,"Executing handler (%s)...", conType->txHandler->handlerName);
 	if ((ret = conType->txHandler->handler(xbee, conType->txHandler, 0, &buf, con, NULL)) != XBEE_ENONE) goto die2;
 	
@@ -275,8 +283,21 @@ EXPORT int xbee_connTx(struct xbee *xbee, struct xbee_con *con, char *data, int 
 	}
 	free(oBuf);
 	
+	if (con->options.waitForAck) {
+		xbee_log(4,"Locking txMutex for con @ %p", con);
+		xsys_mutex_lock(&con->txMutex);
+	}
+	
 	ll_add_tail(&xbee->txList, buf);
 	xsys_sem_post(&xbee->txSem);
+	
+	if (con->options.waitForAck) {
+		if (frameID) {
+			xbee_log(4,"Waiting for txSem for con @ %p", con);
+			ret = xbee_frameIdGetACK(xbee, con, frameID);
+		}
+		xsys_mutex_unlock(&con->txMutex);
+	}
 	
 	goto done;
 die2:
@@ -284,6 +305,14 @@ die2:
 die1:
 done:
 	return ret;
+}
+
+int xbee_conFree(struct xbee *xbee, struct xbee_con *con) {
+	if (!xbee) return XBEE_ENOXBEE;
+	if (xbee_conValidate(xbee,con,NULL)) return XBEE_EINVAL;
+	xsys_mutex_destroy(&con->txMutex);
+	free(con);
+	return XBEE_ENONE;
 }
 
 EXPORT int xbee_conEnd(struct xbee *xbee, struct xbee_con *con, void **userData) {
@@ -311,8 +340,8 @@ EXPORT int xbee_conEnd(struct xbee *xbee, struct xbee_con *con, void **userData)
 		con->destroySelf = 1;
 		return XBEE_ECALLBACK;
 	}
-
-	free(con);
+	
+	xbee_conFree(xbee, con);
 	
 	return XBEE_ENONE;
 }
