@@ -2,12 +2,18 @@ LIBOUT:=libxbee
 LIBMAJ:=2
 LIBMIN:=0
 LIBREV:=0
+LIBFULLREV:=$(LIBMAJ).$(LIBMIN).$(LIBREV)
 
 BUILDDIR:=.build
 DESTDIR:=lib
 
 SRCS:=conn io ll log mode rx tx xbee xbee_s1 xbee_s2 xbee_sG xsys join
-RELEASE_ITEMS:=lib/libxbee.so lib/libxbee.so.dbg lib/libxbee.a xbee.h
+RELEASE_ITEMS:=lib/libxbee.so.$(LIBFULLREV) \
+               lib/libxbee.so \
+               lib/libxbee.so.$(LIBFULLREV).dbg \
+               lib/libxbee.a.$(LIBFULLREV) \
+               lib/libxbee.a \
+               xbee.h
 LIBS:=rt pthread
 
 AR:=ar
@@ -42,7 +48,7 @@ spotless: clean
 
 
 release: all
-	tar -cjvf libxbee_v$(LIBMAJ).$(LIBMIN).$(LIBREV)_`date +%Y-%m-%d`_`git rev-parse --verify --short HEAD`.tar.bz2 $(RELEASE_ITEMS)
+	tar -cjvf libxbee_v$(LIBFULLREV)_`date +%Y-%m-%d`_`git rev-parse --verify --short HEAD`.tar.bz2 $(RELEASE_ITEMS)
 
 
 .%.dir:
@@ -50,13 +56,19 @@ release: all
 	@touch $@
 
 
-$(DESTDIR)/$(LIBOUT).so: $(DESTDIR)/$(LIBOUT).o
-	$(GCC) -shared -Wl,-soname,$(LIBOUT).so.$(LIBMAJ).$(LIBMIN).$(LIBREV) $(CLINKS) $(filter %.o,$^) -o $@
+$(DESTDIR)/$(LIBOUT).so: $(DESTDIR)/$(LIBOUT).so.$(LIBFULLREV)
+	ln -fs `basename $^` $@
+
+$(DESTDIR)/$(LIBOUT).so.$(LIBFULLREV): .$(DESTDIR).dir $(DESTDIR)/$(LIBOUT).o
+	$(GCC) -shared -Wl,-soname,$(LIBOUT).so.$(LIBFULLREV) $(CLINKS) $(filter %.o,$^) -o $@
 	$(OBJCOPY) --only-keep-debug $@ $@.dbg
 	$(OBJCOPY) --add-gnu-debuglink=$@.dbg $@
 	$(OBJCOPY) --strip-debug $@
 
-$(DESTDIR)/$(LIBOUT).a: $(DESTDIR)/$(LIBOUT).o
+$(DESTDIR)/$(LIBOUT).a: $(DESTDIR)/$(LIBOUT).a.$(LIBFULLREV)
+	ln -fs `basename $^` $@
+
+$(DESTDIR)/$(LIBOUT).a.$(LIBFULLREV): .$(DESTDIR).dir $(DESTDIR)/$(LIBOUT).o
 	$(AR) rcs $@ $(filter %.o,$^)
 
 $(DESTDIR)/$(LIBOUT).o: .$(DESTDIR).dir $(addprefix .,$(addsuffix .d,$(SRCS))) $(OBJS)
