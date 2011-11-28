@@ -21,8 +21,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "internal.h"
 #include "ll.h"
-#include "xsys.h"
 
 int ll_init(struct ll_head *list) {
 	list->is_head = 1;
@@ -48,9 +48,10 @@ int ll_add_head(void *list, void *item) {
 	ret = 0;
 	i = list;
 	h = i->head;
+	if (!h) goto out2;
 	if (!(h->is_head && h->self == h)) {
 		ret = 1;
-		goto out;
+		goto out2;
 	}
 	xsys_mutex_lock(&h->mutex);
 	p = h->head;
@@ -73,6 +74,7 @@ int ll_add_head(void *list, void *item) {
 	h->head->item = item;
 out:
 	xsys_mutex_unlock(&h->mutex);
+out2:
 	return ret;
 }
 int ll_add_tail(void *list, void *item) {
@@ -82,9 +84,10 @@ int ll_add_tail(void *list, void *item) {
 	ret = 0;
 	i = list;
 	h = i->head;
+	if (!h) goto out2;
 	if (!(h->is_head && h->self == h)) {
 		ret = 1;
-		goto out;
+		goto out2;
 	}
 	xsys_mutex_lock(&h->mutex);
 	p = h->tail;
@@ -107,6 +110,7 @@ int ll_add_tail(void *list, void *item) {
 	h->tail->item = item;
 out:
 	xsys_mutex_unlock(&h->mutex);
+out2:
 	return ret;
 }
 int ll_add_after(void *list, void *ref, void *item) {
@@ -116,7 +120,8 @@ int ll_add_after(void *list, void *ref, void *item) {
 	ret = 1;
 	i = list;
 	h = i->head;
-	if (!(h->is_head && h->self == h)) goto out;
+	if (!h) goto out2;
+	if (!(h->is_head && h->self == h)) goto out2;
 	xsys_mutex_lock(&h->mutex);
 	i = h->head;
 	while (i) {
@@ -144,6 +149,7 @@ int ll_add_after(void *list, void *ref, void *item) {
 	ret = 0;
 out:
 	xsys_mutex_unlock(&h->mutex);
+out2:
 	return ret;
 }
 int ll_add_before(void *list, void *ref, void *item) {
@@ -153,7 +159,8 @@ int ll_add_before(void *list, void *ref, void *item) {
 	ret = 1;
 	i = list;
 	h = i->head;
-	if (!(h->is_head && h->self == h)) goto out;
+	if (!h) goto out2;
+	if (!(h->is_head && h->self == h)) goto out2;
 	xsys_mutex_lock(&h->mutex);
 	i = h->head;
 	while (i) {
@@ -181,6 +188,7 @@ int ll_add_before(void *list, void *ref, void *item) {
 	ret = 0;
 out:
 	xsys_mutex_unlock(&h->mutex);
+out2:
 	return ret;
 }
 
@@ -191,7 +199,7 @@ void *ll_get_head(void *list) {
 	ret = NULL;
 	i = list;
 	h = i->head;
-	if (h->is_head && h->self == h) {
+	if (h && h->is_head && h->self == h) {
 		if (!h->head) return NULL;
 		ret = h->head->item;
 	}
@@ -204,7 +212,7 @@ void *ll_get_tail(void *list) {
 	ret = NULL;
 	i = list;
 	h = i->head;
-	if (h->is_head && h->self == h) {
+	if (h && h->is_head && h->self == h) {
 		if (!h->tail) return NULL;
 		ret = h->tail->item;
 	}
@@ -218,7 +226,8 @@ void *ll_get_item(void *list, void *item) {
 	ret = NULL;
 	i = list;
 	h = i->head;
-	if (!(h->is_head && h->self == h)) goto out;
+	if (!h) goto out2;
+	if (!(h->is_head && h->self == h)) goto out2;
 	xsys_mutex_lock(&h->mutex);
 	i = h->head;
 	while (i) {
@@ -229,6 +238,7 @@ void *ll_get_item(void *list, void *item) {
 	ret = i;
 out:
 	xsys_mutex_unlock(&h->mutex);
+out2:
 	return ret;
 }
 void *ll_get_next(void *list, void *ref) {
@@ -267,6 +277,7 @@ void *ll_ext_head(void *list) {
 	ret = NULL;
 	i = list;
 	h = i->head;
+	if (!h) goto out;
 	if (!(h->is_head && h->self == h)) goto out;
 	xsys_mutex_lock(&h->mutex);
 	p = h->head;
@@ -278,8 +289,8 @@ void *ll_ext_head(void *list) {
 		if (h->tail == p) h->tail = NULL;
 		free(p);
 	}
-out:
 	xsys_mutex_unlock(&h->mutex);
+out:
 	return ret;
 }
 void *ll_ext_tail(void *list) {
@@ -289,6 +300,7 @@ void *ll_ext_tail(void *list) {
 	ret = NULL;
 	i = list;
 	h = i->head;
+	if (!h) goto out;
 	if (!(h->is_head && h->self == h)) goto out;
 	xsys_mutex_lock(&h->mutex);
 	p = h->tail;
@@ -300,8 +312,8 @@ void *ll_ext_tail(void *list) {
 		if (h->head == p) h->head = NULL;
 		free(p);
 	}
-out:
 	xsys_mutex_unlock(&h->mutex);
+out:
 	return ret;
 }
 int ll_ext_item(void *list, void *item) {
@@ -312,7 +324,8 @@ int ll_ext_item(void *list, void *item) {
 	i = list;
 	h = i->head;
 	if (!item) return 0;
-	if (!(h->is_head && h->self == h)) goto out;
+	if (!h) goto out2;
+	if (!(h->is_head && h->self == h)) goto out2;
 	xsys_mutex_lock(&h->mutex);
 	p = h->head;
 	while (p) {
@@ -343,6 +356,7 @@ int ll_ext_item(void *list, void *item) {
 	}
 out:
 	xsys_mutex_unlock(&h->mutex);
+out2:
 	return ret;
 }
 
@@ -353,6 +367,7 @@ int ll_count_items(void *list) {
 	ret = -1;
 	i = list;
 	h = i->head;
+	if (!h) goto out;
 	if (!(h->is_head && h->self == h)) goto out;
 	xsys_mutex_lock(&h->mutex);
 	p = h->head;
@@ -361,7 +376,7 @@ int ll_count_items(void *list) {
 		ret++;
 		p = p->next;
 	}
-out:
 	xsys_mutex_unlock(&h->mutex);
+out:
 	return ret;
 }
