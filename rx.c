@@ -34,6 +34,7 @@
 struct xbee_callbackInfo {
 	struct xbee *xbee;
 	struct xbee_con *con;
+	int taken;
 };
 
 /* ######################################################################### */
@@ -48,7 +49,7 @@ int _xbee_rxCallbackThread(struct xbee_callbackInfo *info) {
 	
 	xbee = info->xbee;
 	con = info->con;
-	free(info);
+	info->taken = 1;
 	
 	con->callbackRunning = 1;
 	
@@ -81,6 +82,30 @@ int _xbee_rxCallbackThread(struct xbee_callbackInfo *info) {
 	}
 
 	return 0;
+}
+
+void xbee_triggerCallback(struct xbee *xbee, struct xbee_con *con) {
+	int i;
+	if ((!con->callbackStarted || !con->callbackRunning)) {
+		struct xbee_callbackInfo info;
+		info.xbee = xbee;
+		info.con = con;
+		info.taken = 0;
+		
+		con->callbackRunning = 0;
+		if (!xsys_thread_create_SYS(&con->callbackThread, (void*(*)(void*))_xbee_rxCallbackThread, (void*)&info)) {
+			con->callbackStarted = 1;
+			while (!info.taken) {
+				usleep(100);
+			}
+		} else {
+			xbee_log(-999,"Failed to start callback for connection @ %p... xsys_thread_create() returned error", con);
+		}
+	}
+	i = ll_count_items(&con->rxList);
+	for (; i; i--) {
+		xsys_sem_post(&con->callbackSem);
+	}
 }
 
 int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
@@ -176,24 +201,7 @@ int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
 		ll_add_tail(&rxCon->rxList, pkt);
 		
 		if (rxCon->callback) {
-			if ((!rxCon->callbackStarted || !rxCon->callbackRunning)) {
-				struct xbee_callbackInfo *info;
-				if ((info = calloc(1, sizeof(struct xbee_callbackInfo))) == NULL) {
-					xbee_log(-999,"Failed to start callback for connection @ %p... alloc() returned NULL", rxCon);
-				} else {
-					info->xbee = data->xbee;
-					info->con = rxCon;
-					
-					rxCon->callbackRunning = 0;
-					if (!xsys_thread_create_SYS(&rxCon->callbackThread, (void*(*)(void*))_xbee_rxCallbackThread, (void*)info)) {
-						rxCon->callbackStarted = 1;
-					} else {
-						xbee_log(-999,"Failed to start callback for connection @ %p... xsys_thread_create() returned error", rxCon);
-					}
-				}
-			} else {
-				xsys_sem_post(&rxCon->callbackSem);
-			}
+			xbee_triggerCallback(data->xbee, rxCon);
 		}
 		
 		xbee_log(3,"%d packets in queue for connection @ %p", ll_count_items(&rxCon->rxList), rxCon);

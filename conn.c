@@ -25,6 +25,7 @@
 #include "internal.h"
 #include "conn.h"
 #include "errors.h"
+#include "rx.h"
 #include "ll.h"
 
 int _xbee_conTypeIdFromName(struct xbee *xbee, char *name, unsigned char *id, int ignoreInitialized) {
@@ -379,11 +380,10 @@ EXPORT int xbee_conAttachCallback(struct xbee *xbee, struct xbee_con *con, void(
 	
 	if (callback) {
 		xbee_log(5,"Attached callback to connection @ %p", con);
+		xbee_triggerCallback(xbee, con);
 	} else {
 		xbee_log(5,"Detached callback from connection @ %p", con);
 	}
-	
-#warning TODO - trigger a callback for any unprocessed packets
 	
 	return XBEE_ENONE;
 }

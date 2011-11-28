@@ -23,6 +23,7 @@
 
 #define XBEE_RX_RESTART_DELAY 25
 
+void xbee_triggerCallback(struct xbee *xbee, struct xbee_con *con);
 int xbee_rx(struct xbee *xbee);
 
 #endif /* __XBEE_RX_H */
