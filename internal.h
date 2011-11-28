@@ -36,7 +36,11 @@ struct xbee_device {
 	int baudrate;
 	int ready;
 };
-
+struct xbee_frameIdInfo {
+	struct xbee_con *con;
+	xsys_sem sem;
+	unsigned char ack;
+};
 struct xbee {
 	int running;
 	struct xbee_device device;
@@ -46,6 +50,8 @@ struct xbee {
 	xsys_thread txThread;
 	xsys_sem txSem;
 	int txRunning;
+	
+	struct xbee_frameIdInfo frameIDs[0xFF];
 	
 	xsys_thread rxThread;
 	void *rxBuf;
@@ -74,6 +80,8 @@ struct xbee_con {
 	
 	int rxPackets;
 	int txPackets;
+	
+	xsys_mutex txMutex;
 	
 	struct ll_head rxList; /* data is struct xbee_pkt */
 };
@@ -170,5 +178,8 @@ struct xbee_mode {
 #define xbee_threadStart(a, b, c) _xbee_threadStart((a), (b), (void*(*)(void*))(c), (#c))
 int _xbee_threadStart(struct xbee *xbee, xsys_thread *thread, void*(*startFunction)(void*), char *startFuncName);
 
-#endif /* __XBEE_INTERNAL_H */
+unsigned char xbee_frameIdGet(struct xbee *xbee, struct xbee_con *con);
+void xbee_frameIdGiveACK(struct xbee *xbee, unsigned char frameID, unsigned char ack);
+unsigned char xbee_frameIdGetACK(struct xbee *xbee, struct xbee_con *con, unsigned char frameID);
 
+#endif /* __XBEE_INTERNAL_H */

@@ -48,6 +48,7 @@ void *xbee_validate(struct xbee *xbee) {
 
 EXPORT int xbee_setup(char *path, int baudrate, struct xbee **retXbee) {
 	struct xbee *xbee;
+	int i;
 	int ret = XBEE_ENONE;
 	
 	if (!xbee_initialized) {
@@ -72,39 +73,53 @@ EXPORT int xbee_setup(char *path, int baudrate, struct xbee **retXbee) {
 		goto die3;
 	}
 	
+	for (i = 0; i <= 0xFF; i++) {
+		if (xsys_sem_init(&xbee->frameIDs[i].sem)) {
+			ret = XBEE_ESEMAPHORE;
+			for (; i >= 0; i--) {
+				xsys_sem_destroy(&xbee->frameIDs[i].sem);
+			}
+			goto die4;
+		}
+	}
+	
 	xbee->running = 1;
 	
 	if (xbee_threadStart(xbee, &(xbee->rxThread), xbee_rx)) {
 		xbee_perror(1,"xbee_threadStart(xbee_rx)");
 		ret = XBEE_ETHREAD;
-		goto die4;
+		goto die5;
 	}
 	
 	if (xsys_sem_init(&xbee->txSem)) {
 		ret = XBEE_ESEMAPHORE;
-		goto die5;
+		goto die6;
 	}
 	if (ll_init(&xbee->txList)) {
 		ret = XBEE_ELINKEDLIST;
-		goto die6;
+		goto die7;
 	}
 	if (xbee_threadStart(xbee, &(xbee->txThread), xbee_tx)) {
 		xbee_perror(1,"xbee_threadStart(xbee_tx)");
 		ret = XBEE_ETHREAD;
-		goto die7;
+		goto die8;
 	}
 	
 	if (retXbee) *retXbee = xbee;
 	xbee_default = xbee;
 	ll_add_tail(&xbee_list, xbee);
 	goto done;
-die7:
+die8:
 	ll_destroy(&xbee->txList, free);
-die6:
+die7:
 	xsys_sem_destroy(&xbee->txSem);
-die5:
+die6:
 	if (!xsys_thread_cancel(xbee->rxThread)) {
 		xsys_thread_join(xbee->rxThread, NULL);
+	}
+die5:
+	for (i = 0; i <= 0xFF; i++) {
+		xsys_sem_destroy(&xbee->frameIDs[i].sem);
 	}
 die4:
 	xbee_io_close(xbee);
@@ -199,4 +214,48 @@ int _xbee_threadStart(struct xbee *xbee, xsys_thread *thread, void*(*startFuncti
 EXPORT void xbee_pktFree(struct xbee_pkt *pkt) {
 	if (!pkt) return;
 	free(pkt);
+}
+
+unsigned char xbee_frameIdGet(struct xbee *xbee, struct xbee_con *con) {
+	int i;
+	for (i = 1; i <= 0xFF; i++) {
+		if (!xbee->frameIDs[i].con) {
+			xbee->frameIDs[i].ack = XBEE_EUNKNOWN;
+			xbee->frameIDs[i].con = con;
+			return i;
+		}
+	}
+	return 0;
+}
+
+void xbee_frameIdGiveACK(struct xbee *xbee, unsigned char frameID, unsigned char ack) {
+	struct xbee_frameIdInfo *info;
+	if (!xbee)          return;
+	info = &(xbee->frameIDs[frameID]);
+	if (!info->con)     return;
+	info->ack = ack;
+	xsys_sem_post(&info->sem);
+}
+
+unsigned char xbee_frameIdGetACK(struct xbee *xbee, struct xbee_con *con, unsigned char frameID) {
+	struct xbee_frameIdInfo *info;
+	unsigned char ret;
+	if (!xbee)          return XBEE_ENOXBEE;
+	if (!con)           return XBEE_EMISSINGPARAM;
+	info = &(xbee->frameIDs[frameID]);
+	if (info->con != con) {
+		return XBEE_EINVAL;
+	}
+	if (xsys_sem_timedwait(&info->sem,2,0)) {
+		if (errno == ETIMEDOUT) {
+			ret = XBEE_ETIMEOUT;
+		} else {
+			ret = XBEE_ESEMAPHORE;
+		}
+		goto done;
+	}
+	ret = info->ack;
+done:
+	info->con = NULL;
+	return ret;
 }

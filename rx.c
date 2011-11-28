@@ -76,7 +76,7 @@ int _xbee_rxCallbackThread(struct xbee_callbackInfo *info) {
 	con->callbackRunning = 0;
 
 	if (con->destroySelf) {
-		free(con);
+		xbee_conFree(xbee, con);
 	}
 
 	return 0;
