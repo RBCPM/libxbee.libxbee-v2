@@ -44,19 +44,19 @@ int xbee_s2_identify(struct xbee *xbee, struct xbee_pktHandler *handler, char is
 /* ######################################################################### */
 
 static struct xbee_conType conTypes[] = {
-	ADD_TYPE_RX  (0x8A,       "Modem Status"),
-	ADD_TYPE_RX  (0x8B,       "Transmit Status"),
+	ADD_TYPE_RX  (0x8A,       0, "Modem Status"),
+	ADD_TYPE_RX  (0x8B,       0, "Transmit Status"),
 	
-	ADD_TYPE_RXTX(0x88, 0x08, "Local AT"),
-	ADD_TYPE_TX  (      0x09, "Local AT (queued)"),
+	ADD_TYPE_RXTX(0x88, 0x08, 0, "Local AT"),
+	ADD_TYPE_TX  (      0x09, 0, "Local AT (queued)"),
 	
-	ADD_TYPE_RXTX(0x97, 0x17, "Remote AT"),
+	ADD_TYPE_RXTX(0x97, 0x17, 1, "Remote AT"),
 	
-	ADD_TYPE_RXTX(0x90, 0x10, "Data"),
-	ADD_TYPE_RXTX(0x91, 0x11, "Data (explicit)"),
+	ADD_TYPE_RXTX(0x90, 0x10, 1, "Data"),
+	ADD_TYPE_RXTX(0x91, 0x11, 1, "Data (explicit)"),
 	
-	ADD_TYPE_RX  (0x92,       "I/O"),
-	ADD_TYPE_RX  (0x94,       "Sensor"),
+	ADD_TYPE_RX  (0x92,       1, "I/O"),
+	ADD_TYPE_RX  (0x94,       1, "Sensor"),
 	
 	ADD_TYPE_TERMINATOR()
 };
@@ -85,4 +85,8 @@ static struct xbee_pktHandler pktHandlers[] = {
 	ADD_HANDLER_TERMINATOR()
 };
 
-struct xbee_mode xbee_mode_s2 = { pktHandlers, conTypes, "series2" };
+struct xbee_mode xbee_mode_s2 = {
+	pktHandlers: pktHandlers,
+	conTypes: conTypes,
+	name: "series2"
+};

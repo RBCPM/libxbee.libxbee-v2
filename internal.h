@@ -21,8 +21,8 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "xsys.h"
 #include "xbee.h"
+#include "xsys.h"
 #include "ll.h"
 
 extern struct xbee *xbee_default;
@@ -51,7 +51,12 @@ struct xbee {
 	xsys_sem txSem;
 	int txRunning;
 	
-	struct xbee_frameIdInfo frameIDs[0xFF];
+	struct xbee_frameIdInfo frameIds[0xFF];
+	unsigned char frameIdLast;
+	xsys_mutex frameIdMutex;
+	
+	struct ll_head threadList;
+	xsys_thread joinThread;
 	
 	xsys_thread rxThread;
 	void *rxBuf;
@@ -69,12 +74,16 @@ struct xbee_con {
 	
 	void(*callback)(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt **pkt, void **userData);
 	xsys_thread callbackThread;
+	xsys_sem callbackSem;
 	
 	char callbackStarted : 1;
 	char callbackRunning : 1;
 	char destroySelf     : 1;
 	char sleeping        : 1;
 	char wakeOnRx        : 1;
+	
+	unsigned char frameID_enabled;
+	unsigned char frameID;
 	
 	void *userData; /* for use by the developer, THEY ARE RESPONSIBLE FOR LEAKS! */
 	
@@ -141,15 +150,15 @@ struct xbee_pktHandler  {
 	char initialized;
 };
 
-/* ADD_TYPE_RXTX(rxID, txID, name) */
-#define ADD_TYPE_RXTX(a, b, c) \
-	{ 1, (a), 1, (b),  (c), NULL }
-#define ADD_TYPE_RX(a, b) \
-	{ 1, (a), 0,  0 ,  (b), NULL }
-#define ADD_TYPE_TX(a, b) \
-	{ 0,  0,  1, (a),  (b), NULL }
+/* ADD_TYPE_RXTX(rxID, txID, needsAddress, name) */
+#define ADD_TYPE_RXTX(a, b, c, d) \
+	{ 1, (a), 1, (b), (c), (d)  }
+#define ADD_TYPE_RX(a, b, c) \
+	{ 1, (a), 0,  0 , (b), (c)  }
+#define ADD_TYPE_TX(a, b, c) \
+	{ 0,  0 , 1, (a), (b), (c)  }
 #define ADD_TYPE_TERMINATOR() \
-	{ 0,  0,  0,  0 , NULL, NULL }
+	{ 0,  0 , 0,  0 ,  0 , NULL }
 
 /* a NULL name indicates the end of the list */
 struct xbee_conType {
@@ -157,8 +166,12 @@ struct xbee_conType {
 	unsigned char rxID;
 	unsigned char txEnabled;
 	unsigned char txID;
+	unsigned char needsAddress; /* 0 - No
+	                               1 - Yes (either)
+	                               2 - Yes (16-bit)
+	                               3 - Yes (64-bit)
+	                               4 - Yes (both) */
 	char *name;
-	void *data;
 	struct xbee_pktHandler *rxHandler;
 	struct xbee_pktHandler *txHandler;
 	struct ll_head conList; /* data is struct xbee_con */
@@ -169,6 +182,8 @@ struct xbee_mode {
 	struct xbee_pktHandler *pktHandlers;
 	struct xbee_conType *conTypes;
 	char *name;
+	int initialized;
+	int pktHandlerCount;
 	int conTypeCount;
 };
 

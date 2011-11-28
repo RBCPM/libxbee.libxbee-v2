@@ -71,6 +71,7 @@ int _xbee_rxCallbackThread(struct xbee_callbackInfo *info) {
 		con->callback(xbee, con, &pkt, &con->userData);
 		if (pkt) free(pkt);
 		if (con->destroySelf) break;
+		if (xsys_sem_timedwait(&con->callbackSem, 5, 0)) break;
 	}
 
 	con->callbackRunning = 0;
@@ -86,6 +87,7 @@ int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
 	int ret;
 	struct rxData *data;
 	struct bufData *buf;
+	struct xbee *xbee;
 	struct xbee_pkt *pkt;
 	struct xbee_con con;
 	struct xbee_con *rxCon;
@@ -96,6 +98,8 @@ int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
 	if (!pktHandler) return XBEE_EMISSINGPARAM;
 	data = pktHandler->rxData;
 	if (!data) return XBEE_EMISSINGPARAM;
+	xbee = data->xbee;
+	if (!xbee) return XBEE_ENOXBEE;
 	
 	data->threadRunning = 1;
 	
@@ -134,9 +138,14 @@ int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
 			goto skip;
 		}
 		
-		if (con.address.frameID_enabled) {
-			xbee_log(4,"Frame ID: 0x%02X", con.address.frameID);
+		if (con.frameID_enabled) {
+			xbee_frameIdGiveACK(xbee, con.frameID, pkt->status);
 		}
+		
+		if (pktHandler->conType->needsAddress &&
+		    !con.address.addr16_enabled &&
+		    !con.address.addr64_enabled) goto skip;
+		
 		if (con.address.addr16_enabled) {
 			xbee_log(4,"16-bit address: 0x%02X%02X", con.address.addr16[0], con.address.addr16[1]);
 		}
@@ -166,20 +175,24 @@ int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
 		
 		ll_add_tail(&rxCon->rxList, pkt);
 		
-		if (rxCon->callback && (!rxCon->callbackStarted || !rxCon->callbackRunning)) {
-			struct xbee_callbackInfo *info;
-			if ((info = calloc(1, sizeof(struct xbee_callbackInfo))) == NULL) {
-				xbee_log(-999,"Failed to start callback for connection @ %p... alloc() returned NULL", rxCon);
-			} else {
-				info->xbee = data->xbee;
-				info->con = rxCon;
-				
-				rxCon->callbackRunning = 0;
-				if (!xsys_thread_create(&rxCon->callbackThread, (void*(*)(void*))_xbee_rxCallbackThread, (void*)info)) {
-					rxCon->callbackStarted = 1;
+		if (rxCon->callback) {
+			if ((!rxCon->callbackStarted || !rxCon->callbackRunning)) {
+				struct xbee_callbackInfo *info;
+				if ((info = calloc(1, sizeof(struct xbee_callbackInfo))) == NULL) {
+					xbee_log(-999,"Failed to start callback for connection @ %p... alloc() returned NULL", rxCon);
 				} else {
-					xbee_log(-999,"Failed to start callback for connection @ %p... xsys_thread_create() returned error", rxCon);
+					info->xbee = data->xbee;
+					info->con = rxCon;
+					
+					rxCon->callbackRunning = 0;
+					if (!xsys_thread_create_SYS(&rxCon->callbackThread, (void*(*)(void*))_xbee_rxCallbackThread, (void*)info)) {
+						rxCon->callbackStarted = 1;
+					} else {
+						xbee_log(-999,"Failed to start callback for connection @ %p... xsys_thread_create() returned error", rxCon);
+					}
 				}
+			} else {
+				xsys_sem_post(&rxCon->callbackSem);
 			}
 		}
 		
@@ -224,7 +237,8 @@ int _xbee_rxHandler(struct xbee *xbee, struct xbee_pktHandler *pktHandler, struc
 	
 	if (!data->threadStarted || !data->threadRunning) {
 		data->threadRunning = 0;
-		if (xsys_thread_create(&data->thread, (void*(*)(void*))_xbee_rxHandlerThread, (void*)pktHandler)) {
+		if (xsys_thread_create_SYS(&data->thread, (void*(*)(void*))_xbee_rxHandlerThread, (void*)pktHandler)) {
+			xbee_perror(1,"xsys_thread_create()");
 			ret = XBEE_ETHREAD;
 			goto die4;
 		}

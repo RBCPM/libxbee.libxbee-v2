@@ -65,7 +65,10 @@ int xsys_setupSerial(int fd, FILE *stream, int baudrate);
 
 
 /* threads */
-int xsys_thread_create(xsys_thread *thread, void*(*start_routine)(void*), void *arg);
+#define xsys_thread_create(a,b,c,d) \
+	_xsys_thread_create((a),(b),(c),(d),(#c))
+int _xsys_thread_create(struct xbee *xbee, xsys_thread *thread, void*(*start_routine)(void*), void *arg, char *funcName);
+int xsys_thread_create_SYS(xsys_thread *thread, void*(*start_routine)(void*), void *arg);
 int xsys_thread_cancel(xsys_thread thread);
 int xsys_thread_join(xsys_thread thread, void **retval);
 int xsys_thread_tryjoin(xsys_thread thread, void **retval);

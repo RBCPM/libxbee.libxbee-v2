@@ -98,8 +98,8 @@ int xbee_sG_atRx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, 
 		goto die1;
 	}
 	
-	con->address.frameID_enabled = 1;
-	con->address.frameID = (*buf)->buf[1];
+	con->frameID_enabled = 1;
+	con->frameID = (*buf)->buf[1];
 	
 	(*pkt)->atCommand[0] = (*buf)->buf[offset + 2];
 	(*pkt)->atCommand[1] = (*buf)->buf[offset + 3];
@@ -141,8 +141,8 @@ int xbee_sG_atTx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, 
 	}
 	
 	nBuf->buf[0] = handler->conType->txID;
-	if (con->address.frameID_enabled) {
-		nBuf->buf[1] = con->address.frameID;
+	if (con->frameID_enabled) {
+		nBuf->buf[1] = con->frameID;
 	}
 	
 	/* local AT (0x09 = queued) */

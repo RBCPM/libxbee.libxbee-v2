@@ -75,20 +75,14 @@ struct xbee_con *xbee_conFromAddress(struct xbee_conType *conType, struct xbee_c
 	con = ll_get_next(&conType->conList, NULL);
 	if (!con) return NULL;
 	
-	/* if address is completely blank, just return the first connection */
-	if (!address->frameID_enabled &&
-			!address->addr64_enabled &&
-			!address->addr16_enabled) {
+	/* if both addresses are completely blank, just return the first connection (probably a local AT connection) */
+	if ((!address->addr64_enabled && !address->addr16_enabled) &&
+	    (!con->address.addr64_enabled && !con->address.addr16_enabled)) {
 		return con;
 	}
 	
 	scon = NULL;
 	do {
-		if (address->frameID_enabled && con->address.frameID_enabled) {
-			/* frameID must match */
-			if (address->frameID != con->address.frameID) continue;
-			if (!address->addr64_enabled && !address->addr16_enabled) goto got;
-		}
 		if (address->addr64_enabled && con->address.addr64_enabled) {
 			xbee_log(10,"Testing 64-bit address: 0x%02X%02X%02X%02X 0x%02X%02X%02X%02X", con->address.addr64[0],
 			                                                                             con->address.addr64[1],
@@ -104,11 +98,6 @@ struct xbee_con *xbee_conFromAddress(struct xbee_conType *conType, struct xbee_c
 				xbee_log(10,"    Success!");
 				goto got;
 			} else {
-				int i;
-				for (i = 0; i < 8; i++) {
-					printf("%d 0x%02X vs 0x%02X = %d\n",i,address->addr64[i],con->address.addr64[i],((address->addr64[i] == con->address.addr64[i])?1:0));
-				}
-				xbee_log(10,"    No match...");
 				continue;
 			}
 		}
@@ -167,9 +156,33 @@ EXPORT int xbee_conNew(struct xbee *xbee, struct xbee_con **retCon, unsigned cha
 	if (id >= xbee->mode->conTypeCount) return XBEE_EINVAL;
 	conType = &(xbee->mode->conTypes[id]);
 	
+	/* need either */
+	if ((conType->needsAddress == 1) &&
+	    ((!address->addr16_enabled) &&
+	     (!address->addr64_enabled))) {
+		return XBEE_EINVAL;
+
+	/* need 16-bit */
+	} else if ((conType->needsAddress == 2) &&
+	           (!address->addr16_enabled)) {
+		return XBEE_EINVAL;
+
+	/* need 64-bit */
+	} else if ((conType->needsAddress == 3) &&
+	           (!address->addr64_enabled)) {
+		return XBEE_EINVAL;
+
+	/* need both */
+	} else if ((conType->needsAddress == 4) &&
+             ((!address->addr16_enabled) ||
+              (!address->addr64_enabled))) {
+		return XBEE_EINVAL;
+	}
+	
 	ret = XBEE_ENONE;
 	if ((con = xbee_conFromAddress(conType, address)) != NULL && !con->sleeping) {
 		*retCon = con;
+printf("Returning existing connection @ %p\n",con);
 		goto done;
 	}
 	
@@ -177,11 +190,13 @@ EXPORT int xbee_conNew(struct xbee *xbee, struct xbee_con **retCon, unsigned cha
 		ret = XBEE_ENOMEM;
 		goto die1;
 	}
+printf("Built new connection @ %p\n",con);
 	
 	con->conType = conType;
 	memcpy(&con->address, address, sizeof(struct xbee_conAddress));
 	con->userData = userData;
 	ll_init(&con->rxList);
+	xsys_sem_init(&con->callbackSem);
 	xsys_mutex_init(&con->txMutex);
 
 	ll_add_tail(&(con->conType->conList), con);
@@ -242,7 +257,6 @@ EXPORT int xbee_convTx(struct xbee *xbee, struct xbee_con *con, char *format, va
 
 EXPORT int xbee_connTx(struct xbee *xbee, struct xbee_con *con, char *data, int length) {
 	int ret = XBEE_ENONE;
-	unsigned char frameID;
 	struct bufData *buf, *oBuf;
 	struct xbee_conType *conType;
 	if (!xbee) {
@@ -265,11 +279,10 @@ EXPORT int xbee_connTx(struct xbee *xbee, struct xbee_con *con, char *data, int 
 	memcpy(buf->buf, data, length);
 	
 	if (con->options.waitForAck) {
-		con->address.frameID_enabled = 1;
-		if ((frameID = xbee_frameIdGet(xbee, con)) == 0) {
+		con->frameID_enabled = 1;
+		if ((con->frameID = xbee_frameIdGet(xbee, con)) == 0) {
 			xbee_log(3,"No avaliable frame IDs... we can't validate delivery");
 		}
-		con->address.frameID = frameID;
 	}
 	
 	xbee_log(6,"Executing handler (%s)...", conType->txHandler->handlerName);
@@ -292,10 +305,12 @@ EXPORT int xbee_connTx(struct xbee *xbee, struct xbee_con *con, char *data, int 
 	xsys_sem_post(&xbee->txSem);
 	
 	if (con->options.waitForAck) {
-		if (frameID) {
+		if (con->frameID) {
 			xbee_log(4,"Waiting for txSem for con @ %p", con);
-			ret = xbee_frameIdGetACK(xbee, con, frameID);
+			ret = xbee_frameIdGetACK(xbee, con, con->frameID);
+			xbee_log(4,"--- ret: %d",ret);
 		}
+		con->frameID_enabled = 0;
 		xsys_mutex_unlock(&con->txMutex);
 	}
 	
@@ -311,6 +326,8 @@ int xbee_conFree(struct xbee *xbee, struct xbee_con *con) {
 	if (!xbee) return XBEE_ENOXBEE;
 	if (xbee_conValidate(xbee,con,NULL)) return XBEE_EINVAL;
 	xsys_mutex_destroy(&con->txMutex);
+	xsys_sem_destroy(&con->callbackSem);
+	ll_destroy(&con->rxList, (void(*)(void*))xbee_pktFree);
 	free(con);
 	return XBEE_ENONE;
 }
@@ -365,6 +382,8 @@ EXPORT int xbee_conAttachCallback(struct xbee *xbee, struct xbee_con *con, void(
 	} else {
 		xbee_log(5,"Detached callback from connection @ %p", con);
 	}
+	
+#warning TODO - trigger a callback for any unprocessed packets
 	
 	return XBEE_ENONE;
 }

@@ -26,6 +26,7 @@
 
 #include "internal.h"
 #include "mode.h"
+#include "join.h"
 #include "io.h"
 #include "ll.h"
 #include "errors.h"
@@ -74,13 +75,29 @@ EXPORT int xbee_setup(char *path, int baudrate, struct xbee **retXbee) {
 	}
 	
 	for (i = 0; i <= 0xFF; i++) {
-		if (xsys_sem_init(&xbee->frameIDs[i].sem)) {
+		if (xsys_sem_init(&xbee->frameIds[i].sem)) {
 			ret = XBEE_ESEMAPHORE;
 			for (; i >= 0; i--) {
-				xsys_sem_destroy(&xbee->frameIDs[i].sem);
+				xsys_sem_destroy(&xbee->frameIds[i].sem);
 			}
 			goto die4;
 		}
+	}
+	
+	if (xsys_mutex_init(&xbee->frameIdMutex)) {
+		ret = XBEE_EMUTEX;
+		goto die5;
+	}
+	
+	if (ll_init(&xbee->threadList)) {
+		ret = XBEE_ELINKEDLIST;
+		goto die6;
+	}
+	/* this gets xsys_thread_create_SYS() because it doesn't want to be in the list! */
+	if (xsys_thread_create_SYS(&(xbee->joinThread), (void *(*)(void *))xbee_join, xbee)) {
+		xbee_perror(1,"xbee_threadStart(joinThread)");
+		ret = XBEE_ETHREAD;
+		goto die7;
 	}
 	
 	xbee->running = 1;
@@ -88,38 +105,46 @@ EXPORT int xbee_setup(char *path, int baudrate, struct xbee **retXbee) {
 	if (xbee_threadStart(xbee, &(xbee->rxThread), xbee_rx)) {
 		xbee_perror(1,"xbee_threadStart(xbee_rx)");
 		ret = XBEE_ETHREAD;
-		goto die5;
+		goto die8;
 	}
 	
 	if (xsys_sem_init(&xbee->txSem)) {
 		ret = XBEE_ESEMAPHORE;
-		goto die6;
+		goto die9;
 	}
 	if (ll_init(&xbee->txList)) {
 		ret = XBEE_ELINKEDLIST;
-		goto die7;
+		goto die10;
 	}
 	if (xbee_threadStart(xbee, &(xbee->txThread), xbee_tx)) {
 		xbee_perror(1,"xbee_threadStart(xbee_tx)");
 		ret = XBEE_ETHREAD;
-		goto die8;
+		goto die11;
 	}
 	
 	if (retXbee) *retXbee = xbee;
 	xbee_default = xbee;
 	ll_add_tail(&xbee_list, xbee);
 	goto done;
-die8:
+die11:
 	ll_destroy(&xbee->txList, free);
-die7:
+die10:
 	xsys_sem_destroy(&xbee->txSem);
-die6:
+die9:
 	if (!xsys_thread_cancel(xbee->rxThread)) {
 		xsys_thread_join(xbee->rxThread, NULL);
 	}
+die8:
+	xsys_mutex_destroy(&xbee->frameIdMutex);
+die7:
+	ll_destroy(&xbee->threadList, free);
+die6:
+	if (!xsys_thread_cancel(xbee->txThread)) {
+		xsys_thread_join(xbee->txThread, NULL);
+	}
 die5:
 	for (i = 0; i <= 0xFF; i++) {
-		xsys_sem_destroy(&xbee->frameIDs[i].sem);
+		xsys_sem_destroy(&xbee->frameIds[i].sem);
 	}
 die4:
 	xbee_io_close(xbee);
@@ -204,7 +229,7 @@ int _xbee_threadStart(struct xbee *xbee, xsys_thread *thread, void*(*startFuncti
 		}
 	}
 	
-	if (xsys_thread_create(thread, startFunction, (void*)xbee)) {
+	if (_xsys_thread_create(xbee, thread, startFunction, (void*)xbee, startFuncName)) {
 		return XBEE_ETHREAD;
 	}
 	xbee_log(1,"Started thread! %s()", startFuncName);
@@ -217,21 +242,30 @@ EXPORT void xbee_pktFree(struct xbee_pkt *pkt) {
 }
 
 unsigned char xbee_frameIdGet(struct xbee *xbee, struct xbee_con *con) {
-	int i;
-	for (i = 1; i <= 0xFF; i++) {
-		if (!xbee->frameIDs[i].con) {
-			xbee->frameIDs[i].ack = XBEE_EUNKNOWN;
-			xbee->frameIDs[i].con = con;
-			return i;
+	unsigned char i;
+	unsigned char ret;
+	ret = 0;
+	xsys_mutex_lock(&xbee->frameIdMutex);
+	for (i = xbee->frameIdLast + 1; i != xbee->frameIdLast; i++) {
+		if (i == 0) i++;
+		if (i == xbee->frameIdLast) break;
+		
+		if (!xbee->frameIds[i].con) {
+			xbee->frameIds[i].ack = XBEE_EUNKNOWN;
+			xbee->frameIds[i].con = con;
+			xbee->frameIdLast = i;
+			ret = i;
+			break;
 		}
 	}
-	return 0;
+	xsys_mutex_unlock(&xbee->frameIdMutex);
+	return ret;
 }
 
 void xbee_frameIdGiveACK(struct xbee *xbee, unsigned char frameID, unsigned char ack) {
 	struct xbee_frameIdInfo *info;
 	if (!xbee)          return;
-	info = &(xbee->frameIDs[frameID]);
+	info = &(xbee->frameIds[frameID]);
 	if (!info->con)     return;
 	info->ack = ack;
 	xsys_sem_post(&info->sem);
@@ -242,7 +276,7 @@ int xbee_frameIdGetACK(struct xbee *xbee, struct xbee_con *con, unsigned char fr
 	int ret;
 	if (!xbee)          return XBEE_ENOXBEE;
 	if (!con)           return XBEE_EMISSINGPARAM;
-	info = &(xbee->frameIDs[frameID]);
+	info = &(xbee->frameIds[frameID]);
 	if (info->con != con) {
 		return XBEE_EINVAL;
 	}

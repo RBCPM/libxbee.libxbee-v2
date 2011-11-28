@@ -37,10 +37,16 @@ void xbee_cleanupMode(struct xbee *xbee) {
 	struct xbee_con *con;
 	struct xbee_pkt *pkt;
 	struct bufData *buf;
+	struct xbee_mode *mode;
+	
 	if (!xbee->mode) return;
+	mode = xbee->mode;
+	xbee->mode = NULL;
+	
 	xbee_log(5,"- Cleaning up connections...");
-	for (i = 0; xbee->mode->conTypes[i].name; i++) {
-		conType = &(xbee->mode->conTypes[i]);
+	for (i = 0; mode->conTypes[i].name; i++) {
+		if (!mode->conTypes[i].initialized) continue;
+		conType = &(mode->conTypes[i]);
 		xbee_log(5,"-- Cleaning up connection type '%s'...", conType->name);
 		
 		while ((con = ll_ext_head(&conType->conList)) != NULL) {
@@ -61,8 +67,9 @@ void xbee_cleanupMode(struct xbee *xbee) {
 	}
 
 	xbee_log(5,"- Cleaning up packet handlers...");
-	for (i = 0; xbee->mode->pktHandlers[i].handler; i++) {
-		pktHandler = &(xbee->mode->pktHandlers[i]);
+	for (i = 0; mode->pktHandlers[i].handler; i++) {
+		if (!mode->pktHandlers[i].initialized) continue;
+		pktHandler = &(mode->pktHandlers[i]);
 		xbee_log(5,"-- Cleaning up handler '%s'...", pktHandler->handlerName);
 		
 		if (pktHandler->rxData) {
@@ -84,6 +91,10 @@ void xbee_cleanupMode(struct xbee *xbee) {
 			free(pktHandler->rxData);
 		}
 	}
+	
+	free(mode->pktHandlers);
+	free(mode->conTypes);
+	free(mode);
 }
 
 EXPORT char *xbee_modeGet(struct xbee *xbee) {
@@ -124,6 +135,7 @@ EXPORT int xbee_modeSet(struct xbee *xbee, char *name) {
 	struct xbee_mode *mode;
 	struct xbee_conType *conType;
 	int isRx;
+	int ret;
 	int i, o, c;
 	if (!xbee) {
 		if (!xbee_default) return 1;
@@ -132,6 +144,7 @@ EXPORT int xbee_modeSet(struct xbee *xbee, char *name) {
 	if (!xbee_validate(xbee)) return 1;
 	if (!name) return 1;
 	
+	ret = 0;
 	xbee_cleanupMode(xbee);
 
 	/* check that the mode specified is in our list of avaliable modes (xbee_sG.c) */
@@ -139,13 +152,39 @@ EXPORT int xbee_modeSet(struct xbee *xbee, char *name) {
 		if (!strcasecmp(xbee_modes[i]->name, name)) break;
 	}
 	if (!xbee_modes[i]) return 1;
-	mode = (struct xbee_mode*)xbee_modes[i];
 	
-	if (!mode->conTypes ||
-			!mode->pktHandlers ||
-			!mode->name) return 1;
+	if (!xbee_modes[i]->conTypes ||
+			!xbee_modes[i]->pktHandlers ||
+			!xbee_modes[i]->name) return 1;
 	
-	xbee_log(1,"Set mode to '%s'", name);
+	if (!xbee_modes[i]->initialized) {
+		for (o = 0; xbee_modes[i]->pktHandlers[o].handler; o++);
+		xbee_modes[i]->pktHandlerCount = o;
+		for (o = 0; xbee_modes[i]->conTypes[o].name; o++);
+		xbee_modes[i]->conTypeCount = o;
+		xbee_modes[i]->initialized = 1;
+	}
+			
+	/* setup a copy of the chosen mode */
+	if ((mode = calloc(1, sizeof(struct xbee_mode))) == NULL) {
+		ret = 1;
+		goto die1;
+	}
+	mode->name = xbee_modes[i]->name; /* this is static... we are happy to link in */
+	
+	if ((mode->pktHandlers = calloc(1, sizeof(struct xbee_pktHandler) * xbee_modes[i]->pktHandlerCount)) == NULL) {
+		ret = 1;
+		goto die2;
+	}
+	memcpy(mode->pktHandlers, xbee_modes[i]->pktHandlers, sizeof(struct xbee_pktHandler) * xbee_modes[i]->pktHandlerCount);
+	
+	if ((mode->conTypes = calloc(1, sizeof(struct xbee_conType) * xbee_modes[i]->conTypeCount)) == NULL) {
+		ret = 1;
+		goto die3;
+	}
+	memcpy(mode->conTypes, xbee_modes[i]->conTypes, sizeof(struct xbee_conType) * xbee_modes[i]->conTypeCount);
+	
+	xbee_log(1,"Setting mode to '%s'", name);
 	
 	/* wipe all connection types */
 	for (i = 0; mode->conTypes[i].name; i++) {
@@ -187,6 +226,7 @@ EXPORT int xbee_modeSet(struct xbee *xbee, char *name) {
 		c++;
 	}
 	xbee_log(2,"Successfully activated %d packet handlers", c);
+	mode->pktHandlerCount = i;
 	
 	/* check for unused conTypes */
 	c = 0;
@@ -208,6 +248,12 @@ EXPORT int xbee_modeSet(struct xbee *xbee, char *name) {
 	mode->conTypeCount = i;
 	
 	xbee->mode = mode;
-	
-	return 0;
+	goto done;
+die3:
+	free(mode->conTypes);
+die2:
+	free(mode);
+die1:
+done:
+	return ret;
 }

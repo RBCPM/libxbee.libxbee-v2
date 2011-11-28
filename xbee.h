@@ -33,9 +33,6 @@ struct xbee_conAddress {
 	
 	unsigned char addr64_enabled;
 	unsigned char addr64[8];
-	
-	unsigned char frameID_enabled;
-	unsigned char frameID;
 };
 struct xbee_conOptions {
 	unsigned char disableAck   : 1;

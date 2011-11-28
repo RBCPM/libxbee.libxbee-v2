@@ -47,6 +47,7 @@
 #define XBEE_ECALLBACK                                     -23
 #define XBEE_EUNESCAPED_START                              -24
 #define XBEE_ETIMEOUT                                      -25
+#define XBEE_EMUTEX                                        -26
 
 #endif /* __XBEE_ERRORS_H */
 

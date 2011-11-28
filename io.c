@@ -188,6 +188,7 @@ int xbee_io_writeRawByte(FILE *f, unsigned char c) {
 	int ret = XBEE_EUNKNOWN;
 	int retries = XBEE_IO_RETRIES;
 	
+	xbee_log(20,"WRITE: 0x%02X [%c]", c, ((c >= 32 && c <= 126)?c:' '));
 	do {
 		if (xsys_fwrite(&c, 1, 1, f)) break;
 		
@@ -221,7 +222,6 @@ done:
 }
 
 int xbee_io_writeEscapedByte(FILE *f, unsigned char c) {
-	xbee_log(20,"WRITE: 0x%02X [%c]", c, ((c >= 32 && c <= 126)?c:' '));
 	if (c == 0x7E ||
 			c == 0x7D ||
 			c == 0x11 ||

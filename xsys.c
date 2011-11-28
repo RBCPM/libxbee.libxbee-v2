@@ -18,7 +18,13 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "internal.h"
 #include "xsys.h"
+#include "join.h"
+#include "ll.h"
 
 #define __XBEE_XSYS_LOAD_C
 #if defined(__GNUC__) /* ------- */
@@ -29,3 +35,20 @@
 #error Unsupported OS
 #endif /* ---------------------- */
 #undef __XBEE_XSYS_LOAD_C
+
+int _xsys_thread_create(struct xbee *xbee, xsys_thread *thread, void*(*start_routine)(void*), void *arg, char *funcName) {
+	struct threadInfo *info;
+	int ret;
+	if (!(info = calloc(1, sizeof(struct threadInfo)))) {
+		return XBEE_ENOMEM;
+	}
+	ret = xsys_thread_create_SYS(&info->thread, start_routine, arg);
+	if (!ret) {
+		info->funcName = funcName;
+		ll_add_tail(&xbee->threadList, info);
+		if (thread) *thread = info->thread;
+	} else {
+		free(info);
+	}
+	return ret;
+}

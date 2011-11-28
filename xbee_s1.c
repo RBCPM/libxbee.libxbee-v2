@@ -43,12 +43,10 @@ int xbee_s1_txStatus(struct xbee *xbee, struct xbee_pktHandler *handler, char is
 		goto die1;
 	}
 	
-	con->address.frameID_enabled = 1;
-	con->address.frameID = (*buf)->buf[1];
+	con->frameID_enabled = 1;
+	con->frameID = (*buf)->buf[1];
 	
 	(*pkt)->status = (*buf)->buf[2];
-	
-	xbee_frameIdGiveACK(xbee, con->address.frameID, (*pkt)->status);
 	
 	goto done;
 die1:
@@ -134,8 +132,8 @@ int xbee_s1_DataTx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx
 	}
 	
 	nBuf->buf[0] = handler->conType->txID;
-	if (con->address.frameID_enabled) {
-		nBuf->buf[1] = con->address.frameID;
+	if (con->frameID_enabled) {
+		nBuf->buf[1] = con->frameID;
 	}
 	
 	/* 64-bit addressing */
@@ -318,19 +316,19 @@ done:
 /* ######################################################################### */
 
 static struct xbee_conType conTypes[] = {
-	ADD_TYPE_RX  (0x8A,       "Modem Status"),
-	ADD_TYPE_RX  (0x89,       "Transmit Status"),
+	ADD_TYPE_RX  (0x8A,       0, "Modem Status"),
+	ADD_TYPE_RX  (0x89,       0, "Transmit Status"),
 	
-	ADD_TYPE_RXTX(0x88, 0x08, "Local AT"),
-	ADD_TYPE_TX  (      0x09, "Local AT (queued)"),
+	ADD_TYPE_RXTX(0x88, 0x08, 0, "Local AT"),
+	ADD_TYPE_TX  (      0x09, 0, "Local AT (queued)"),
 	
-	ADD_TYPE_RXTX(0x97, 0x17, "Remote AT"),
+	ADD_TYPE_RXTX(0x97, 0x17, 1, "Remote AT"),
 	
-	ADD_TYPE_RXTX(0x80, 0x00, "64-bit Data"),
-	ADD_TYPE_RXTX(0x81, 0x01, "16-bit Data"),
+	ADD_TYPE_RXTX(0x80, 0x00, 3, "64-bit Data"),
+	ADD_TYPE_RXTX(0x81, 0x01, 2, "16-bit Data"),
 	
-	ADD_TYPE_RX  (0x82,       "64-bit I/O"),
-	ADD_TYPE_RX  (0x83,       "16-bit I/O"),
+	ADD_TYPE_RX  (0x82,       3, "64-bit I/O"),
+	ADD_TYPE_RX  (0x83,       2, "16-bit I/O"),
 	
 	ADD_TYPE_TERMINATOR()
 };
@@ -358,4 +356,8 @@ static struct xbee_pktHandler pktHandlers[] = {
 	ADD_HANDLER_TERMINATOR()
 };
 
-struct xbee_mode xbee_mode_s1 = { pktHandlers, conTypes, "series1" };
+struct xbee_mode xbee_mode_s1 = {
+	pktHandlers: pktHandlers,
+	conTypes: conTypes,
+	name: "series1"
+};

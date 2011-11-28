@@ -6,7 +6,7 @@ LIBREV:=0
 BUILDDIR:=.build
 DESTDIR:=lib
 
-SRCS:=conn io ll log mode rx tx xbee xbee_s1 xbee_s2 xbee_sG xsys
+SRCS:=conn io ll log mode rx tx xbee xbee_s1 xbee_s2 xbee_sG xsys join
 RELEASE_ITEMS:=lib/libxbee.so lib/libxbee.so.dbg lib/libxbee.a xbee.h
 LIBS:=rt pthread
 

@@ -174,7 +174,7 @@ int xsys_setupSerial(int fd, FILE *stream, int baudrate) {
 /* ######################################################################### */
 /* threads */
 
-int xsys_thread_create(xsys_thread *thread, void*(*start_routine)(void*), void *arg) {
+int xsys_thread_create_SYS(xsys_thread *thread, void*(*start_routine)(void*), void *arg) {
 	return pthread_create((pthread_t*)thread, NULL, start_routine, arg);
 }
 int xsys_thread_cancel(xsys_thread thread) {
@@ -188,6 +188,7 @@ int xsys_thread_tryjoin(xsys_thread thread, void **retval) {
 }
 int xsys_thread_detach_self(void) {
 	return pthread_detach(pthread_self());
+	return 0;
 }
 int xsys_thread_iAm(xsys_thread thread) {
 	return pthread_equal(pthread_self(), thread);
@@ -228,9 +229,14 @@ int xsys_sem_wait(xsys_sem *sem) {
 }
 int xsys_sem_timedwait(xsys_sem *sem, time_t sec, long nsec) {
 	struct timespec to;
-	to.tv_sec = sec;
-	to.tv_nsec = nsec;
-	return sem_timedwait(sem, &to);
+	clock_gettime(CLOCK_REALTIME, &to);
+	to.tv_sec += sec;
+	to.tv_nsec += nsec;
+	if (to.tv_nsec >= 1000000000) {
+		to.tv_sec++;
+		to.tv_nsec -= 1000000000;
+	}
+	return sem_timedwait((sem_t*)sem, &to);
 }
 int xsys_sem_post(xsys_sem *sem) {
 	return sem_post((sem_t*)sem);
