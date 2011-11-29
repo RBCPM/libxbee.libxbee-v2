@@ -77,9 +77,6 @@ int xbee_sG_atRx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, 
 		goto die1;
 	}
 	
-	if ((*buf)->buf[0] != 0x88) {
-	}
-	
 	if ((*buf)->buf[0] == 0x88) {
 		offset = 0;
 	} else if ((*buf)->buf[0] == 0x97) {

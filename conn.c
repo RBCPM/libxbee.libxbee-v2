@@ -73,7 +73,7 @@ struct xbee_con *xbee_conFromAddress(struct xbee_conType *conType, struct xbee_c
 	if (!address) return NULL;
 	if (!conType || !conType->initialized) return NULL;
 	
-	con = ll_get_next(&conType->conList, NULL);
+	con = ll_get_head(&conType->conList);
 	if (!con) return NULL;
 	
 	/* if both addresses are completely blank, just return the first connection (probably a local AT connection) */
@@ -183,7 +183,6 @@ EXPORT int xbee_conNew(struct xbee *xbee, struct xbee_con **retCon, unsigned cha
 	ret = XBEE_ENONE;
 	if ((con = xbee_conFromAddress(conType, address)) != NULL && !con->sleeping) {
 		*retCon = con;
-printf("Returning existing connection @ %p\n",con);
 		goto done;
 	}
 	
@@ -191,7 +190,6 @@ printf("Returning existing connection @ %p\n",con);
 		ret = XBEE_ENOMEM;
 		goto die1;
 	}
-printf("Built new connection @ %p\n",con);
 	
 	con->conType = conType;
 	memcpy(&con->address, address, sizeof(struct xbee_conAddress));

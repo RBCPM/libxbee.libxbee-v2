@@ -280,7 +280,7 @@ int xbee_frameIdGetACK(struct xbee *xbee, struct xbee_con *con, unsigned char fr
 	if (info->con != con) {
 		return XBEE_EINVAL;
 	}
-	if (xsys_sem_timedwait(&info->sem,2,0)) {
+	if (xsys_sem_timedwait(&info->sem,5,0)) {
 		if (errno == ETIMEDOUT) {
 			ret = XBEE_ETIMEOUT;
 		} else {
