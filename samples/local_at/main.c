@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <semaphore.h>
 
 #include <xbee.h>
 
@@ -17,6 +18,7 @@ void myCB(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt **pkt, void *
 	
 	if ((*pkt)->datalen == 0) {
 		printf("Scan complete!\n");
+		if (userData && *userData) sem_post(*userData);
 		return;
 	}
 
@@ -32,6 +34,7 @@ void myCB(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt **pkt, void *
 
 int main(int argc, char *argv[]) {
 	int ret;
+	sem_t sem;
 	void *p;
 	
 	/* this is our xbee instance... from 'user' space you don't have access to the struct */
@@ -47,7 +50,7 @@ int main(int argc, char *argv[]) {
 	/* make a lixbee instance, and connect it to /dev/ttyUSB1 @ 57600 baud
 	   you don't have to keep hold of the returned xbee, in which case you can pass NULL and the most recently started instance will be used! */
 	if ((ret = xbee_setup("/dev/ttyUSB0", 57600, &xbee)) != 0) {
-		fprintf(stderr, "xbee_setup(): failed... (%d)\n", ret);
+		xbee_log(-1,"xbee_setup(): failed... (%d)", ret);
 		exit(1);
 	}
 	/* setup libxbee to use the series 1 packets - you have to do this before you do anything else! */
@@ -55,15 +58,20 @@ int main(int argc, char *argv[]) {
 	
 	/* get the connection type ID, you pass in a string, it returns an ID */
 	if ((ret = xbee_conTypeIdFromName(xbee, "Local AT", &conType)) != 0) {
-		fprintf(stderr, "xbee_conTypeIdFromName(): failed... (%d)\n", ret);
+		xbee_log(-1,"xbee_conTypeIdFromName(): failed... (%d)", ret);
+		exit(1);
+	}
+	
+	if ((ret = sem_init(&sem, 0, 0)) != 0) {
+		xbee_log(-1,"sem_init(): failed... (%d)", ret);
 		exit(1);
 	}
 	
 	/* build a connection to the following address */
 	addr.addr16_enabled = 0;
 	addr.addr64_enabled = 0;
-	if ((ret = xbee_conNew(xbee, &con, conType, &addr, NULL)) != 0) {
-		fprintf(stderr, "xbee_newcon(): failed... (%d)\n", ret);
+	if ((ret = xbee_conNew(xbee, &con, conType, &addr, &sem)) != 0) {
+		xbee_log(-1,"xbee_newcon(): failed... (%d)", ret);
 		exit(1);
 	}
 	{
@@ -80,9 +88,10 @@ int main(int argc, char *argv[]) {
 	if ((ret = xbee_conTx(xbee, con, "ND")) != 0) {
 		xbee_log(-1,"Something went wrong... (%d)", ret);
 	} else {
-		xbee_log(-1,"Waiting for response...");
-		sleep(5);
+		sem_wait(&sem);
 	}
+
+	sem_destroy(&sem);
 
 	/* shutdown the connection */
 	xbee_conEnd(xbee, con, NULL);
