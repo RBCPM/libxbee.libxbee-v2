@@ -26,7 +26,7 @@
 
 #include "internal.h"
 #include "mode.h"
-#include "join.h"
+#include "thread.h"
 #include "io.h"
 #include "ll.h"
 #include "errors.h"
@@ -89,59 +89,69 @@ EXPORT int xbee_setup(char *path, int baudrate, struct xbee **retXbee) {
 		goto die5;
 	}
 	
-	if (ll_init(&xbee->threadList)) {
-		ret = XBEE_ELINKEDLIST;
+	if (xsys_sem_init(&xbee->semMonitor)) {
+		ret = XBEE_ESEMAPHORE;
 		goto die6;
 	}
-	/* this gets xsys_thread_create_SYS() because it doesn't want to be in the list! */
-	if (xsys_thread_create_SYS(&(xbee->joinThread), (void *(*)(void *))xbee_join, xbee)) {
-		xbee_perror(1,"xbee_threadStart(joinThread)");
-		ret = XBEE_ETHREAD;
+	
+	if (ll_init(&xbee->threadList)) {
+		ret = XBEE_ELINKEDLIST;
 		goto die7;
 	}
 	
-	xbee->running = 1;
-	
-	if (xbee_threadStart(xbee, &(xbee->rxThread), xbee_rx)) {
-		xbee_perror(1,"xbee_threadStart(xbee_rx)");
+	if (xsys_thread_create(&(xbee->threadMonitor), (void *(*)(void *))xbee_threadMonitor, xbee)) {
+		xbee_perror(1,"xsys_thread_create(joinThread)");
 		ret = XBEE_ETHREAD;
 		goto die8;
 	}
 	
+	xbee->running = 1;
+	if (ll_add_tail(&xbee_list, xbee)) {
+		ret = XBEE_ELINKEDLIST;
+		goto die9;
+	}
+	
+	if (xbee_threadStartMonitored(xbee, &(xbee->rxThread), xbee_rx, xbee)) {
+		xbee_log(1,"xbee_threadStartMonitored(xbee_rx)");
+		ret = XBEE_ETHREAD;
+		goto die10;
+	}
+	
 	if (xsys_sem_init(&xbee->txSem)) {
 		ret = XBEE_ESEMAPHORE;
-		goto die9;
+		goto die11;
 	}
 	if (ll_init(&xbee->txList)) {
 		ret = XBEE_ELINKEDLIST;
-		goto die10;
+		goto die12;
 	}
-	if (xbee_threadStart(xbee, &(xbee->txThread), xbee_tx)) {
-		xbee_perror(1,"xbee_threadStart(xbee_tx)");
+	if (xbee_threadStartMonitored(xbee, &(xbee->txThread), xbee_tx, xbee)) {
+		xbee_log(1,"xbee_threadStartMonitored(xbee_tx)");
 		ret = XBEE_ETHREAD;
-		goto die11;
+		goto die13;
 	}
 	
 	if (retXbee) *retXbee = xbee;
 	xbee_default = xbee;
-	ll_add_tail(&xbee_list, xbee);
 	goto done;
-die11:
+/* ######################################################################### */
+die13:
 	ll_destroy(&xbee->txList, free);
-die10:
+die12:
 	xsys_sem_destroy(&xbee->txSem);
+die11:
+	xbee_threadStopMonitored(xbee, &xbee->rxThread, NULL, NULL);
+die10:
+	ll_ext_item(&xbee_list, xbee);
 die9:
-	if (!xsys_thread_cancel(xbee->rxThread)) {
-		xsys_thread_join(xbee->rxThread, NULL);
-	}
+	xbee->running = 0;
+	xsys_thread_cancel(xbee->threadMonitor);
 die8:
-	xsys_mutex_destroy(&xbee->frameIdMutex);
-die7:
 	ll_destroy(&xbee->threadList, free);
+die7:
+	xsys_sem_destroy(&xbee->semMonitor);
 die6:
-	if (!xsys_thread_cancel(xbee->txThread)) {
-		xsys_thread_join(xbee->txThread, NULL);
-	}
+	xsys_mutex_destroy(&xbee->frameIdMutex);
 die5:
 	for (i = 0; i <= 0xFF; i++) {
 		xsys_sem_destroy(&xbee->frameIds[i].sem);
@@ -159,7 +169,7 @@ done:
 }
 
 EXPORT void xbee_shutdown(struct xbee *xbee) {
-	int o;
+	int i,o;
 	struct bufData *buf;
 	
 	if (!xbee) {
@@ -174,9 +184,19 @@ EXPORT void xbee_shutdown(struct xbee *xbee) {
 	xbee_log(2,"Shutting down libxbee...");
 	ll_ext_item(&xbee_list, xbee);
 	
+	xbee_log(5,"- Terminating thread monitor...");
+	xsys_thread_cancel(xbee->threadMonitor);
+	ll_destroy(&xbee->threadList, free);
+	xsys_sem_destroy(&xbee->semMonitor);
+	
+	xbee_log(5,"- Destroying frameID control...");
+	for (i = 0; i <= 0xFF; i++) {
+		xsys_sem_destroy(&xbee->frameIds[i].sem);
+	}
+	xsys_mutex_destroy(&xbee->frameIdMutex);
+	
 	xbee_log(5,"- Terminating txThread...");
-	xsys_thread_cancel(xbee->txThread);
-	xsys_thread_join(xbee->txThread,NULL);
+	xbee_threadStopMonitored(xbee, &xbee->txThread, NULL, NULL);
 	
 	for (o = 0; (buf = ll_ext_head(&xbee->txList)) != NULL; o++) {
 		free(buf);
@@ -186,8 +206,7 @@ EXPORT void xbee_shutdown(struct xbee *xbee) {
 	xsys_sem_destroy(&xbee->txSem);
 	
 	xbee_log(5,"- Terminating rxThread...");
-	xsys_thread_cancel(xbee->rxThread);
-	xsys_thread_join(xbee->rxThread,NULL);
+	xbee_threadStopMonitored(xbee, &xbee->rxThread, NULL, NULL);
 	
 	xbee_cleanupMode(xbee);
 	
@@ -202,6 +221,8 @@ EXPORT void xbee_shutdown(struct xbee *xbee) {
 	xbee_log(5,"- Unlink and free instance");
 	free(xbee);
 	xbee_log(2,"Shutdown complete");
+	
+	xbee_default = ll_get_tail(&xbee_list);
 	
 	return;
 }
@@ -229,7 +250,7 @@ int _xbee_threadStart(struct xbee *xbee, xsys_thread *thread, void*(*startFuncti
 		}
 	}
 	
-	if (_xsys_thread_create(xbee, thread, startFunction, (void*)xbee, startFuncName)) {
+	if (xsys_thread_create(thread, startFunction, (void*)xbee)) {
 		return XBEE_ETHREAD;
 	}
 	xbee_log(1,"Started thread! %s()", startFuncName);

@@ -56,7 +56,8 @@ struct xbee {
 	xsys_mutex frameIdMutex;
 	
 	struct ll_head threadList;
-	xsys_thread joinThread;
+	xsys_thread threadMonitor;
+	xsys_sem semMonitor;
 	
 	xsys_thread rxThread;
 	void *rxBuf;

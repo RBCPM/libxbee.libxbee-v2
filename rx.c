@@ -93,7 +93,7 @@ void xbee_triggerCallback(struct xbee *xbee, struct xbee_con *con) {
 		info.taken = 0;
 		
 		con->callbackRunning = 0;
-		if (!xsys_thread_create_SYS(&con->callbackThread, (void*(*)(void*))_xbee_rxCallbackThread, (void*)&info)) {
+		if (!xsys_thread_create(&con->callbackThread, (void*(*)(void*))_xbee_rxCallbackThread, (void*)&info)) {
 			con->callbackStarted = 1;
 			while (!info.taken) {
 				usleep(100);
@@ -245,7 +245,7 @@ int _xbee_rxHandler(struct xbee *xbee, struct xbee_pktHandler *pktHandler, struc
 	
 	if (!data->threadStarted || !data->threadRunning) {
 		data->threadRunning = 0;
-		if (xsys_thread_create_SYS(&data->thread, (void*(*)(void*))_xbee_rxHandlerThread, (void*)pktHandler)) {
+		if (xsys_thread_create(&data->thread, (void*(*)(void*))_xbee_rxHandlerThread, (void*)pktHandler)) {
 			xbee_perror(1,"xsys_thread_create()");
 			ret = XBEE_ETHREAD;
 			goto die4;

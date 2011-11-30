@@ -21,12 +21,13 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-struct threadInfo {
-	char *funcName;
-	xsys_thread thread;
-};
+void xbee_threadMonitor(struct xbee *xbee);
 
-void xbee_join(struct xbee *xbee);
+#define xbee_threadStartMonitored(a,b,c,d) \
+	_xbee_threadStartMonitored((a),(b),(void*(*)(void*))(c),(void*)(d),(#c))
+int _xbee_threadStartMonitored(struct xbee *xbee, xsys_thread *thread, void*(*start_routine)(void*), void *arg, char *funcName);
+
+int xbee_threadStopMonitored(struct xbee *xbee, xsys_thread *thread, int *restartCount, void **retval);
 
 #endif /* __XBEE_JOIN_H */
 

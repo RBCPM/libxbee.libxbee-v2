@@ -7,7 +7,7 @@ LIBFULLREV:=$(LIBMAJ).$(LIBMIN).$(LIBREV)
 BUILDDIR:=.build
 DESTDIR:=lib
 
-SRCS:=conn io ll log mode rx tx xbee xbee_s1 xbee_s2 xbee_sG xsys join
+SRCS:=conn io ll log mode rx tx xbee xbee_s1 xbee_s2 xbee_sG xsys thread
 RELEASE_ITEMS:=lib/libxbee.so.$(LIBFULLREV) \
                lib/libxbee.so \
                lib/libxbee.so.$(LIBFULLREV).dbg \

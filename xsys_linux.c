@@ -174,7 +174,7 @@ int xsys_setupSerial(int fd, FILE *stream, int baudrate) {
 /* ######################################################################### */
 /* threads */
 
-int xsys_thread_create_SYS(xsys_thread *thread, void*(*start_routine)(void*), void *arg) {
+int xsys_thread_create(xsys_thread *thread, void*(*start_routine)(void*), void *arg) {
 	return pthread_create((pthread_t*)thread, NULL, start_routine, arg);
 }
 int xsys_thread_cancel(xsys_thread thread) {
