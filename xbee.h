@@ -121,6 +121,8 @@ int xbee_conEnd(struct xbee *xbee, struct xbee_con *con, void **userData);
 
 int xbee_conAttachCallback(struct xbee *xbee, struct xbee_con *con, void(*callback)(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt **pkt, void **userData), void **prevCallback);
 int xbee_conOptions(struct xbee *xbee, struct xbee_con *con, struct xbee_conOptions *getOptions, struct xbee_conOptions *setOptions);
+void *xbee_conGetData(struct xbee *xbee, struct xbee_con *con);
+int xbee_conSetData(struct xbee *xbee, struct xbee_con *con, void *data);
 int xbee_conSleep(struct xbee *xbee, struct xbee_con *con, int wakeOnRx);
 int xbee_conWake(struct xbee *xbee, struct xbee_con *con);
 

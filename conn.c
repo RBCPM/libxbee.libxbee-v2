@@ -402,6 +402,33 @@ EXPORT int xbee_conOptions(struct xbee *xbee, struct xbee_con *con, struct xbee_
 	return XBEE_ENONE;
 }
 
+EXPORT void *xbee_conGetData(struct xbee *xbee, struct xbee_con *con) {
+	if (!xbee) {
+		if (!xbee_default) return NULL;
+		xbee = xbee_default;
+	}
+	if (!xbee_validate(xbee)) return NULL;
+	if (!con) return NULL;
+	
+	if (xbee_conValidate(xbee, con, NULL)) return NULL;
+	
+	return con->userData;
+}
+
+EXPORT int xbee_conSetData(struct xbee *xbee, struct xbee_con *con, void *data) {
+	if (!xbee) {
+		if (!xbee_default) return XBEE_ENOXBEE;
+		xbee = xbee_default;
+	}
+	if (!xbee_validate(xbee)) return XBEE_ENOXBEE;
+	if (!con) return XBEE_EMISSINGPARAM;
+	
+	if (xbee_conValidate(xbee, con, NULL)) return XBEE_EINVAL;
+	
+	con->userData = data;
+	return XBEE_ENONE;
+}
+
 EXPORT int xbee_conSleep(struct xbee *xbee, struct xbee_con *con, int wakeOnRx) {
 	if (!xbee) {
 		if (!xbee_default) return XBEE_ENOXBEE;
