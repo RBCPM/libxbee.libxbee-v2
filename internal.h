@@ -153,16 +153,17 @@ struct xbee_pktHandler  {
 
 /* ADD_TYPE_RXTX(rxID, txID, needsAddress, name) */
 #define ADD_TYPE_RXTX(a, b, c, d) \
-	{ 1, (a), 1, (b), (c), (d)  }
+	{ 0, 1, (a), 1, (b), (c), (d) , NULL, NULL }
 #define ADD_TYPE_RX(a, b, c) \
-	{ 1, (a), 0,  0 , (b), (c)  }
+	{ 0, 1, (a), 0,  0 , (b), (c) , NULL, NULL }
 #define ADD_TYPE_TX(a, b, c) \
-	{ 0,  0 , 1, (a), (b), (c)  }
+	{ 0, 0,  0 , 1, (a), (b), (c) , NULL, NULL }
 #define ADD_TYPE_TERMINATOR() \
-	{ 0,  0 , 0,  0 ,  0 , NULL }
+	{ 0, 0,  0 , 0,  0 ,  0 , NULL, NULL, NULL }
 
 /* a NULL name indicates the end of the list */
 struct xbee_conType {
+	char initialized;
 	unsigned char rxEnabled;
 	unsigned char rxID;
 	unsigned char txEnabled;
@@ -176,7 +177,6 @@ struct xbee_conType {
 	struct xbee_pktHandler *rxHandler;
 	struct xbee_pktHandler *txHandler;
 	struct ll_head conList; /* data is struct xbee_con */
-	char initialized;
 };
 
 struct xbee_mode {
