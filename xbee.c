@@ -66,7 +66,7 @@ EXPORT int xbee_setup(char *path, int baudrate, struct xbee **retXbee) {
 		ret = XBEE_ENOMEM;
 		goto die2;
 	}
-	strcpy(xbee->device.path,"/dev/ttyUSB1");
+	strcpy(xbee->device.path, path);
 	xbee->device.baudrate = baudrate;
 	
 	if (xbee_io_open(xbee)) {
