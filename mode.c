@@ -160,8 +160,10 @@ EXPORT int xbee_modeSet(struct xbee *xbee, char *name) {
 	if (!xbee_modes[i]->initialized) {
 		for (o = 0; xbee_modes[i]->pktHandlers[o].handler; o++);
 		xbee_modes[i]->pktHandlerCount = o;
+		xbee_log(10, "Counted %d packet handlers...", o);
 		for (o = 0; xbee_modes[i]->conTypes[o].name; o++);
 		xbee_modes[i]->conTypeCount = o;
+		xbee_log(10, "Counted %d connection types...", o);
 		xbee_modes[i]->initialized = 1;
 	}
 			
@@ -172,13 +174,13 @@ EXPORT int xbee_modeSet(struct xbee *xbee, char *name) {
 	}
 	mode->name = xbee_modes[i]->name; /* this is static... we are happy to link in */
 	
-	if ((mode->pktHandlers = calloc(1, sizeof(struct xbee_pktHandler) * xbee_modes[i]->pktHandlerCount)) == NULL) {
+	if ((mode->pktHandlers = calloc(1, sizeof(struct xbee_pktHandler) * (xbee_modes[i]->pktHandlerCount + 1))) == NULL) {
 		ret = 1;
 		goto die2;
 	}
 	memcpy(mode->pktHandlers, xbee_modes[i]->pktHandlers, sizeof(struct xbee_pktHandler) * xbee_modes[i]->pktHandlerCount);
 	
-	if ((mode->conTypes = calloc(1, sizeof(struct xbee_conType) * xbee_modes[i]->conTypeCount)) == NULL) {
+	if ((mode->conTypes = calloc(1, sizeof(struct xbee_conType) * (xbee_modes[i]->conTypeCount + 1))) == NULL) {
 		ret = 1;
 		goto die3;
 	}
