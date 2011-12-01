@@ -72,15 +72,21 @@ struct xbee_con;
 
 
 struct xbee_pkt_ioSample {
-	unsigned char d0 : 1;
-	unsigned char d1 : 1;
-	unsigned char d2 : 1;
-	unsigned char d3 : 1;
-	unsigned char d4 : 1;
-	unsigned char d5 : 1;
-	unsigned char d6 : 1;
-	unsigned char d7 : 1;
-	unsigned char d8 : 1;
+	union {
+		struct {
+			unsigned char d0 : 1;
+			unsigned char d1 : 1;
+			unsigned char d2 : 1;
+			unsigned char d3 : 1;
+			unsigned char d4 : 1;
+			unsigned char d5 : 1;
+			unsigned char d6 : 1;
+			unsigned char d7 : 1;
+			unsigned char d8 : 1;
+			unsigned char __space__ : 7;
+		} pin;
+		unsigned short raw;
+	} digital;
 	unsigned short a0;
 	unsigned short a1;
 	unsigned short a2;
@@ -88,25 +94,33 @@ struct xbee_pkt_ioSample {
 	unsigned short a4;
 	unsigned short a5;
 };
+#define XBEE_IO_DIGITAL_ENABLED_MASK 0x01FF
+#define XBEE_IO_ANALOG_ENABLED_MASK  0x7E00
 struct xbee_pkt_ioData {
-	unsigned char d0_enabled : 1;
-	unsigned char d1_enabled : 1;
-	unsigned char d2_enabled : 1;
-	unsigned char d3_enabled : 1;
-	unsigned char d4_enabled : 1;
-	unsigned char d5_enabled : 1;
-	unsigned char d6_enabled : 1;
-	unsigned char d7_enabled : 1;
-	unsigned char d8_enabled : 1;
-	unsigned char a0_enabled : 1;
-	unsigned char a1_enabled : 1;
-	unsigned char a2_enabled : 1;
-	unsigned char a3_enabled : 1;
-	unsigned char a4_enabled : 1;
-	unsigned char a5_enabled : 1;
-
 	unsigned char sampleCount;
-	unsigned char sampleIndex;
+	
+	union {
+		struct {
+			unsigned char d0 : 1;
+			unsigned char d1 : 1;
+			unsigned char d2 : 1;
+			unsigned char d3 : 1;
+			unsigned char d4 : 1;
+			unsigned char d5 : 1;
+			unsigned char d6 : 1;
+			unsigned char d7 : 1;
+			unsigned char d8 : 1;
+			unsigned char a0 : 1;
+			unsigned char a1 : 1;
+			unsigned char a2 : 1;
+			unsigned char a3 : 1;
+			unsigned char a4 : 1;
+			unsigned char a5 : 1;
+			unsigned char __space__  : 1;
+		} pin;
+		unsigned short mask;
+	} enable;
+
 	struct xbee_pkt_ioSample sample[1];
 };
 struct xbee_pkt {
