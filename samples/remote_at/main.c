@@ -14,14 +14,14 @@ unsigned char conType;
 void myCB(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt **pkt, void **userData) {
 	int ret;
 	
-	if (userData && *userData) sem_post(*userData);
-	
 	if ((*pkt)->status) {
 		printf("status = %d\n",(*pkt)->status);
 		return;
 	}
 	
 	printf("Remote NI: %s\n", (*pkt)->data);
+	
+	if (userData && *userData) sem_post(*userData);
 }
 
 
