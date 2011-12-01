@@ -124,13 +124,6 @@ typedef int(*xbee_pktHandlerFunc)(struct xbee *xbee,
                                   struct xbee_con *con,
                                   struct xbee_pkt **pkt);
 
-/* ADD_HANDLER(packetID, dataStarts, functionName) */
-#define ADD_HANDLER(a, b) \
-	{ (a), (#b), (b), NULL, NULL }
-#define ADD_HANDLER_TERMINATOR() \
-	{ 0, NULL, NULL, NULL, NULL }
-
-
 struct rxData {
 	unsigned char threadStarted;
 	unsigned char threadRunning;
@@ -140,6 +133,12 @@ struct rxData {
 	struct ll_head list; /* data is struct bufData */
 	xsys_thread thread;
 };
+
+/* ADD_HANDLER(packetID, dataStarts, functionName) */
+#define ADD_HANDLER(a, b) \
+	{ (a), (#b), (b), NULL, NULL }
+#define ADD_HANDLER_TERMINATOR() \
+	{ 0, NULL, NULL, NULL, NULL }
 
 /* a NULL handler indicates the end of the list */
 struct xbee_pktHandler  {
