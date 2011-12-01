@@ -29,7 +29,6 @@
 #include "thread.h"
 #include "io.h"
 #include "ll.h"
-#include "errors.h"
 #include "log.h"
 #include "rx.h"
 #include "tx.h"

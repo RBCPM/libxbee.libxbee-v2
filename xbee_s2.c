@@ -23,7 +23,6 @@
 #include <string.h>
 
 #include "internal.h"
-#include "errors.h"
 #include "xbee.h"
 #include "xbee_s2.h"
 #include "xbee_sG.h"

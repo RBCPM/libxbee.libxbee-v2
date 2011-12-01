@@ -24,8 +24,36 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-struct xbee;
+#define XBEE_ENONE                                           0
+#define XBEE_EUNKNOWN                                       -1
+#define XBEE_ENOMEM                                         -2
+#define XBEE_ESELECT                                        -3
+#define XBEE_ESELECTINTERRUPTED                             -4
+#define XBEE_EEOF                                           -5
+#define XBEE_EIORETRIES                                     -6
+#define XBEE_EOPENFAILED                                    -7
+#define XBEE_EIO                                            -8
+#define XBEE_ESEMAPHORE                                     -9
+#define XBEE_ELINKEDLIST                                   -10
+#define XBEE_ETHREAD                                       -11
+#define XBEE_ENOXBEE                                       -12
+#define XBEE_EMISSINGPARAM                                 -13
+#define XBEE_EINVALBAUDRATE                                -14
+#define XBEE_ESETUP                                        -15
+#define XBEE_ELENGTH                                       -16
+#define XBEE_EINVAL                                        -17
+#define XBEE_EBUSY                                         -18
+#define XBEE_ENOMODE                                       -19
+#define XBEE_EFAILED                                       -20
+#define XBEE_ECANTTX                                       -21
+#define XBEE_ENOTREADY                                     -22
+#define XBEE_ECALLBACK                                     -23
+#define XBEE_EUNESCAPED_START                              -24
+#define XBEE_ETIMEOUT                                      -25
+#define XBEE_EMUTEX                                        -26
+#define XBEE_EINUSE                                        -27
 
+struct xbee;
 
 struct xbee_conAddress {
 	unsigned char addr16_enabled;

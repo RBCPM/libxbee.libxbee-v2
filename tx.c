@@ -25,7 +25,6 @@
 #include "internal.h"
 #include "tx.h"
 #include "io.h"
-#include "errors.h"
 #include "log.h"
 
 int _xbee_tx(struct xbee *xbee) {

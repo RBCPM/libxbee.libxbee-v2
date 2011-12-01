@@ -35,7 +35,6 @@
 #endif /* ---------------------- */
 #undef __XBEE_XSYS_LOAD_H
 
-#include "errors.h"
 #include "log.h"
 
 /* file I/O */

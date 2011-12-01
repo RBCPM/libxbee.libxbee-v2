@@ -26,7 +26,6 @@
 #include <sys/types.h>
 
 #include "internal.h"
-#include "errors.h"
 #include "log.h"
 #include "io.h"
 
