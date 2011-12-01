@@ -1,0 +1,50 @@
+v2.0.1 - ___ - 1 Dec 2011
+	Bug fixes:
+		+ Fixed incorrect addressing semantics
+		+ Fixed waitForAck handling
+		+ xbee_newCon() can validate addressing for each conType
+		+ xbee_modeSet() now correctly creates new memory for the settings. Previously big issues would arise when using mulitple instances of libxbee
+		+ Fixed xbee_io_getEscapedByte()
+		+ Fixed various segfaults in ll.c
+		+ Fixed xbee_setup() and xbee_shutdown() leaks
+	Modifications / Additions:
+		+ Moved XBEE_E* from errors.h -> xbee.h
+		+ Moved struct xbee_conOptions from internal.h -> xbee.h
+		+ _xbee_rxCallbackThread() will now idle for 5 seconds before dying
+		+ xbee_io_getEscapedByte() now handles unescaped packet re-starts correctly
+		+ Added sample applicaions
+		+ Added thread monitor, to keep xbee_rx() and xbee_tx() running, possibly more later
+		+ Improved handling of I/O data
+		+ Added xsys_lockf(), xsys_thread_iAm() and xsys_sem_timedwait()
+	New user functions:
+		+ xbee_convTx() - pass it a format string and va_list
+		+ xbee_connTx() - pass it fixed data & length
+		+ xbee_conOptions()
+		+ xbee_conGetData()
+		+ xbee_conSetData()
+		+ xbee_conSleep()
+		+ xbee_conWake()
+
+v2.0.0 - a15e66b0a6ef - 26 Nov 2011
+	Initial functional release
+	User function list:
+		+ xbee_validate()
+		+ xbee_setup()
+		+ xbee_shutdown()
+		+ xbee_pktFree()
+		+ xbee_modeGetList()
+		+ xbee_modeGet()
+		+ xbee_modeSet()
+		+ xbee_conTypeIdFromName()
+		+ xbee_conNew()
+		+ xbee_conTx()
+		+ xbee_conRx()
+		+ xbee_conEnd()
+		+ xbee_conAttachCallback()
+		+ xbee_logSetTarget()
+		+ xbee_logSetLevel()
+		+ xbee_log()
+	Core functionality:
+		+ Rx thread, with threadded packet handling and callbacks
+		+ Tx thread
+		+ Series 1 packet handling fully supported
