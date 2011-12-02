@@ -29,12 +29,25 @@ CLINKS:=$(addprefix -l,$(LIBS)) $(DEBUG)
 
 ###############################################################################
 
-.PHONY: all clean spotless new release .%.dir
+.PHONY: all install install_sudo clean spotless new release .%.dir
 .PRECIOUS: .%.dir $(BUILDDIR)/%.d
 
 OBJS:=$(addprefix $(BUILDDIR)/,$(addsuffix .o,$(SRCS)))
 
 all: $(DESTDIR)/$(LIBOUT).so $(DESTDIR)/$(LIBOUT).a
+
+install: all
+	sudo make install_sudo
+
+install_sudo: all
+	cp -f $(DESTDIR)/$(LIBOUT).so.$(LIBFULLREV) /usr/lib/$(LIBOUT).so.$(LIBFULLREV)
+	chmod 644 /usr/lib/$(LIBOUT).so.$(LIBFULLREV)
+	ln -fs /usr/lib/$(LIBOUT).so.$(LIBFULLREV) /usr/lib/$(LIBOUT).so
+	cp -f $(DESTDIR)/$(LIBOUT).a.$(LIBFULLREV) /usr/lib
+	chmod 644 /usr/lib/$(LIBOUT).a.$(LIBFULLREV)
+	ln -fs /usr/lib/$(LIBOUT).a.$(LIBFULLREV) /usr/lib/$(LIBOUT).a
+	cp -f xbee.h /usr/include/xbee.h
+	chmod 644 /usr/include/xbee.h
 
 new: clean
 	@$(MAKE) --no-print-directory all
