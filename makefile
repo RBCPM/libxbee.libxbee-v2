@@ -16,10 +16,11 @@ RELEASE_ITEMS:=lib/libxbee.so.$(LIBFULLREV) \
                xbee.h
 LIBS:=rt pthread
 
-AR:=ar
-LD:=ld
-GCC:=gcc
-OBJCOPY:=objcopy
+CROSS_COMPILE?=
+AR:=$(CROSS_COMPILE)ar
+LD:=$(CROSS_COMPILE)ld
+GCC:=$(CROSS_COMPILE)gcc
+OBJCOPY:=$(CROSS_COMPILE)objcopy
 
 DEBUG:=-g
 CFLAGS:=-Wall -Wstrict-prototypes -Wno-variadic-macros -c -fPIC -fvisibility=hidden $(DEBUG)
