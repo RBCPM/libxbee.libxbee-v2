@@ -1,4 +1,4 @@
-v2.0.1 - ___ - 1 Dec 2011
+v2.0.1 - 01f9a11ac931 - 1 Dec 2011
 	Bug fixes:
 		+ Fixed incorrect addressing semantics
 		+ Fixed waitForAck handling
