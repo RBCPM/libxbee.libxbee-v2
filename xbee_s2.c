@@ -27,12 +27,147 @@
 #include "xbee_s2.h"
 #include "xbee_sG.h"
 
+int xbee_s2_txStatus(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) {
+	void *p;
+	int ret = XBEE_ENONE;
+  
+	if (!xbee)         return XBEE_ENOXBEE;
+	if (!handler)      return XBEE_EMISSINGPARAM;
+	if (!isRx)         return XBEE_EINVAL;
+	if (!buf || !*buf) return XBEE_EMISSINGPARAM;
+	if (!con)          return XBEE_EMISSINGPARAM;
+	if (!pkt || !*pkt) return XBEE_EMISSINGPARAM;
+  
+	if ((*buf)->len != 7) {
+	  ret = XBEE_ELENGTH;
+	  goto die1;
+	}
+  
+	con->frameID_enabled = 1;
+	con->frameID = (*buf)->buf[1];
+
+	con->address.addr16_enabled = 1;
+	con->address.addr16[0] = (*buf)->buf[2];
+	con->address.addr16[1] = (*buf)->buf[3];
+	
+	(*pkt)->status = (*buf)->buf[5];
+  
+	(*pkt)->datalen = 2;
+	if ((p = realloc((*pkt), (sizeof(struct xbee_pkt) - sizeof(struct xbee_pkt_ioData)) + (sizeof(unsigned char) * ((*pkt)->datalen) - 1))) == NULL) {
+		ret = XBEE_ENOMEM;
+		goto die1;
+	}
+	(*pkt) = p;
+
+	(*pkt)->data[0] = (*buf)->buf[4]; /* Transmission retry count */
+	(*pkt)->data[1] = (*buf)->buf[6]; /* Discovery status */
+	
+	goto done;
+die1:
+done:
+	return ret;
+}
+
+int xbee_s2_dataRx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) {
+	int ret = XBEE_ENONE;
+  
+	if (!xbee)         return XBEE_ENOXBEE;
+	if (!handler)      return XBEE_EMISSINGPARAM;
+	if (!isRx)         return XBEE_EINVAL;
+	if (!buf || !*buf) return XBEE_EMISSINGPARAM;
+	if (!con)          return XBEE_EMISSINGPARAM;
+	if (!pkt || !*pkt) return XBEE_EMISSINGPARAM;
+  
+	if ((*buf)->len < 12) {
+		ret = XBEE_ELENGTH;
+		goto die1;
+	}
+	
+	con->address.addr64_enabled = 1;
+	memcpy(con->address.addr64, &((*buf)->buf[1]), 8);
+	con->address.addr16_enabled = 1;
+	memcpy(con->address.addr16, &((*buf)->buf[9]), 2);
+	
+	(*pkt)->options = (*buf)->buf[11];
+
+	(*pkt)->datalen = (*buf)->len - (12);
+	if ((*pkt)->datalen > 1) {
+		void *p;
+		if ((p = realloc((*pkt), (sizeof(struct xbee_pkt) - sizeof(struct xbee_pkt_ioData)) + (sizeof(unsigned char) * ((*pkt)->datalen) - 1))) == NULL) {
+			ret = XBEE_ENOMEM;
+			goto die1;
+		}
+		(*pkt) = p;
+	}
+	(*pkt)->data_valid = 1;
+	if ((*pkt)->datalen) memcpy((*pkt)->data, &((*buf)->buf[12]), (*pkt)->datalen);
+	
+	goto done;
+die1:
+done:
+	return ret;
+}
+
+int xbee_s2_dataTx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) {
+	int ret = XBEE_ENONE;
+	struct bufData *nBuf;
+	void *p;
+	
+	if (!xbee)         return XBEE_ENOXBEE;
+	if (!handler)      return XBEE_EMISSINGPARAM;
+	if (isRx)          return XBEE_EINVAL;
+	if (!buf || !*buf) return XBEE_EMISSINGPARAM;
+	if (!con)          return XBEE_EMISSINGPARAM;
+	if (!handler->conType || !handler->conType->txEnabled) return XBEE_EINVAL;
+	
+	if ((nBuf = calloc(1, sizeof(struct bufData) + (sizeof(unsigned char) * (XBEE_MAX_PACKETLEN - 1)))) == NULL) {
+		ret = XBEE_ENOMEM;
+		goto die1;
+	}
+	
+	nBuf->buf[0] = handler->conType->txID;
+	if (con->frameID_enabled) {
+		nBuf->buf[1] = con->frameID;
+	}
+	
+	/* 64-bit address */
+	if (con->address.addr64_enabled) {
+		memcpy(&(nBuf->buf[2]), con->address.addr64, 8);
+		nBuf->buf[10] = 0xFF;
+		nBuf->buf[11] = 0xFE;
+	} else if (con->address.addr16_enabled) {
+		/* 64-bit address stays zero'ed */
+		memcpy(&(nBuf->buf[10]), con->address.addr16, 2);
+	} else {
+		ret = XBEE_EINVAL;
+		goto die2;
+	}
+	
+	nBuf->buf[12] = con->options.broadcastRadius;
+	
+	if (con->options.multicast)    nBuf->buf[13] |= 0x08;
+	
+	nBuf->len = 14 + (*buf)->len;
+	if (nBuf->len > XBEE_MAX_PACKETLEN) {
+		ret = XBEE_ELENGTH;
+		goto die2;
+	}
+	memcpy(&(nBuf->buf[14]), (*buf)->buf, (*buf)->len);
+	
+	/* try (and ignore failure) to realloc buf to the correct length */
+	if ((p = realloc(nBuf, sizeof(struct bufData) + (sizeof(unsigned char) * (nBuf->len - 1)))) != NULL) nBuf = p;
+	
+	*buf = nBuf;
+	
+	goto done;
+die2:
+	free(nBuf);
+die1:
+done:
+	return ret;
+}
+
 #warning TODO - The Series 2 handlers
-int xbee_s2_txStatus(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return XBEE_EUNKNOWN; }
-
-int xbee_s2_dataRx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return XBEE_EUNKNOWN; }
-int xbee_s2_dataTx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return XBEE_EUNKNOWN; }
-
 int xbee_s2_explicitRx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return XBEE_EUNKNOWN; }
 int xbee_s2_explicitTx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return XBEE_EUNKNOWN; }
 
@@ -56,6 +191,7 @@ static struct xbee_conType conTypes[] = {
 	
 	ADD_TYPE_RX  (0x92,       1, "I/O"),
 	ADD_TYPE_RX  (0x94,       1, "Sensor"),
+	ADD_TYPE_RX  (0x95,       1, "Identify"),
 	
 	ADD_TYPE_TERMINATOR()
 };

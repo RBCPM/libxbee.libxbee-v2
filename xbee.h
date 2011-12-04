@@ -67,6 +67,8 @@ struct xbee_conOptions {
 	unsigned char broadcastPAN : 1;
 	unsigned char applyChanges : 1;
 	unsigned char waitForAck   : 1;
+	unsigned char multicast    : 1;
+	unsigned char broadcastRadius;
 };
 struct xbee_con;
 

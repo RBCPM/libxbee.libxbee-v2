@@ -2,6 +2,7 @@ v2.0.2 - in progress
 	Modifications / Additions:
 		+ Added 'make install'
 		+ Added CROSS_COMPILE support
+		+ Implemented Series2 Rx,Tx and Status handlers
 
 v2.0.1 - 01f9a11ac931 - 1 Dec 2011
 	Bug fixes:
