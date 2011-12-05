@@ -27,6 +27,7 @@ void xbee_threadMonitor(struct xbee *xbee);
 	_xbee_threadStartMonitored((a),(b),(void*(*)(void*))(c),(void*)(d),(#c))
 int _xbee_threadStartMonitored(struct xbee *xbee, xsys_thread *thread, void*(*start_routine)(void*), void *arg, char *funcName);
 
+void xbee_threadKillMonitored(void *info);
 int xbee_threadStopMonitored(struct xbee *xbee, xsys_thread *thread, int *restartCount, void **retval);
 
 #endif /* __XBEE_JOIN_H */

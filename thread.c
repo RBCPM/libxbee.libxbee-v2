@@ -81,7 +81,7 @@ void xbee_threadMonitor(struct xbee *xbee) {
 				}
 			}
 		}
-		xbee_log(10,"Scan complete! joined/restarted %d/%d threads, %d threads remain", joined, restarted, count);
+		xbee_log(10,"Scan complete! joined/restarted/remain %d/%d/%d threads", joined, restarted, count);
 	}
 }
 
@@ -127,6 +127,23 @@ int _xbee_threadStartMonitored(struct xbee *xbee, xsys_thread *thread, void*(*st
 	return XBEE_ENONE;
 }
 
+
+static int _xbee_threadKillMonitored(struct threadInfo *info, int *restartCount, void **retval) {
+	if (info == NULL) return XBEE_EINVAL;
+	
+	xsys_thread_cancel(*(info->thread));
+	xsys_thread_join(*(info->thread), retval);
+	
+	if (restartCount) *restartCount = info->restartCount;
+	
+	free(info);
+	
+	return XBEE_ENONE;
+}
+void xbee_threadKillMonitored(void *info) {
+	_xbee_threadKillMonitored(info, NULL, NULL);
+}
+
 int xbee_threadStopMonitored(struct xbee *xbee, xsys_thread *thread, int *restartCount, void **retval) {
 	struct threadInfo *tinfo;
 	if (!xbee) {
@@ -145,12 +162,5 @@ int xbee_threadStopMonitored(struct xbee *xbee, xsys_thread *thread, int *restar
 	if (tinfo == NULL) return XBEE_EINVAL;
 	if (ll_ext_item(&xbee->threadList, tinfo)) return XBEE_ELINKEDLIST;
 	
-	xsys_thread_cancel(*(tinfo->thread));
-	xsys_thread_join(*(tinfo->thread), retval);
-	
-	if (restartCount) *restartCount = tinfo->restartCount;
-	
-	free(tinfo);
-	
-	return XBEE_ENONE;
+	return _xbee_threadKillMonitored(tinfo, restartCount, retval);
 }

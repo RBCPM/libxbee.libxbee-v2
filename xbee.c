@@ -183,9 +183,9 @@ EXPORT void xbee_shutdown(struct xbee *xbee) {
 	xbee_log(2,"Shutting down libxbee...");
 	ll_ext_item(&xbee_list, xbee);
 	
-	xbee_log(5,"- Terminating thread monitor...");
+	xbee_log(5,"- Terminating thread monitor and child threads...");
 	xsys_thread_cancel(xbee->threadMonitor);
-	ll_destroy(&xbee->threadList, free);
+	ll_destroy(&xbee->threadList, xbee_threadKillMonitored);
 	xsys_sem_destroy(&xbee->semMonitor);
 	
 	xbee_log(5,"- Destroying frameID control...");
