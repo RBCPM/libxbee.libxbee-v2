@@ -73,7 +73,9 @@ int _xbee_rxCallbackThread(struct xbee_callbackInfo *info) {
 		if (con->destroySelf) break;
 		if (xsys_sem_timedwait(&con->callbackSem, 5, 0)) break;
 	}
-
+	
+	xbee_log(2,"Callback thread terminating (con: %p)", con);
+	
 	con->callbackRunning = 0;
 
 	if (con->destroySelf) {

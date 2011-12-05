@@ -381,7 +381,10 @@ EXPORT int xbee_conAttachCallback(struct xbee *xbee, struct xbee_con *con, void(
 	
 	if (callback) {
 		xbee_log(5,"Attached callback to connection @ %p", con);
-		xbee_triggerCallback(xbee, con);
+		if (ll_count_items(&con->rxList)) {
+			xbee_log(5,"... and triggering callback due to packets in queue");
+			xbee_triggerCallback(xbee, con);
+		}
 	} else {
 		xbee_log(5,"Detached callback from connection @ %p", con);
 	}
