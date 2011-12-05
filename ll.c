@@ -307,7 +307,7 @@ void *ll_ext_tail(void *list) {
 	if (p) {
 		ret = p->item;
 		
-		h->tail = p->next;
+		h->tail = p->prev;
 		if (h->tail) h->tail->next = NULL;
 		if (h->head == p) h->head = NULL;
 		free(p);
