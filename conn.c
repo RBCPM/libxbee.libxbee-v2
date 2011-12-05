@@ -112,7 +112,7 @@ got1:
 		/* if both connections have endpoints disabled, match! */
 		if (!address->endpoints_enabled || !con->address.endpoints_enabled) goto got2;
 		/* if both local endpoints match, match! */
-		if (address->local_endpoint && con->address.local_endpoint) goto got2;
+		if (address->local_endpoint == con->address.local_endpoint) goto got2;
 		continue;
 got2:
 		if (!con->sleeping) break;

@@ -185,6 +185,9 @@ int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
 			                                                                    con.address.addr64[6],
 			                                                                    con.address.addr64[7]);
 		}
+		if (con.address.endpoints_enabled) {
+			xbee_log(4,"Endpoints (local/remote): 0x%02X/0x%02X", con.address.local_endpoint, con.address.remote_endpoint);
+		}
 		
 		if ((rxCon = xbee_conFromAddress(pktHandler->conType, &con.address)) == NULL) {
 			xbee_log(3,"No connection for packet...");
