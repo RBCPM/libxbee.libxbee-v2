@@ -27,6 +27,8 @@
 #include "xbee_s2.h"
 #include "xbee_sG.h"
 
+/* when using Series 2 XBees, dont forget to set JV=1 */
+
 int xbee_s2_txStatus(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) {
 	void *p;
 	int ret = XBEE_ENONE;
@@ -167,10 +169,139 @@ done:
 	return ret;
 }
 
-#warning TODO - The Series 2 handlers
-int xbee_s2_explicitRx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return XBEE_EUNKNOWN; }
-int xbee_s2_explicitTx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return XBEE_EUNKNOWN; }
+int xbee_s2_explicitRx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) {
+	int ret = XBEE_ENONE;
+  
+	if (!xbee)         return XBEE_ENOXBEE;
+	if (!handler)      return XBEE_EMISSINGPARAM;
+	if (!isRx)         return XBEE_EINVAL;
+	if (!buf || !*buf) return XBEE_EMISSINGPARAM;
+	if (!con)          return XBEE_EMISSINGPARAM;
+	if (!pkt || !*pkt) return XBEE_EMISSINGPARAM;
+  
+	if ((*buf)->len < 18) {
+		ret = XBEE_ELENGTH;
+		goto die1;
+	}
+	
+	con->address.addr64_enabled = 1;
+	memcpy(con->address.addr64, &((*buf)->buf[1]), 8);
+	con->address.addr16_enabled = 1;
+	memcpy(con->address.addr16, &((*buf)->buf[9]), 2);
 
+#warning TODO - confirm 'endpoint' behaviour... is it like TCP/IP ports?
+	con->address.endpoints_enabled = 1;
+	/*      source endpoint = (*buf)->buf[11]; */
+	con->address.remote_endpoint = (*buf)->buf[11];
+  /* destination endpoint = (*buf)->buf[12]; */
+	con->address.local_endpoint = (*buf)->buf[12];
+
+#warning TODO - check 'clusder ID' behaviour
+	/* might be interesting to print during testing... */
+	/* cluster ID = (*buf)->buf[13:14]; */
+	
+	/* NO IDEA... should be 0xC105 on Tx apparently... */
+	/* profile ID = (*buf)->buf[15:16] */
+	
+	(*pkt)->options = (*buf)->buf[17];
+
+	(*pkt)->datalen = (*buf)->len - (18);
+	if ((*pkt)->datalen > 1) {
+		void *p;
+		if ((p = realloc((*pkt), (sizeof(struct xbee_pkt) - sizeof(struct xbee_pkt_ioData)) + (sizeof(unsigned char) * ((*pkt)->datalen) - 1))) == NULL) {
+			ret = XBEE_ENOMEM;
+			goto die1;
+		}
+		(*pkt) = p;
+	}
+	(*pkt)->data_valid = 1;
+	if ((*pkt)->datalen) memcpy((*pkt)->data, &((*buf)->buf[18]), (*pkt)->datalen);
+	
+	goto done;
+die1:
+done:
+	return ret;
+}
+
+int xbee_s2_explicitTx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) {
+	int ret = XBEE_ENONE;
+	struct bufData *nBuf;
+	void *p;
+	
+	if (!xbee)         return XBEE_ENOXBEE;
+	if (!handler)      return XBEE_EMISSINGPARAM;
+	if (isRx)          return XBEE_EINVAL;
+	if (!buf || !*buf) return XBEE_EMISSINGPARAM;
+	if (!con)          return XBEE_EMISSINGPARAM;
+	if (!handler->conType || !handler->conType->txEnabled) return XBEE_EINVAL;
+	
+	if ((nBuf = calloc(1, sizeof(struct bufData) + (sizeof(unsigned char) * (XBEE_MAX_PACKETLEN - 1)))) == NULL) {
+		ret = XBEE_ENOMEM;
+		goto die1;
+	}
+	
+	nBuf->buf[0] = handler->conType->txID;
+	if (con->frameID_enabled) {
+		nBuf->buf[1] = con->frameID;
+	}
+	
+	/* 64-bit address */
+	if (con->address.addr64_enabled) {
+		memcpy(&(nBuf->buf[2]), con->address.addr64, 8);
+		nBuf->buf[10] = 0xFF;
+		nBuf->buf[11] = 0xFE;
+	} else if (con->address.addr16_enabled) {
+		/* 64-bit address stays zero'ed */
+		memcpy(&(nBuf->buf[10]), con->address.addr16, 2);
+	} else {
+		ret = XBEE_EINVAL;
+		goto die2;
+	}
+	
+	if (con->address.endpoints_enabled) {
+		nBuf->buf[12] = con->address.local_endpoint;
+		nBuf->buf[13] = con->address.remote_endpoint;
+	} else {
+		/* endpoint defaults to 0xE8 (0x01 - 0xDB for user use) */
+		nBuf->buf[12] = 0xE8;
+		nBuf->buf[13] = 0xE8;
+	}
+	
+	/* reserved... */
+	nBuf->buf[14] = 0;
+	
+	/* cluster ID */
+	nBuf->buf[15] = 0x11; /* 0x11 = Transparent Serial Data... libxbee doesn't support others... yet */
+	
+	/* profile ID */
+	nBuf->buf[16] = 0xC1;
+	nBuf->buf[17] = 0x05;
+	
+	nBuf->buf[18] = con->options.broadcastRadius;
+	
+	if (con->options.multicast)    nBuf->buf[19] |= 0x08;
+	
+	nBuf->len = 20 + (*buf)->len;
+	if (nBuf->len > XBEE_MAX_PACKETLEN) {
+		ret = XBEE_ELENGTH;
+		goto die2;
+	}
+	memcpy(&(nBuf->buf[20]), (*buf)->buf, (*buf)->len);
+	
+	/* try (and ignore failure) to realloc buf to the correct length */
+	if ((p = realloc(nBuf, sizeof(struct bufData) + (sizeof(unsigned char) * (nBuf->len - 1)))) != NULL) nBuf = p;
+	
+	*buf = nBuf;
+	
+	goto done;
+die2:
+	free(nBuf);
+die1:
+done:
+	return ret;
+}
+
+#warning TODO - The remaining Series 2 handlers
 int xbee_s2_IO(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return XBEE_EUNKNOWN; }
 int xbee_s2_sensor(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return XBEE_EUNKNOWN; }
 int xbee_s2_identify(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) { return XBEE_EUNKNOWN; }
