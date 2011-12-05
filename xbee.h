@@ -61,6 +61,10 @@ struct xbee_conAddress {
 	
 	unsigned char addr64_enabled;
 	unsigned char addr64[8];
+	
+	unsigned char endpoints_enabled;
+	unsigned char local_endpoint;
+	unsigned char remote_endpoint;
 };
 struct xbee_conOptions {
 	unsigned char disableAck   : 1;

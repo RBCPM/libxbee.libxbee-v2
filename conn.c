@@ -96,9 +96,7 @@ struct xbee_con *xbee_conFromAddress(struct xbee_conType *conType, struct xbee_c
 			/* if 64-bit address matches, accept, else decline (don't even accept matching 16-bit address */
 			if (!memcmp(address->addr64, con->address.addr64, 8)) {
 				xbee_log(10,"    Success!");
-				goto got;
-			} else {
-				continue;
+				goto got1;
 			}
 		}
 		if (address->addr16_enabled && con->address.addr16_enabled) {
@@ -106,11 +104,17 @@ struct xbee_con *xbee_conFromAddress(struct xbee_conType *conType, struct xbee_c
 			/* if 16-bit address matches accept */
 			if (!memcmp(address->addr16, con->address.addr16, 2)) {
 				xbee_log(10,"    Success!");
-				goto got;
+				goto got1;
 			}
 		}
 		continue;
-got:
+got1:
+		/* if both connections have endpoints disabled, match! */
+		if (!address->endpoints_enabled || !con->address.endpoints_enabled) goto got2;
+		/* if both local endpoints match, match! */
+		if (address->local_endpoint && con->address.local_endpoint) goto got2;
+		continue;
+got2:
 		if (!con->sleeping) break;
 		scon = con;
 	} while ((con = ll_get_next(&conType->conList, con)) != NULL);
