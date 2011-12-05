@@ -138,10 +138,12 @@ int xbee_io_getRawByte(FILE *f, unsigned char *cOut) {
 					ret = XBEE_EEOF;
 					goto done;
 				}
-				if (!(s = strerror(errno))) {
-					xbee_logstderr(1,"Unknown error detected (%d)",errno);
-				} else {
-					xbee_logstderr(1,"Error detected (%s)",s);
+				if (retries <= XBEE_IO_RETRIES_WARN) {
+					if (!(s = strerror(errno))) {
+						xbee_logstderr(1,"Unknown error detected (%d)",errno);
+					} else {
+						xbee_logstderr(1,"Error detected (%s)",s);
+					}
 				}
 				usleep(1000);
 			} else {
@@ -152,6 +154,10 @@ int xbee_io_getRawByte(FILE *f, unsigned char *cOut) {
 			break;
 		}
 	} while (--retries);
+	
+	if (retries != XBEE_IO_RETRIES) {
+		xbee_log(2,"Used up %d retries...", XBEE_IO_RETRIES - retries);
+	}
 	
 	if (!retries) {
 		ret = XBEE_EIORETRIES;
@@ -198,10 +204,12 @@ int xbee_io_writeRawByte(FILE *f, unsigned char c) {
 			goto done;
 		} else if (xsys_ferror(f)) {
 			char *s;
-			if (!(s = strerror(errno))) {
-				xbee_logstderr(1,"Unknown error detected (%d)",errno);
-			} else {
-				xbee_logstderr(1,"Error detected (%s)",s);
+			if (retries <= XBEE_IO_RETRIES_WARN) {
+				if (!(s = strerror(errno))) {
+					xbee_logstderr(1,"Unknown error detected (%d)",errno);
+				} else {
+					xbee_logstderr(1,"Error detected (%s)",s);
+				}
 			}
 			usleep(1000);
 		} else {
@@ -209,6 +217,10 @@ int xbee_io_writeRawByte(FILE *f, unsigned char c) {
 			usleep(100);
 		}
 	} while (--retries);
+	
+	if (retries != XBEE_IO_RETRIES) {
+		xbee_log(2,"Used up %d retries...", XBEE_IO_RETRIES - retries);
+	}
 	
 	if (!retries) {
 		ret = XBEE_EIORETRIES;

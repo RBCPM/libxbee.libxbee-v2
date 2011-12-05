@@ -22,6 +22,7 @@
 */
 
 #define XBEE_IO_RETRIES 10
+#define XBEE_IO_RETRIES_WARN 6
 
 int xbee_io_open(struct xbee *xbee);
 void xbee_io_close(struct xbee *xbee);

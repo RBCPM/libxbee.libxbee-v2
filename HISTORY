@@ -5,6 +5,7 @@ v2.0.2 - in progress
 		+ Implemented Series2 Rx,Tx (Explicit & normal) and Status handlers
 		+ Added 'endpoint' support for Series2 modules
 		+ Fixed premature callback trigger/end
+		+ Hid I/O errors until its 'an issue'
 
 v2.0.1 - 01f9a11ac931 - 1 Dec 2011
 	Bug fixes:
