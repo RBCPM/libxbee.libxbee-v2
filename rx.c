@@ -79,7 +79,7 @@ int _xbee_rxCallbackThread(struct xbee_callbackInfo *info) {
 	con->callbackRunning = 0;
 
 	if (con->destroySelf) {
-		xbee_conFree(xbee, con);
+		xbee_conFree(xbee, con, 0);
 	}
 
 	return 0;

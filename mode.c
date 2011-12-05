@@ -62,7 +62,7 @@ void xbee_cleanupMode(struct xbee *xbee) {
 			}
 			if (o) xbee_log(5,"---- Free'd %d packets", o);
 			
-			xbee_conFree(xbee,con);
+			xbee_conFree(xbee, con, 1);
 		}
 	}
 
