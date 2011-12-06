@@ -6,6 +6,7 @@ v2.0.2 - in progress
 		+ Added 'endpoint' support for Series2 modules
 		+ Fixed premature callback trigger/end
 		+ Hid I/O errors until its 'an issue'
+		+ Changed options->applyChanges to options->queueChanges, so that the default is to apply
 
 v2.0.1 - 01f9a11ac931 - 1 Dec 2011
 	Bug fixes:
