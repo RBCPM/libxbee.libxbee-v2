@@ -1,3 +1,6 @@
+v2.0.3 - inprogress
+		+ 'make release' now includes architecture in archive name
+
 v2.0.2 - a917fb0aa7c5 - 6 Dec 2011
 	Modifications / Additions:
 		+ Added 'make install'

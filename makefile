@@ -62,7 +62,7 @@ spotless: clean
 
 
 release: all
-	tar -cjvf libxbee_v$(LIBFULLREV)_`date +%Y-%m-%d`_`git rev-parse --verify --short HEAD`.tar.bz2 $(RELEASE_ITEMS)
+	tar -cjvf libxbee_v$(LIBFULLREV)_`date +%Y-%m-%d`_`git rev-parse --verify --short HEAD`_`uname -m`.tar.bz2 $(RELEASE_ITEMS)
 
 
 .%.dir:
