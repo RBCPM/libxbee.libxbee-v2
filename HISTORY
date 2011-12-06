@@ -7,6 +7,7 @@ v2.0.2 - in progress
 		+ Fixed premature callback trigger/end
 		+ Hid I/O errors until its 'an issue'
 		+ Changed options->applyChanges to options->queueChanges, so that the default is to apply
+		+ Changed 5 second Tx timeout to 1 second
 
 v2.0.1 - 01f9a11ac931 - 1 Dec 2011
 	Bug fixes:
