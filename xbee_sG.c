@@ -164,7 +164,7 @@ int xbee_sG_atTx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, 
 			ret = XBEE_EINVAL;
 			goto die2;
 		}
-		if (con->options.applyChanges) nBuf->buf[12] |= 0x02;
+		if (!con->options.queueChanges) nBuf->buf[12] |= 0x02;
 		offset = 11;
 	
 	} else {

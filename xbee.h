@@ -69,7 +69,7 @@ struct xbee_conAddress {
 struct xbee_conOptions {
 	unsigned char disableAck   : 1;
 	unsigned char broadcastPAN : 1;
-	unsigned char applyChanges : 1;
+	unsigned char queueChanges : 1;
 	unsigned char waitForAck   : 1;
 	unsigned char multicast    : 1;
 	unsigned char broadcastRadius;
