@@ -281,9 +281,10 @@ EXPORT int xbee_connTx(struct xbee *xbee, struct xbee_con *con, char *data, int 
 	memcpy(buf->buf, data, length);
 	
 	if (con->options.waitForAck) {
-		con->frameID_enabled = 1;
 		if ((con->frameID = xbee_frameIdGet(xbee, con)) == 0) {
-			xbee_log(3,"No avaliable frame IDs... we can't validate delivery");
+			xbee_log(1,"No avaliable frame IDs... we can't validate delivery");
+		} else {
+			con->frameID_enabled = 1;
 		}
 	}
 	
@@ -298,7 +299,7 @@ EXPORT int xbee_connTx(struct xbee *xbee, struct xbee_con *con, char *data, int 
 	}
 	free(oBuf);
 	
-	if (con->options.waitForAck) {
+	if (con->options.waitForAck && con->frameID) {
 		xbee_log(4,"Locking txMutex for con @ %p", con);
 		xsys_mutex_lock(&con->txMutex);
 	}
@@ -306,15 +307,14 @@ EXPORT int xbee_connTx(struct xbee *xbee, struct xbee_con *con, char *data, int 
 	ll_add_tail(&xbee->txList, buf);
 	xsys_sem_post(&xbee->txSem);
 	
-	if (con->options.waitForAck) {
-		if (con->frameID) {
-			xbee_log(4,"Waiting for txSem for con @ %p", con);
-			ret = xbee_frameIdGetACK(xbee, con, con->frameID);
-			xbee_log(4,"--- ret: %d",ret);
-		}
-		con->frameID_enabled = 0;
+	if (con->options.waitForAck && con->frameID) {
+		xbee_log(4,"Waiting for txSem for con @ %p", con);
+		ret = xbee_frameIdGetACK(xbee, con, con->frameID);
+		xbee_log(4,"--- ret: %d",ret);
+		xbee_log(4,"Unlocking txMutex for con @ %p", con);
 		xsys_mutex_unlock(&con->txMutex);
 	}
+	con->frameID_enabled = 0;
 	
 	goto done;
 die2:
