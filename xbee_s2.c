@@ -189,7 +189,6 @@ int xbee_s2_explicitRx(struct xbee *xbee, struct xbee_pktHandler *handler, char 
 	con->address.addr16_enabled = 1;
 	memcpy(con->address.addr16, &((*buf)->buf[9]), 2);
 
-#warning TODO - confirm 'endpoint' behaviour... is it like TCP/IP ports?
 	con->address.endpoints_enabled = 1;
 	/*      source endpoint = (*buf)->buf[11]; */
 	con->address.remote_endpoint = (*buf)->buf[11];
