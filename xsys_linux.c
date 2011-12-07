@@ -241,3 +241,6 @@ int xsys_sem_timedwait(xsys_sem *sem, time_t sec, long nsec) {
 int xsys_sem_post(xsys_sem *sem) {
 	return sem_post((sem_t*)sem);
 }
+int xsys_sem_getvalue(xsys_sem *sem, int *value) {
+	return sem_getvalue(sem, value);
+}
