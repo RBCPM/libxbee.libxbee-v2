@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <errno.h>
 
 #include "internal.h"
 #include "rx.h"
@@ -43,6 +44,7 @@ int _xbee_rxCallbackThread(struct xbee_callbackInfo *info) {
 	struct xbee_pkt *pkt;
 	struct xbee *xbee;
 	struct xbee_con *con;
+	void(*callback)(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt **pkt, void **userData);
 	
 	/* prevent having to xsys_thread_join() */
 	xsys_thread_detach_self();
@@ -53,26 +55,45 @@ int _xbee_rxCallbackThread(struct xbee_callbackInfo *info) {
 	
 	con->callbackRunning = 1;
 	
-	while ((pkt = ll_ext_head(&(con->rxList))) != NULL) {
-		if (!con->callback) {
+	for (;;) {
+		pkt = ll_ext_head(&(con->rxList));
+		if (!pkt) {
+			int semval;
+			if (xsys_sem_getvalue(&con->callbackSem, &semval) != 0) {
+				xbee_log(1,"xsys_sem_getvalue(): Error while retrieving value...");
+				break;
+			}
+			/* use up the prods... (they appear to be wrongly given) */
+			if (semval > 0) {
+				/* we should really return immediately... but just incase */
+				if (xsys_sem_timedwait(&con->callbackSem, 0, 500) != 0) {
+					if (errno != ETIMEDOUT) {
+						xbee_log(1,"xsys_sem_timedwait(): Error while waiting... (%d)", errno);
+					}
+					break;
+				}
+				continue;
+			}
+			if (xsys_sem_timedwait(&con->callbackSem, 5, 0) != 0) {
+				if (errno != ETIMEDOUT) {
+					xbee_log(1,"xsys_sem_timedwait(): Error while waiting... (%d)", errno);
+				}
+				break;
+			}
+			continue;
+		}
+		
+		callback = con->callback;
+		if (!callback) {
 			xbee_log(1,"Callback for connection @ %p disappeared... replacing the packet", con);
 			ll_add_head(&(con->rxList), pkt);
 			break;
 		}
-		xbee_log(1,"Running callback (func: %p, "
-		                             "xbee: %p, "
-		                             "con: %p, "
-		                             "pkt: %p, "
-		                             "userData: %p)",
-		                              con->callback,
-		                              xbee,
-		                              con,
-		                              pkt,
-		                              con->userData);
-		con->callback(xbee, con, &pkt, &con->userData);
+		xbee_log(1,"Running callback (func: %p, xbee: %p, con: %p, pkt: %p, userData: %p)",
+		                              callback, xbee, con, pkt, con->userData);
+		callback(xbee, con, &pkt, &con->userData);
 		if (pkt) free(pkt);
 		if (con->destroySelf) break;
-		if (xsys_sem_timedwait(&con->callbackSem, 5, 0)) break;
 	}
 	
 	xbee_log(2,"Callback thread terminating (con: %p)", con);
@@ -87,7 +108,6 @@ int _xbee_rxCallbackThread(struct xbee_callbackInfo *info) {
 }
 
 void xbee_triggerCallback(struct xbee *xbee, struct xbee_con *con) {
-	int i;
 	if ((!con->callbackStarted || !con->callbackRunning)) {
 		struct xbee_callbackInfo info;
 		info.xbee = xbee;
@@ -104,10 +124,7 @@ void xbee_triggerCallback(struct xbee *xbee, struct xbee_con *con) {
 			xbee_log(-999,"Failed to start callback for connection @ %p... xsys_thread_create() returned error", con);
 		}
 	}
-	i = ll_count_items(&con->rxList);
-	for (; i; i--) {
-		xsys_sem_post(&con->callbackSem);
-	}
+	xsys_sem_post(&con->callbackSem);
 }
 
 int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
@@ -177,14 +194,9 @@ int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
 			xbee_log(4,"16-bit address: 0x%02X%02X", con.address.addr16[0], con.address.addr16[1]);
 		}
 		if (con.address.addr64_enabled) {
-			xbee_log(4,"64-bit address: 0x%02X%02X%02X%02X 0x%02X%02X%02X%02X", con.address.addr64[0],
-			                                                                    con.address.addr64[1],
-			                                                                    con.address.addr64[2],
-			                                                                    con.address.addr64[3],
-			                                                                    con.address.addr64[4],
-			                                                                    con.address.addr64[5],
-			                                                                    con.address.addr64[6],
-			                                                                    con.address.addr64[7]);
+			xbee_log(4,"64-bit address: 0x%02X%02X%02X%02X 0x%02X%02X%02X%02X",
+			           con.address.addr64[0], con.address.addr64[1], con.address.addr64[2], con.address.addr64[3],
+			           con.address.addr64[4], con.address.addr64[5], con.address.addr64[6], con.address.addr64[7]);
 		}
 		if (con.address.endpoints_enabled) {
 			xbee_log(4,"Endpoints (local/remote): 0x%02X/0x%02X", con.address.local_endpoint, con.address.remote_endpoint);
@@ -236,7 +248,6 @@ int _xbee_rxHandler(struct xbee *xbee, struct xbee_pktHandler *pktHandler, struc
 			ret = XBEE_ENOMEM;
 			goto die1;
 		}
-		pktHandler->rxData = data;
 		data->xbee = xbee;
 		if (xsys_sem_init(&data->sem)) {
 			ret = XBEE_ESEMAPHORE;
@@ -246,6 +257,7 @@ int _xbee_rxHandler(struct xbee *xbee, struct xbee_pktHandler *pktHandler, struc
 			ret = XBEE_ELINKEDLIST;
 			goto die3;
 		}
+		pktHandler->rxData = data;
 	}
 	
 	if (!data->threadStarted || !data->threadRunning) {
@@ -286,6 +298,11 @@ int _xbee_rx(struct xbee *xbee) {
 	
 	if (!xbee) return XBEE_ENOXBEE;
 
+	if (!xbee->mode) {
+		xbee_log(-999,"libxbee's mode has not been set, please use xbee_setMode()");
+		return XBEE_ENOMODE;
+	}
+	
 	buf = NULL;
 	while (xbee->running) {
 		ret = XBEE_ENONE;
@@ -353,8 +370,9 @@ int _xbee_rx(struct xbee *xbee) {
     }
 		
 		if (!xbee->mode) {
-			xbee_log(-999,"libxbee's mode has not been set, please use xbee_setMode()");
-			continue;
+			xbee_log(-999,"libxbee's mode has not been un-set, please use xbee_setMode()");
+			ret = XBEE_ENOMODE;
+			goto die2;
 		}
 		pktHandlers = xbee->mode->pktHandlers;
 		
@@ -384,6 +402,7 @@ int _xbee_rx(struct xbee *xbee) {
 
 die2:
 	free(buf);
+	xbee->rxBuf = NULL;
 die1:
 done:
 	return ret;
