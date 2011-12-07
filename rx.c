@@ -56,6 +56,7 @@ int _xbee_rxCallbackThread(struct xbee_callbackInfo *info) {
 	con->callbackRunning = 1;
 	
 	for (;;) {
+		if (con->destroySelf) break;
 		pkt = ll_ext_head(&(con->rxList));
 		if (!pkt) {
 			int semval;
@@ -93,7 +94,6 @@ int _xbee_rxCallbackThread(struct xbee_callbackInfo *info) {
 		                              callback, xbee, con, pkt, con->userData);
 		callback(xbee, con, &pkt, &con->userData);
 		if (pkt) free(pkt);
-		if (con->destroySelf) break;
 	}
 	
 	xbee_log(2,"Callback thread terminating (con: %p)", con);

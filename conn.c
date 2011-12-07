@@ -226,7 +226,7 @@ EXPORT struct xbee_pkt *xbee_conRx(struct xbee *xbee, struct xbee_con *con) {
 	
 	/* you aren't allowed at the packets this way if a callback is enabled... */
 	if (con->callback) {
-		xbee_log(10,"Cannot return packet while callback is enabled for connection @ %p", con);
+		xbee_log(1,"Cannot retrieve a packet while callback is enabled for connection @ %p", con);
 		return NULL;
 	}
 	
@@ -358,10 +358,28 @@ EXPORT int xbee_conEnd(struct xbee *xbee, struct xbee_con *con, void **userData)
 
 	if (con->callbackRunning) {
 		con->destroySelf = 1;
+		xsys_sem_post(&con->callbackSem);
 		return XBEE_ECALLBACK;
 	}
 	
 	xbee_conFree(xbee, con, 1);
+	
+	return XBEE_ENONE;
+}
+
+EXPORT int xbee_conGetCallback(struct xbee *xbee, struct xbee_con *con, void **callback) {
+	struct xbee_conType *conType;
+	if (!xbee) {
+		if (!xbee_default) return XBEE_ENOXBEE;
+		xbee = xbee_default;
+	}
+	if (!xbee_validate(xbee)) return XBEE_ENOXBEE;
+	if (!con) return XBEE_EMISSINGPARAM;
+	if (!callback) return XBEE_EMISSINGPARAM;
+	
+	if (xbee_conValidate(xbee, con, &conType)) return XBEE_EINVAL;
+	
+	*callback = con->callback;
 	
 	return XBEE_ENONE;
 }
