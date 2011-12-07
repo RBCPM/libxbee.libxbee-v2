@@ -22,7 +22,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <errno.h>
 
 #include "internal.h"
 #include "mode.h"
@@ -76,8 +75,9 @@ EXPORT int xbee_setup(char *path, int baudrate, struct xbee **retXbee) {
 	for (i = 0; i <= 0xFF; i++) {
 		if (xsys_sem_init(&xbee->frameIds[i].sem)) {
 			ret = XBEE_ESEMAPHORE;
-			for (; i >= 0; i--) {
-				xsys_sem_destroy(&xbee->frameIds[i].sem);
+			/* tidy up what was setup */
+			for (; i > 0; i--) {
+				xsys_sem_destroy(&xbee->frameIds[i - 1].sem);
 			}
 			goto die4;
 		}
@@ -98,13 +98,13 @@ EXPORT int xbee_setup(char *path, int baudrate, struct xbee **retXbee) {
 		goto die7;
 	}
 	
+	xbee->running = 1;
 	if (xsys_thread_create(&(xbee->threadMonitor), (void *(*)(void *))xbee_threadMonitor, xbee)) {
 		xbee_perror(1,"xsys_thread_create(joinThread)");
 		ret = XBEE_ETHREAD;
 		goto die8;
 	}
 	
-	xbee->running = 1;
 	if (ll_add_tail(&xbee_list, xbee)) {
 		ret = XBEE_ELINKEDLIST;
 		goto die9;
@@ -134,11 +134,13 @@ EXPORT int xbee_setup(char *path, int baudrate, struct xbee **retXbee) {
 	xbee_default = xbee;
 	goto done;
 /* ######################################################################### */
+	/* cleanup txThread */
 die13:
 	ll_destroy(&xbee->txList, free);
 die12:
 	xsys_sem_destroy(&xbee->txSem);
 die11:
+	/* cleanup rxThread */
 	xbee_threadStopMonitored(xbee, &xbee->rxThread, NULL, NULL);
 die10:
 	ll_ext_item(&xbee_list, xbee);
@@ -146,7 +148,7 @@ die9:
 	xbee->running = 0;
 	xsys_thread_cancel(xbee->threadMonitor);
 die8:
-	ll_destroy(&xbee->threadList, free);
+	ll_destroy(&xbee->threadList, xbee_threadKillMonitored);
 die7:
 	xsys_sem_destroy(&xbee->semMonitor);
 die6:
@@ -168,8 +170,7 @@ done:
 }
 
 EXPORT void xbee_shutdown(struct xbee *xbee) {
-	int i,o;
-	struct bufData *buf;
+	int i;
 	
 	if (!xbee) {
 		if (!xbee_default) return;
@@ -183,133 +184,53 @@ EXPORT void xbee_shutdown(struct xbee *xbee) {
 	xbee_log(2,"Shutting down libxbee...");
 	ll_ext_item(&xbee_list, xbee);
 	
+	/* cleanup txThread */
+	xbee_log(5,"- Terminating txThread...");
+	xbee_threadStopMonitored(xbee, &xbee->txThread, NULL, NULL);
+	xbee_log(5,"-- Cleanup txList...");
+	ll_destroy(&xbee->txList, free);
+	xbee_log(5,"-- Cleanup txSem...");
+	xsys_sem_destroy(&xbee->txSem);
+	
+	/* cleanup rxThread */
+	xbee_log(5,"- Terminating rxThread...");
+	xbee_threadStopMonitored(xbee, &xbee->rxThread, NULL, NULL);
+	
+	/* cleanup threadMonitor */
 	xbee_log(5,"- Terminating thread monitor and child threads...");
 	xsys_thread_cancel(xbee->threadMonitor);
 	ll_destroy(&xbee->threadList, xbee_threadKillMonitored);
 	xsys_sem_destroy(&xbee->semMonitor);
 	
+	/* cleanup the frameID ACK system */
 	xbee_log(5,"- Destroying frameID control...");
+	xsys_mutex_destroy(&xbee->frameIdMutex);
 	for (i = 0; i <= 0xFF; i++) {
 		xsys_sem_destroy(&xbee->frameIds[i].sem);
 	}
-	xsys_mutex_destroy(&xbee->frameIdMutex);
 	
-	xbee_log(5,"- Terminating txThread...");
-	xbee_threadStopMonitored(xbee, &xbee->txThread, NULL, NULL);
+	xbee_log(5,"- Cleanup I/O information...");
+	xbee_io_close(xbee);
+	free(xbee->device.path);
 	
-	for (o = 0; (buf = ll_ext_head(&xbee->txList)) != NULL; o++) {
-		free(buf);
-	}
-	if (o) xbee_log(5,"-- Free'd %d packets",o);
-	xbee_log(5, "-- Cleanup txSem...");
-	xsys_sem_destroy(&xbee->txSem);
-	
-	xbee_log(5,"- Terminating rxThread...");
-	xbee_threadStopMonitored(xbee, &xbee->rxThread, NULL, NULL);
-	
+	/* xbee_cleanupMode() prints it's own messages */
 	xbee_cleanupMode(xbee);
 	
+	/* this is nessesary, because we just killex the rxThread...
+	   which means that we would leak memory otherwise! */
 	xbee_log(5,"- Cleanup rxBuf...");
 	free(xbee->rxBuf);
 	
-	xbee_log(5,"- Closing device handles...");
-	xsys_fclose(xbee->device.f);
-	xsys_close(xbee->device.fd);
-	free(xbee->device.path);
-	
-	xbee_log(5,"- Unlink and free instance");
+	xbee_log(5,"- Cleanup libxbee instance");
 	free(xbee);
-	xbee_log(2,"Shutdown complete");
+	xbee_log(2,"Shutdown complete!");
 	
 	xbee_default = ll_get_tail(&xbee_list);
 	
 	return;
 }
 
-int _xbee_threadStart(struct xbee *xbee, xsys_thread *thread, void*(*startFunction)(void*), char *startFuncName) {
-	int i;
-	int ret;
-	if (!xbee)          return XBEE_ENOXBEE;
-	if (!thread)        return XBEE_EMISSINGPARAM;
-	if (!startFunction) return XBEE_EMISSINGPARAM;
-	if (!startFuncName) return XBEE_EMISSINGPARAM;
-	
-	if ((*thread) != 0) {
-		if (!(ret = xsys_thread_tryjoin(*thread, (void**)&i))) {
-			xbee_log(1,"%s() has previously ended and returned %d... restarting...", startFuncName, i);
-		} else {
-			if (ret == EBUSY) {
-				xbee_log(1,"%s() is still running...", startFuncName);
-				return XBEE_EBUSY;
-			} else if (ret == EINVAL ||
-								 ret == EDEADLK) {
-				return XBEE_ETHREAD;
-			}
-			/* if ret == ESRCH then this thread hasn't been started yet! */
-		}
-	}
-	
-	if (xsys_thread_create(thread, startFunction, (void*)xbee)) {
-		return XBEE_ETHREAD;
-	}
-	xbee_log(1,"Started thread! %s()", startFuncName);
-	return 0;
-}
-
 EXPORT void xbee_pktFree(struct xbee_pkt *pkt) {
 	if (!pkt) return;
 	free(pkt);
-}
-
-unsigned char xbee_frameIdGet(struct xbee *xbee, struct xbee_con *con) {
-	unsigned char i;
-	unsigned char ret;
-	ret = 0;
-	xsys_mutex_lock(&xbee->frameIdMutex);
-	for (i = xbee->frameIdLast + 1; i != xbee->frameIdLast; i++) {
-		if (i == 0) i++;
-		if (i == xbee->frameIdLast) break;
-		
-		if (!xbee->frameIds[i].con) {
-			xbee->frameIds[i].ack = XBEE_EUNKNOWN;
-			xbee->frameIds[i].con = con;
-			xbee->frameIdLast = i;
-			ret = i;
-			break;
-		}
-	}
-	xsys_mutex_unlock(&xbee->frameIdMutex);
-	return ret;
-}
-
-void xbee_frameIdGiveACK(struct xbee *xbee, unsigned char frameID, unsigned char ack) {
-	struct xbee_frameIdInfo *info;
-	if (!xbee)          return;
-	info = &(xbee->frameIds[frameID]);
-	if (!info->con)     return;
-	info->ack = ack;
-	xsys_sem_post(&info->sem);
-}
-
-int xbee_frameIdGetACK(struct xbee *xbee, struct xbee_con *con, unsigned char frameID) {
-	struct xbee_frameIdInfo *info;
-	int ret;
-	if (!xbee)          return XBEE_ENOXBEE;
-	if (!con)           return XBEE_EMISSINGPARAM;
-	info = &(xbee->frameIds[frameID]);
-	if (info->con != con) {
-		return XBEE_EINVAL;
-	}
-	if (xsys_sem_timedwait(&info->sem,1,0)) {
-		if (errno == ETIMEDOUT) {
-			ret = XBEE_ETIMEOUT;
-		} else {
-			ret = XBEE_ESEMAPHORE;
-		}
-		goto done;
-	}
-	ret = info->ack;
-done:
-	info->con = NULL;
-	return ret;
 }

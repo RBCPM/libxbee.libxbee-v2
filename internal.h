@@ -187,14 +187,4 @@ struct xbee_mode {
 	int conTypeCount;
 };
 
-/* ######################################################################### */
-
-/* --- xbee.c --- */
-#define xbee_threadStart(a, b, c) _xbee_threadStart((a), (b), (void*(*)(void*))(c), (#c))
-int _xbee_threadStart(struct xbee *xbee, xsys_thread *thread, void*(*startFunction)(void*), char *startFuncName);
-
-unsigned char xbee_frameIdGet(struct xbee *xbee, struct xbee_con *con);
-void xbee_frameIdGiveACK(struct xbee *xbee, unsigned char frameID, unsigned char ack);
-int xbee_frameIdGetACK(struct xbee *xbee, struct xbee_con *con, unsigned char frameID);
-
 #endif /* __XBEE_INTERNAL_H */
