@@ -92,7 +92,7 @@ $(DESTDIR)/$(LIBOUT).o: .$(DESTDIR).dir $(addprefix .,$(addsuffix .d,$(SRCS))) $
 
 
 .%.d: %.c
-	$(GCC) -MM -MT $(@:.d=.o) $(filter %.c,$^) -o $@
+	$(GCC) -MM -MT $(addprefix $(BUILDDIR)/,$(filter %.o,$(^:.c=.o))) $(filter %.c,$^) -o $@
 
 $(BUILDDIR)/%.o: .$(BUILDDIR).dir %.c
 	$(GCC) $(CFLAGS) $(firstword $(filter %.c,$^)) -o $@

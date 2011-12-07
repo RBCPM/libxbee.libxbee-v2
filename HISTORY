@@ -1,6 +1,7 @@
 v2.0.3 - inprogress
 	Bug fixes:
 		+ Transmitting multiple frames one after the other could fill the XBee buffer and cause data loss
+		+ Fixed build system (*.d files were generated for wrong target)
 	Modifications / Additions:
 		+ 'make release' now includes architecture in archive name
 		+ Code review on major sources
