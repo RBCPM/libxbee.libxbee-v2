@@ -46,9 +46,6 @@ int main(int argc, char *argv[]) {
 	struct xbee_con *con;
 	struct xbee_conAddress addr;
 	
-	/* the packet that is recieved... you have access to this! (see xbee.h) */
-	struct xbee_pkt *pkt;
-	
 	/* set the log level REALLY high, so we can see all the messages. default is 0 */
 	xbee_logSetLevel(100);
 	/* make a lixbee instance, and connect it to /dev/ttyUSB1 @ 57600 baud
@@ -93,9 +90,6 @@ int main(int argc, char *argv[]) {
 	for (;;) {
 		sleep(60);
 	}
-	
-	/* we broke out... so free */
-	xbee_pktFree(pkt);
 	
 	/* shutdown the connection, 'p' here gets set to the user data (see inside the callback) */
 	xbee_conEnd(xbee, con, NULL);
