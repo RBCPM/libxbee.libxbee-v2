@@ -18,6 +18,8 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef XBEE_DISABLE_LOGGING
+
 #include <string.h>
 #include <errno.h>
 
@@ -61,12 +63,13 @@ int xbee_shouldLog(int minLevel) {
 	return !(xbee_logLevel < minLevel);
 }
 
-void _xbee_logWrite(FILE *stream, const char *file, int line, const char *function) {
-	fprintf(stream, "[%s:%d] %s(): %s\n", file, line, function, xbee_logBuffer);
+void _xbee_logWrite(FILE *stream, const char *file, int line, const char *function, int minLevel) {
+	fprintf(stream, "%d#[%s:%d] %s(): %s\n", minLevel, file, line, function, xbee_logBuffer);
 }
 
-void _xbee_logDevWrite(FILE *stream, const char *file, int line, const char *function) {
-	fprintf(stream, "DEV:[%s:%d] %s(): %s\n", file, line, function, xbee_logBuffer);
+void _xbee_logDevWrite(FILE *stream, const char *file, int line, const char *function, int minLevel) {
+	fprintf(stream, "DEV:");
+	_xbee_logWrite(stream, file, line, function, minLevel);
 }
 
 EXPORT void _xbee_logDev(const char *file, int line, const char *function, int minLevel, char *format, ...) {
@@ -81,7 +84,7 @@ EXPORT void _xbee_logDev(const char *file, int line, const char *function, int m
   vsnprintf(xbee_logBuffer, XBEE_LOG_BUFFERLEN, format, ap);
   va_end(ap);
 	
-	_xbee_logDevWrite(xbee_logf, file, line, function);
+	_xbee_logDevWrite(xbee_logf, file, line, function, minLevel);
 	
 	xsys_mutex_unlock(&xbee_logMutex);
 }
@@ -98,7 +101,7 @@ void _xbee_log(const char *file, int line, const char *function, int minLevel, c
   vsnprintf(xbee_logBuffer, XBEE_LOG_BUFFERLEN, format, ap);
   va_end(ap);
 	
-	_xbee_logWrite(xbee_logf, file, line, function);
+	_xbee_logWrite(xbee_logf, file, line, function, minLevel);
 	
 	xsys_mutex_unlock(&xbee_logMutex);
 }
@@ -125,7 +128,7 @@ void _xbee_perror(const char *file, int line, const char *function, int minLevel
 		strerror_r(lerrno, &(xbee_logBuffer[i]), XBEE_LOG_BUFFERLEN - 1 - i);
 	}
 	
-	_xbee_logWrite(xbee_logf, file, line, function);
+	_xbee_logWrite(xbee_logf, file, line, function, minLevel);
 	
 	xsys_mutex_unlock(&xbee_logMutex);
 }
@@ -142,10 +145,12 @@ void _xbee_logstderr(const char *file, int line, const char *function, int minLe
   vsnprintf(xbee_logBuffer, XBEE_LOG_BUFFERLEN, format, ap);
   va_end(ap);
 	
-	_xbee_logWrite(xbee_logf, file, line, function);
+	_xbee_logWrite(xbee_logf, file, line, function, minLevel);
 	if (xbee_logf != stderr) {		
-		_xbee_logWrite(stderr, file, line, function);
+		_xbee_logWrite(stderr, file, line, function, minLevel);
 	}
 	
 	xsys_mutex_unlock(&xbee_logMutex);
 }
+
+#endif /* XBEE_DISABLE_LOGGING */

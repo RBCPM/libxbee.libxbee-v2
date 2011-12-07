@@ -24,6 +24,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#ifndef XBEE_DISABLE_LOGGING
+
 int xbee_shouldLog(int minLevel);
 
 void _xbee_log(const char *file, int line, const char *function, int minLevel, char *format, ...);
@@ -37,6 +39,14 @@ void _xbee_perror(const char *file, int line, const char *function, int minLevel
 void _xbee_logstderr(const char *file, int line, const char *function, int minLevel, char *format, ...);
 #define xbee_logstderr(...) \
 	_xbee_logstderr(__FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
+
+#else /* XBEE_DISABLE_LOGGING */
+
+#define xbee_log(...)
+#define xbee_perror(...)
+#define xbee_logstderr(...)
+
+#endif /* XBEE_DISABLE_LOGGING */
 
 #endif /* __XBEE_LOG_H */
 

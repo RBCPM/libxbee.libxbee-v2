@@ -27,6 +27,8 @@ CFLAGS:=-Wall -Wstrict-prototypes -Wno-variadic-macros -c -fPIC -fvisibility=hid
 #CFLAGS+=-pedantic
 CLINKS:=$(addprefix -l,$(LIBS)) $(DEBUG)
 
+### un-commend to remove ALL logging (smaller & faster binary)
+#CFLAGS+=-DXBEE_DISABLE_LOGGING
 
 ###############################################################################
 
