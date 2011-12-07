@@ -24,6 +24,9 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <unistd.h>
+#include <sys/time.h>
+
 #include <fcntl.h>
 #define __USE_GNU
 #include <pthread.h>
@@ -33,6 +36,8 @@
 typedef pthread_t         xsys_thread;
 typedef pthread_mutex_t   xsys_mutex;
 typedef sem_t             xsys_sem;
+typedef size_t            xsys_size_t;
+typedef ssize_t           xsys_ssize_t;
 
 #define EXPORT __attribute__((visibility ("default")))
 

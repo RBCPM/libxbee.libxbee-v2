@@ -22,8 +22,6 @@
 */
 
 #include <stdio.h>
-#include <unistd.h>
-#include <sys/time.h>
 
 #define __XBEE_XSYS_LOAD_H
 #if defined(__GNUC__) /* ------- */
@@ -41,15 +39,15 @@
 int xsys_open(char *path, int flags);
 int xsys_lockf(int fd);
 int xsys_close(int fd);
-ssize_t xsys_read(int fd, void *buf, size_t count);
-ssize_t xsys_write(int fd, void *buf, size_t count);
+xsys_ssize_t xsys_read(int fd, void *buf, xsys_size_t count);
+xsys_ssize_t xsys_write(int fd, void *buf, xsys_size_t count);
 
 FILE *xsys_fopen(char *path, char *mode);
 FILE *xsys_fdopen(int fd, char *mode);
 int xsys_fclose(FILE *fp);
 
-size_t xsys_fread(void *ptr, size_t size, size_t nmemb, FILE *stream);
-size_t xsys_fwrite(void *ptr, size_t size, size_t nmemb, FILE *stream);
+xsys_size_t xsys_fread(void *ptr, xsys_size_t size, xsys_size_t nmemb, FILE *stream);
+xsys_size_t xsys_fwrite(void *ptr, xsys_size_t size, xsys_size_t nmemb, FILE *stream);
 int xsys_fflush(FILE *stream);
 int xsys_ferror(FILE *stream);
 int xsys_feof(FILE *stream);
