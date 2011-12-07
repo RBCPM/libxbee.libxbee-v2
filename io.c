@@ -112,14 +112,16 @@ int xbee_io_reopen(struct xbee *xbee) {
 
 /* ######################################################################### */
 
-int xbee_io_getRawByte(FILE *f, unsigned char *cOut) {
+int xbee_io_getRawByte(struct xbee *xbee, unsigned char *cOut) {
 	unsigned char c;
 	int ret = XBEE_EUNKNOWN;
 	int retries = XBEE_IO_RETRIES;
 	*cOut = 0;
 
+	if (!xbee->device.ready) return XBEE_ENOTREADY;
+	
 	do {
-		if ((ret = xsys_select(f, NULL)) == -1) {
+		if ((ret = xsys_select(xbee->device.f, NULL)) == -1) {
 			xbee_perror(1,"xbee_select()");
 			if (errno == EINTR) {
 				ret = XBEE_ESELECTINTERRUPTED;
@@ -129,11 +131,11 @@ int xbee_io_getRawByte(FILE *f, unsigned char *cOut) {
 			goto done;
 		}
 	
-		if (xsys_fread(&c, 1, 1, f) == 0) {
+		if (xsys_fread(&c, 1, 1, xbee->device.f) == 0) {
 			/* for some reason nothing was read... */
-			if (xsys_ferror(f)) {
+			if (xsys_ferror(xbee->device.f)) {
 				char *s;
-				if (xsys_feof(f)) {
+				if (xsys_feof(xbee->device.f)) {
 					xbee_logstderr(1,"EOF detected...");
 					ret = XBEE_EEOF;
 					goto done;
@@ -171,16 +173,19 @@ done:
 	return ret;
 }
 
-int xbee_io_getEscapedByte(FILE *f, unsigned char *cOut) {
+int xbee_io_getEscapedByte(struct xbee *xbee, unsigned char *cOut) {
 	unsigned char c;
 	int ret = XBEE_EUNKNOWN;
+
+	if (!xbee->device.ready) return XBEE_ENOTREADY;
+	
 	*cOut = 0;
 
-	if ((ret = xbee_io_getRawByte(f, &c)) != 0) return ret;
+	if ((ret = xbee_io_getRawByte(xbee, &c)) != 0) return ret;
 	if (c == 0x7E) {
 		ret = XBEE_EUNESCAPED_START;
 	} else if (c == 0x7D) {
-		if ((ret = xbee_io_getRawByte(f, &c)) != 0) return ret;
+		if ((ret = xbee_io_getRawByte(xbee, &c)) != 0) return ret;
 		c ^= 0x20;
 	}
 	*cOut = c;
@@ -189,20 +194,22 @@ int xbee_io_getEscapedByte(FILE *f, unsigned char *cOut) {
 
 /* ######################################################################### */
 
-int xbee_io_writeRawByte(FILE *f, unsigned char c) {
+int xbee_io_writeRawByte(struct xbee *xbee, unsigned char c) {
 	int ret = XBEE_EUNKNOWN;
 	int retries = XBEE_IO_RETRIES;
+
+	if (!xbee->device.ready) return XBEE_ENOTREADY;
 	
 	xbee_log(20,"WRITE: 0x%02X [%c]", c, ((c >= 32 && c <= 126)?c:' '));
 	do {
-		if (xsys_fwrite(&c, 1, 1, f)) break;
+		if (xsys_fwrite(&c, 1, 1, xbee->device.f)) break;
 		
 		/* for some reason nothing was written... */
-		if (xsys_feof(f)) {
+		if (xsys_feof(xbee->device.f)) {
 			xbee_logstderr(1,"EOF detected...");
 			ret = XBEE_EEOF;
 			goto done;
-		} else if (xsys_ferror(f)) {
+		} else if (xsys_ferror(xbee->device.f)) {
 			char *s;
 			if (retries <= XBEE_IO_RETRIES_WARN) {
 				if (!(s = strerror(errno))) {
@@ -232,14 +239,16 @@ done:
 	return ret;
 }
 
-int xbee_io_writeEscapedByte(FILE *f, unsigned char c) {
+int xbee_io_writeEscapedByte(struct xbee *xbee, unsigned char c) {
+	if (!xbee->device.ready) return XBEE_ENOTREADY;
+
 	if (c == 0x7E ||
 			c == 0x7D ||
 			c == 0x11 ||
 			c == 0x13) {
-		if (xbee_io_writeRawByte(f, 0x7D)) return XBEE_EIO;
+		if (xbee_io_writeRawByte(xbee, 0x7D)) return XBEE_EIO;
 		c ^= 0x20;
 	}
-	if (xbee_io_writeRawByte(f, c)) return XBEE_EIO;
+	if (xbee_io_writeRawByte(xbee, c)) return XBEE_EIO;
 	return 0;
 }

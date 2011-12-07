@@ -46,16 +46,16 @@ int _xbee_tx(struct xbee *xbee) {
 		
 		chksum = 0;
 		
-		xbee_io_writeRawByte(xbee->device.f, 0x7E);
-		xbee_io_writeEscapedByte(xbee->device.f, ((buf->len >> 8) & 0xFF));
-		xbee_io_writeEscapedByte(xbee->device.f, ( buf->len       & 0xFF));
+		xbee_io_writeRawByte(xbee, 0x7E);
+		xbee_io_writeEscapedByte(xbee, ((buf->len >> 8) & 0xFF));
+		xbee_io_writeEscapedByte(xbee, ( buf->len       & 0xFF));
 		
 		for (i = 0; i < buf->len; i++) {
 			chksum += buf->buf[i];
-			xbee_io_writeEscapedByte(xbee->device.f, buf->buf[i]);
+			xbee_io_writeEscapedByte(xbee, buf->buf[i]);
 		}
 		
-		xbee_io_writeEscapedByte(xbee->device.f, 0xFF - chksum);
+		xbee_io_writeEscapedByte(xbee, 0xFF - chksum);
 		
 		free(buf);
 	}

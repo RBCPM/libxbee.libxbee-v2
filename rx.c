@@ -317,7 +317,7 @@ int _xbee_rx(struct xbee *xbee) {
 		}
 		
 		for (pos = -3; pos < 0 || (pos < len && pos < XBEE_MAX_PACKETLEN); pos++) {
-			if ((ret = xbee_io_getEscapedByte(xbee->device.f, &c)) != 0) {
+			if ((ret = xbee_io_getEscapedByte(xbee, &c)) != 0) {
 				if (ret == XBEE_EUNESCAPED_START) {
 					if (pos > -3) xbee_log(3,"Unexpected start byte... restarting packet capture");
 					pos = -3;
