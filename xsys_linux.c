@@ -188,7 +188,6 @@ int xsys_thread_tryjoin(xsys_thread thread, void **retval) {
 }
 int xsys_thread_detach_self(void) {
 	return pthread_detach(pthread_self());
-	return 0;
 }
 int xsys_thread_iAm(xsys_thread thread) {
 	return pthread_equal(pthread_self(), thread);
