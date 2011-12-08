@@ -1,6 +1,6 @@
 v2.0.3 - inprogress
 	Bug fixes:
-		+ Transmitting multiple frames one after the other could fill the XBee buffer and cause data loss
+		+ Transmitting multiple frames one after the other could fill the XBee buffer and cause data loss (use RTS/CTS, or delay if XBEE_NO_RTSCTS defined)
 		+ Fixed build system (*.d files were generated for wrong target)
 	Modifications / Additions:
 		+ 'make release' now includes architecture in archive name

@@ -29,6 +29,7 @@ CLINKS:=$(addprefix -l,$(LIBS)) $(DEBUG)
 
 ### un-commend to remove ALL logging (smaller & faster binary)
 #CFLAGS+=-DXBEE_DISABLE_LOGGING
+#CFLAGS+=-DXBEE_NO_RTSCTS
 
 ###############################################################################
 

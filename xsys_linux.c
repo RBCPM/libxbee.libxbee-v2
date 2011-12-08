@@ -142,6 +142,11 @@ int xsys_setupSerial(int fd, FILE *stream, int baudrate) {
   tc.c_cflag &= ~ CSIZE;            /* remove size flag... */
   tc.c_cflag |=   CS8;              /* ...enable 8 bit characters */
   tc.c_cflag |=   HUPCL;            /* enable lower control lines on close - hang up */
+#ifdef XBEE_NO_RTSCTS
+  tc.c_cflag &= ~ CRTSCTS;          /* disable hardware CTS/RTS flow control */
+#else
+  tc.c_cflag |=   CRTSCTS;          /* enable hardware CTS/RTS flow control */
+#endif
   /* local flags */
   tc.c_lflag &= ~ ISIG;             /* disable generating signals */
   tc.c_lflag &= ~ ICANON;           /* disable canonical mode - line by line */

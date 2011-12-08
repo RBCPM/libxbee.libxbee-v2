@@ -39,8 +39,10 @@ int _xbee_tx(struct xbee *xbee) {
 			xsys_sem_wait(&xbee->txSem);
 			continue;
 		} else {
+#ifdef XBEE_NO_RTSCTS
 			/* it appears that the XBee's are unable to keep up if we just go full tilt! */
 			usleep(10000);
+#endif
 		}
 		
 		chksum = 0;
