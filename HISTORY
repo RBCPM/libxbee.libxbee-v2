@@ -6,6 +6,7 @@ v2.0.3 - inprogress
 		+ 'make release' now includes architecture in archive name
 		+ Code review on major sources
 		+ Added 'XBEE_DISABLE_LOGGING' definition to allow all logging to be removed from the binary (see makefile)
+		+ Added parsing of 'XBEE_LOG_LEVEL' environment variable, this is overridden by calls to xbee_logSetLevel()
 
 v2.0.2 - a917fb0aa7c5 - 6 Dec 2011
 	Modifications / Additions:

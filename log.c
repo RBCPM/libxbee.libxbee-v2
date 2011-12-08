@@ -20,6 +20,7 @@
 
 #ifndef XBEE_DISABLE_LOGGING
 
+#include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 
@@ -31,20 +32,32 @@
 
 static FILE *xbee_logf = NULL;
 static int xbee_logLevel = 0;
-static int xbee_logfSet = 0;
 static int xbee_logReady = 0;
-static xsys_mutex xbee_logMutex;
+static xsys_mutex xbee_logMutex = XSYS_MUTEX_INIT;
 #define XBEE_LOG_BUFFERLEN 1024
 static char xbee_logBuffer[XBEE_LOG_BUFFERLEN];
 
 static int xbee_logPrepare(void) {
-	if (xbee_logReady) return 0;
-	if (xsys_mutex_init(&xbee_logMutex)) return 1;
-	if (!xbee_logfSet) {
-		xbee_logf = XBEE_LOG_DEFAULT_TARGET;
-		xbee_logfSet = 1;
+	int l;
+	char *e;
+	xsys_mutex_lock(&xbee_logMutex);
+	if (xbee_logReady) {
+		xsys_mutex_unlock(&xbee_logMutex);
+		return 0;
 	}
+
+	xbee_logf = XBEE_LOG_DEFAULT_TARGET;
+
+	/* get the log level from the environment */
+	if ((e = getenv("XBEE_LOG_LEVEL")) != NULL) {
+		if (sscanf(e,"%d",&l) == 1) {
+			xbee_logLevel = l;
+			printf("libxbee: Initialized log level to %d from environment\n", xbee_logLevel);
+		}
+	}
+
 	xbee_logReady = 1;
+	xsys_mutex_unlock(&xbee_logMutex);
 	return 0;
 }
 
@@ -56,6 +69,7 @@ EXPORT void xbee_logSetTarget(FILE *f) {
 }
 
 EXPORT void xbee_logSetLevel(int level) {
+	if (!xbee_logReady) if (xbee_logPrepare()) return;
 	xbee_logLevel = level;
 }
 
@@ -64,7 +78,7 @@ int xbee_shouldLog(int minLevel) {
 }
 
 void _xbee_logWrite(FILE *stream, const char *file, int line, const char *function, int minLevel) {
-	fprintf(stream, "%d#[%s:%d] %s(): %s\n", minLevel, file, line, function, xbee_logBuffer);
+	fprintf(stream, "%3d#[%s:%d] %s(): %s\n", minLevel, file, line, function, xbee_logBuffer);
 }
 
 void _xbee_logDevWrite(FILE *stream, const char *file, int line, const char *function, int minLevel) {
