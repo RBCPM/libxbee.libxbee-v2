@@ -24,4 +24,3 @@
 void xbee_cleanupMode(struct xbee *xbee);
 
 #endif /* __XBEE_MODE_H */
-

@@ -163,6 +163,13 @@ struct xbee_pkt {
 	struct xbee_pkt_ioData ioData;
 };
 
+/* this struct is for use with plugins... (see samples/plugin) */
+struct plugin_features {
+	int (*init)(struct xbee *xbee);
+	void (*thread)(struct xbee *xbee);
+	struct xbee_mode **xbee_modes;
+};
+
 /* ######################################################################### */
 /* ######################################################################### */
 /* ######################################################################### */
@@ -307,6 +314,16 @@ int xbee_conSleep(struct xbee *xbee, struct xbee_con *con, int wakeOnRx);
  *-  'con' should be the connection that was returned by xbee_conNew()
  */
 int xbee_conWake(struct xbee *xbee, struct xbee_con *con);
+
+/* ######################################################################### */
+/* ######################################################################### */
+/* ######################################################################### */
+/* --- plugin.c --- */
+/* this function allows you to load a plugin
+ *-  'filename' is the path to the plugin you wish to load
+ *-  'xbee' may be NULL or a valid xbee instance. This is passed to the plugin's init() and thread() functions
+ */
+int xbee_pluginLoad(char *filename, struct xbee *xbee);
 
 /* ######################################################################### */
 /* ######################################################################### */

@@ -7,14 +7,14 @@ LIBFULLREV:=$(LIBMAJ).$(LIBMIN).$(LIBREV)
 BUILDDIR:=.build
 DESTDIR:=lib
 
-SRCS:=conn io ll log mode frame rx tx xbee xbee_s1 xbee_s2 xbee_sG xsys thread
+SRCS:=conn io ll log mode frame rx tx xbee xbee_s1 xbee_s2 xbee_sG xsys thread plugin
 RELEASE_ITEMS:=lib/libxbee.so.$(LIBFULLREV) \
                lib/libxbee.so \
                lib/libxbee.so.$(LIBFULLREV).dbg \
                lib/libxbee.a.$(LIBFULLREV) \
                lib/libxbee.a \
                xbee.h
-LIBS:=rt pthread
+LIBS:=rt pthread dl
 
 CROSS_COMPILE?=
 AR:=$(CROSS_COMPILE)ar
