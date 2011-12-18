@@ -117,8 +117,8 @@ EXPORT char **xbee_modeGetList(void) {
 	for (i = 0; xbee_modes[i]; i++) {
 		datalen += sizeof(char) * (strlen(xbee_modes[i]->name) + 1);
 	}
-	
 	datalen += sizeof(char *) * (i + 1);
+	
 	if ((modes = calloc(1, datalen)) == NULL) return NULL;
 	d = (char *)&(modes[i+1]);
 	

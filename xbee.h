@@ -213,6 +213,11 @@ int xbee_modeSet(struct xbee *xbee, char *name);
 /* ######################################################################### */
 /* ######################################################################### */
 /* --- conn.c --- */
+/* this function acts similarly to xbee_modeGetList(). it will return the avaliable connection types for the given xbee (see samples/modes)
+ *-  'xbee' should be the libxbee instance that you wish to use. If this is NULL, then the most recent instance will be used
+ */
+int xbee_conGetTypeList(struct xbee *xbee, char ***retList);
+
 /* this function allows you to get the conType ID for a given connection type, the returned ID should be used with xbee_conNew()
  *-  'xbee' should be the libxbee instance that you wish to use. If this is NULL, then the most recent instance will be used
  *-  'name' should be the name of the connection that you wish to get the ID for

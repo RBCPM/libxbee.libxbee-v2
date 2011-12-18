@@ -35,7 +35,7 @@ int _xbee_conTypeIdFromName(struct xbee *xbee, char *name, unsigned char *id, in
 		xbee = xbee_default;
 	}
 	if (!xbee_validate(xbee)) return XBEE_ENOXBEE;
-	if (!xbee->mode) return XBEE_EINVAL;
+	if (!xbee->mode) return XBEE_ENOMODE;
 	if (!name) return XBEE_EMISSINGPARAM;
 	
 	for (i = 0; xbee->mode->conTypes[i].name; i++) {
@@ -49,6 +49,39 @@ int _xbee_conTypeIdFromName(struct xbee *xbee, char *name, unsigned char *id, in
 }
 EXPORT int xbee_conTypeIdFromName(struct xbee *xbee, char *name, unsigned char *id) {
 	return _xbee_conTypeIdFromName(xbee, name, id, 0);
+}
+
+EXPORT int xbee_conGetTypeList(struct xbee *xbee, char ***retList) {
+	int i;
+	char **retL;
+	char *d;
+	int datalen;
+	if (!xbee) {
+		if (!xbee_default) return XBEE_ENOXBEE;
+		xbee = xbee_default;
+	}
+	if (!xbee_validate(xbee)) return XBEE_ENOXBEE;
+	if (!xbee->mode) return XBEE_ENOMODE;
+	
+	datalen = 0;
+	for (i = 0; xbee->mode->conTypes[i].name; i++) {
+		datalen += sizeof(char) * (strlen(xbee->mode->conTypes[i].name) + 1);
+	}
+	datalen += sizeof(char *) * (i + 1);
+	
+	if ((retL = calloc(1, datalen)) == NULL) return XBEE_ENOMEM;
+	d = (char *)&(retL[i+1]);
+	
+	for (i = 0; xbee->mode->conTypes[i].name; i++) {
+		strcpy(d, xbee->mode->conTypes[i].name);
+		retL[i] = d;
+		d = &(d[strlen(xbee->mode->conTypes[i].name) + 1]);
+	}
+	retL[i] = NULL;
+	
+	*retList = retL;
+	
+	return 0;
 }
 
 struct xbee_conType *_xbee_conTypeFromID(struct xbee_conType *conTypes, unsigned char id, int ignoreInitialized) {
