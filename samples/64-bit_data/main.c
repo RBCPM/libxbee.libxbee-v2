@@ -132,7 +132,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	/* you have access to the error log! Your messages will be prefixed with "DEV:" */
-	xbee_log(0,"Hello!");
+	xbee_log(xbee,0,"Hello!");
 
 	/* the main loop */
 	for (;;) {

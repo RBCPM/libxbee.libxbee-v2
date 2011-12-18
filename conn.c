@@ -101,8 +101,13 @@ struct xbee_conType *xbee_conTypeFromID(struct xbee_conType *conTypes, unsigned 
 	return _xbee_conTypeFromID(conTypes, id, 0);
 }
 
-struct xbee_con *xbee_conFromAddress(struct xbee_conType *conType, struct xbee_conAddress *address) {
+struct xbee_con *xbee_conFromAddress(struct xbee *xbee, struct xbee_conType *conType, struct xbee_conAddress *address) {
 	struct xbee_con *con, *scon;
+	if (!xbee) {
+		if (!xbee_default) return NULL;
+		xbee = xbee_default;
+	}
+	if (!xbee_validate(xbee)) return NULL;
 	if (!address) return NULL;
 	if (!conType || !conType->initialized) return NULL;
 	
@@ -218,7 +223,7 @@ EXPORT int xbee_conNew(struct xbee *xbee, struct xbee_con **retCon, unsigned cha
 	}
 	
 	ret = XBEE_ENONE;
-	if ((con = xbee_conFromAddress(conType, address)) != NULL && !con->sleeping) {
+	if ((con = xbee_conFromAddress(xbee, conType, address)) != NULL && !con->sleeping) {
 		*retCon = con;
 		goto done;
 	}

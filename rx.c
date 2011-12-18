@@ -201,7 +201,7 @@ int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
 			xbee_log(4,"Endpoints (local/remote): 0x%02X/0x%02X", con.address.local_endpoint, con.address.remote_endpoint);
 		}
 		
-		if ((rxCon = xbee_conFromAddress(pktHandler->conType, &con.address)) == NULL) {
+		if ((rxCon = xbee_conFromAddress(xbee, pktHandler->conType, &con.address)) == NULL) {
 			xbee_log(3,"No connection for packet...");
 			goto skip;
 		}

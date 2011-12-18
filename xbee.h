@@ -324,9 +324,10 @@ void xbee_logSetLevel(int level);
 
 #ifndef __XBEE_INTERNAL_H
 /* this function allows you to write to the libxbee log from user-space, you should use the following macro, and not call this function directly */
-void _xbee_logDev(const char *file, int line, const char *function, int minLevel, char *format, ...);
+void _xbee_logDev(const char *file, int line, const char *function, struct xbee *xbee, int minLevel, char *format, ...);
 
 /* this macro allows you to write to the libxbee log
+ *-  'xbee' is the xbee handle you wish to associate with the log message, or NULL for a general message
  *-  'minLevel' the first argument is the log level to use for this message
  *     this number must be below the level applied using xbee_logSetLevel() for the mssage to appear
  *-  the remaining arguments are identical to that of printf()

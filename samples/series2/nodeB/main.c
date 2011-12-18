@@ -85,7 +85,7 @@ int main(int argc, char *argv[]) {
 	
 		printf("Sending...\n");
 		if (xbee_conTx(xbee, con, "Hello End Node!")) {
-			xbee_log(0,"Error while sending message... :(");
+			xbee_log(xbee,0,"Error while sending message... :(");
 		}
 		
 		sleep(1);

@@ -58,7 +58,7 @@ int xsys_disableBuffer(FILE *stream);
 
 
 /* configuration */
-int xsys_setupSerial(int fd, FILE *stream, int baudrate);
+int xsys_setupSerial(struct xbee *xbee);
 
 
 /* threads */

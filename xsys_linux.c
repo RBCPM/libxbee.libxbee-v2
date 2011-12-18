@@ -100,12 +100,12 @@ int xsys_disableBuffer(FILE *stream) {
 /* ######################################################################### */
 /* configuration */
 
-int xsys_setupSerial(int fd, FILE *stream, int baudrate) {
+int xsys_setupSerial(struct xbee *xbee) {
   struct termios tc;
   speed_t chosenbaud;
 	
   /* select the baud rate */
-  switch (baudrate) {
+  switch (xbee->device.baudrate) {
   case 1200:  chosenbaud = B1200;   break;
   case 2400:  chosenbaud = B2400;   break;
   case 4800:  chosenbaud = B4800;   break;
@@ -119,7 +119,7 @@ int xsys_setupSerial(int fd, FILE *stream, int baudrate) {
   };
 	
   /* setup the baud rate and other io attributes */
-  if (tcgetattr(fd, &tc)) {
+  if (tcgetattr(xbee->device.fd, &tc)) {
 		xbee_perror(1,"tcgetattr()");
 		return XBEE_ESETUP;
 	}
@@ -161,13 +161,13 @@ int xsys_setupSerial(int fd, FILE *stream, int baudrate) {
 		xbee_perror(1,"cfsetspeed()");
 		return XBEE_ESETUP;
 	}
-  if (tcsetattr(fd, TCSANOW, &tc)) {
+  if (tcsetattr(xbee->device.fd, TCSANOW, &tc)) {
 		xbee_perror(1,"tcsetattr()");
 		return XBEE_ESETUP;
 	}
 	
 	/* enable input & output transmission */
-  if (tcflow(fd, TCOON | TCION)) {
+  if (tcflow(xbee->device.fd, TCOON | TCION)) {
 		xbee_perror(1,"tcflow");
 		return XBEE_ESETUP;
 	}

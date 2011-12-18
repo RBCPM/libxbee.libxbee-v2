@@ -63,8 +63,11 @@ int xbee_io_open(struct xbee *xbee) {
 	/* disable buffering */
 	xsys_disableBuffer(f);
 	
+	xbee->device.fd = fd;
+	xbee->device.f = f;
+
 	/* setup serial port (baud, control lines etc...) */
-	if ((ret = xsys_setupSerial(fd, f, xbee->device.baudrate)) != 0) {
+	if ((ret = xsys_setupSerial(xbee)) != 0) {
 		if (ret == XBEE_ESETUP) {
 			xbee_perror(1,"xsys_setupSerial()");
 		} else if (ret == XBEE_EINVALBAUDRATE) {
@@ -75,8 +78,6 @@ int xbee_io_open(struct xbee *xbee) {
 		goto die3;
 	}
 	
-	xbee->device.fd = fd;
-	xbee->device.f = f;
 	xbee->device.ready = 1;
 	
 	goto done;

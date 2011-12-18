@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
 	/* make a lixbee instance, and connect it to /dev/ttyUSB1 @ 57600 baud
 	   you don't have to keep hold of the returned xbee, in which case you can pass NULL and the most recently started instance will be used! */
 	if ((ret = xbee_setup("/dev/ttyUSB0", 57600, &xbee)) != 0) {
-		xbee_log(-1,"xbee_setup(): failed... (%d)", ret);
+		xbee_log(NULL,-1,"xbee_setup(): failed... (%d)", ret);
 		exit(1);
 	}
 	/* setup libxbee to use the series 1 packets - you have to do this before you do anything else! */
@@ -77,12 +77,12 @@ int main(int argc, char *argv[]) {
 	
 	/* get the connection type ID, you pass in a string, it returns an ID */
 	if ((ret = xbee_conTypeIdFromName(xbee, "Local AT", &conType)) != 0) {
-		xbee_log(-1,"xbee_conTypeIdFromName(): failed... (%d)", ret);
+		xbee_log(xbee,-1,"xbee_conTypeIdFromName(): failed... (%d)", ret);
 		exit(1);
 	}
 	
 	if ((ret = sem_init(&sem, 0, 0)) != 0) {
-		xbee_log(-1,"sem_init(): failed... (%d)", ret);
+		xbee_log(xbee,-1,"sem_init(): failed... (%d)", ret);
 		exit(1);
 	}
 	
@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
 	addr.addr16_enabled = 0;
 	addr.addr64_enabled = 0;
 	if ((ret = xbee_conNew(xbee, &con, conType, &addr, &sem)) != 0) {
-		xbee_log(-1,"xbee_newcon(): failed... (%d)", ret);
+		xbee_log(xbee,-1,"xbee_newcon(): failed... (%d)", ret);
 		exit(1);
 	}
 	{
@@ -105,7 +105,7 @@ int main(int argc, char *argv[]) {
 
 	/* send the request */
 	if ((ret = xbee_conTx(xbee, con, "ND")) != 0) {
-		xbee_log(-1,"Something went wrong... (%d)", ret);
+		xbee_log(xbee,-1,"Something went wrong... (%d)", ret);
 	} else {
 		sem_wait(&sem);
 	}

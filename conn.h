@@ -26,7 +26,7 @@ int xbee_conFree(struct xbee *xbee, struct xbee_con *con, int skipChecks);
 int _xbee_conTypeIdFromName(struct xbee *xbee, char *name, unsigned char *id, int ignoreInitialized);
 struct xbee_conType *_xbee_conTypeFromID(struct xbee_conType *conTypes, unsigned char id, int ignoreInitialized);
 struct xbee_conType *xbee_conTypeFromID(struct xbee_conType *conTypes, unsigned char id);
-struct xbee_con *xbee_conFromAddress(struct xbee_conType *conType, struct xbee_conAddress *address);
+struct xbee_con *xbee_conFromAddress(struct xbee *xbee, struct xbee_conType *conType, struct xbee_conAddress *address);
 
 int xbee_conValidate(struct xbee *xbee, struct xbee_con *con, struct xbee_conType **conType);
 

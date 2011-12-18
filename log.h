@@ -21,24 +21,21 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <stdio.h>
-#include <stdarg.h>
-
 #ifndef XBEE_DISABLE_LOGGING
 
 int xbee_shouldLog(int minLevel);
 
-void _xbee_log(const char *file, int line, const char *function, int minLevel, char *format, ...);
+void _xbee_log(const char *file, int line, const char *function, struct xbee *xbee, int minLevel, char *format, ...);
 #define xbee_log(...) \
-	_xbee_log(__FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
+	_xbee_log(__FILE__, __LINE__, __FUNCTION__, xbee, __VA_ARGS__)
 
-void _xbee_perror(const char *file, int line, const char *function, int minLevel, char *format, ...);
+void _xbee_perror(const char *file, int line, const char *function, struct xbee *xbee, int minLevel, char *format, ...);
 #define xbee_perror(...) \
-	_xbee_perror(__FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
+	_xbee_perror(__FILE__, __LINE__, __FUNCTION__, xbee, __VA_ARGS__)
 
-void _xbee_logstderr(const char *file, int line, const char *function, int minLevel, char *format, ...);
+void _xbee_logstderr(const char *file, int line, const char *function, struct xbee *xbee, int minLevel, char *format, ...);
 #define xbee_logstderr(...) \
-	_xbee_logstderr(__FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
+	_xbee_logstderr(__FILE__, __LINE__, __FUNCTION__, xbee, __VA_ARGS__)
 
 #else /* XBEE_DISABLE_LOGGING */
 
