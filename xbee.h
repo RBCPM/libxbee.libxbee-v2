@@ -213,20 +213,94 @@ int xbee_modeSet(struct xbee *xbee, char *name);
 /* ######################################################################### */
 /* ######################################################################### */
 /* --- conn.c --- */
+/* this function allows you to get the conType ID for a given connection type, the returned ID should be used with xbee_conNew()
+ *-  'xbee' should be the libxbee instance that you wish to use. If this is NULL, then the most recent instance will be used
+ *-  'name' should be the name of the connection that you wish to get the ID for
+ *-  'id' should be a pointer to a char that contains the connection ID
+ */
 int xbee_conTypeIdFromName(struct xbee *xbee, char *name, unsigned char *id);
+
+/* this function allows you to create a new connection, or return an existing connection that has the same address
+ *-  'xbee' should be the libxbee instance that you wish to use. If this is NULL, then the most recent instance will be used
+ *-  'retCon' should be a pointer to an xbee_con* that you will use for future connection-orientated operations. if this is NULL, the call will fail
+ *-  'id' should be the connection type ID that you retrieved using xbee_conTypeIdFromname()
+ *-  'address' should be a pointer to a struct that you have populated with the relevant addressing information
+ *-  'userData' will be stored in the connection's struct, and can be accessed from within a callback, or later by using xbee_conGetData() and xbee_conSetData()
+ */
 int xbee_conNew(struct xbee *xbee, struct xbee_con **retCon, unsigned char id, struct xbee_conAddress *address, void *userData);
+
+/* this function will return a received packet (if avaliable) from the given connection. Calling this function will return NULL and trigger a log message if callbacks are enabled
+ *-  'xbee' should be the libxbee instance that you wish to use. If this is NULL, then the most recent instance will be used
+ *-  'con' should be the connection that was returned by xbee_conNew()
+ */
 struct xbee_pkt *xbee_conRx(struct xbee *xbee, struct xbee_con *con);
+
+/* this function allows you to transmit a message using the given connection
+ *-  'xbee' should be the libxbee instance that you wish to use. If this is NULL, then the most recent instance will be used
+ *-  'con' should be the connection that was returned by xbee_conNew()
+ *-  the remaining arguments are identical to that of printf()
+ */
 int xbee_conTx(struct xbee *xbee, struct xbee_con *con, char *format, ...);
+/* this function is identical to xbee_conTx(), but you may pass it a va_list. this is useful if you develop your own function that uses variadic arguments */
 int xbee_convTx(struct xbee *xbee, struct xbee_con *con, char *format, va_list ap);
+/* this function is identical to xbee_conTx(), but instead you pass it a completed buffer and length */
 int xbee_connTx(struct xbee *xbee, struct xbee_con *con, char *data, int length);
+
+/* this function allows you to shutdown and free all memory associated with a connection
+ *-  'xbee' should be the libxbee instance that you wish to use. If this is NULL, then the most recent instance will be used
+ *-  'con' should be the connection that was returned by xbee_conNew()
+ *-  'userData' allows you to retrieve the user data assigned to the connection. If memory is allocated, and you do not retrieve this information, a leak will occur
+ */
 int xbee_conEnd(struct xbee *xbee, struct xbee_con *con, void **userData);
 
+/* ######################################################################### */
+
+/* this function allows you to retrieve the address of the function assigned as a callback for the given connection
+ *-  'xbee' should be the libxbee instance that you wish to use. If this is NULL, then the most recent instance will be used
+ *-  'con' should be the connection that was returned by xbee_conNew()
+ *-  'callback' should be a pointer to retrieve the current setting. if this is NULL, then the call will fail
+ */
 int xbee_conGetCallback(struct xbee *xbee, struct xbee_con *con, void **callback);
+
+/* this function allows you to assign a callback to a connection. the callback's prototype must follow the prototype shown here
+ *-  'xbee' should be the libxbee instance that you wish to use. If this is NULL, then the most recent instance will be used
+ *-  'con' should be the connection that was returned by xbee_conNew()
+ *-  'callback' should be the address of the callback function. if this is NULL, then callbacks are disabled for this connection
+ */
 int xbee_conAttachCallback(struct xbee *xbee, struct xbee_con *con, void(*callback)(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt **pkt, void **userData), void **prevCallback);
+
+/* this function allows you to set and retrieve options for the given connection
+ *-  'xbee' should be the libxbee instance that you wish to use. If this is NULL, then the most recent instance will be used
+ *-  'con' should be the connection that was returned by xbee_conNew()
+ *-  'getOptions' is a pointer to the struct that will recieve the currently applied options (may be NULL to only set)
+ *-  'setOptions' is a pointer to the struct that will be used to update the connections options (may be NULL to only get)
+ */
 int xbee_conOptions(struct xbee *xbee, struct xbee_con *con, struct xbee_conOptions *getOptions, struct xbee_conOptions *setOptions);
+
+/* this function allows you to retrieve the user data assigned to a function either during creation - xbee_conNew() - from within a callback, or by calling xbee_conSetData()
+ *-  'xbee' should be the libxbee instance that you wish to use. If this is NULL, then the most recent instance will be used
+ *-  'con' should be the connection that was returned by xbee_conNew()
+ */
 void *xbee_conGetData(struct xbee *xbee, struct xbee_con *con);
+
+/* this function allows you to assign user data to a function
+ *-  'xbee' should be the libxbee instance that you wish to use. If this is NULL, then the most recent instance will be used
+ *-  'con' should be the connection that was returned by xbee_conNew()
+ *-  'data' is a pointer to the data you wish to assign to the connection. this may be of any type, or NULL to un-assign data
+ */
 int xbee_conSetData(struct xbee *xbee, struct xbee_con *con, void *data);
+
+/* this function allows you yo put a connection to sleep
+ *-  'xbee' should be the libxbee instance that you wish to use. If this is NULL, then the most recent instance will be used
+ *-  'con' should be the connection that was returned by xbee_conNew()
+ *-  'wakeOnRx' allows you to control if the connection will wake on Rx, when there are no matching awake connections
+ */
 int xbee_conSleep(struct xbee *xbee, struct xbee_con *con, int wakeOnRx);
+
+/* this function allows you to wake a sleeping function
+ *-  'xbee' should be the libxbee instance that you wish to use. If this is NULL, then the most recent instance will be used
+ *-  'con' should be the connection that was returned by xbee_conNew()
+ */
 int xbee_conWake(struct xbee *xbee, struct xbee_con *con);
 
 /* ######################################################################### */
