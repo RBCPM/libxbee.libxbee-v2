@@ -35,13 +35,14 @@ struct xbee *xbee_default = NULL;
 static struct ll_head xbee_list;
 static int xbee_initialized = 0;
 
-void *xbee_validate(struct xbee *xbee) {
+int xbee_validate(struct xbee *xbee) {
 	if (!xbee_initialized) {
 		ll_init(&xbee_list);
 		xbee_initialized = 1;
 	}
 	
-	return ll_get_item(&xbee_list, xbee);
+	if (ll_get_item(&xbee_list, xbee)) return 1;
+	return 0;
 }
 
 EXPORT int xbee_setup(char *path, int baudrate, struct xbee **retXbee) {
