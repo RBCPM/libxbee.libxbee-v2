@@ -109,25 +109,26 @@ EXPORT char *xbee_modeGet(struct xbee *xbee) {
 
 EXPORT char **xbee_modeGetList(void) {
 	char **modes;
+	char *d;
 	int i;
+	int datalen;
 	
-	for (i = 0; xbee_modes[i]; i++);
+	datalen = 0;
+	for (i = 0; xbee_modes[i]; i++) {
+		datalen += sizeof(char) * (strlen(xbee_modes[i]->name) + 1);
+	}
 	
-	if ((modes = calloc(i + 1, sizeof(char *))) == NULL) return NULL;
+	datalen += sizeof(char *) * (i + 1);
+	if ((modes = calloc(1, datalen)) == NULL) return NULL;
+	d = (char *)&(modes[i+1]);
 	
 	for (i = 0; xbee_modes[i]; i++) {
-		if ((modes[i] = calloc(1, sizeof(char) * (strlen(xbee_modes[i]->name) + 1))) == NULL) goto die1;
-		strcpy(modes[i],xbee_modes[i]->name);
+		strcpy(d, xbee_modes[i]->name);
+		modes[i] = d;
+		d = &(d[strlen(xbee_modes[i]->name) + 1]);
 	}
-	goto done;
+	modes[i] = NULL;
 	
-die1:
-	for (; i > 0; i--) {
-		free(modes[i-1]);
-	}
-	free(modes);
-	modes = NULL;
-done:	
 	return modes;
 }
 
