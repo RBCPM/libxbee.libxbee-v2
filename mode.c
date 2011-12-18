@@ -28,7 +28,15 @@
 #include "ll.h"
 
 #include "conn.h"
-#include "xbee_sG.h"
+#include "xbee_s1.h"
+#include "xbee_s2.h"
+
+/* these are the built-in modes avaliable to the user */
+struct xbee_mode *xbee_modes[] = {
+	&xbee_mode_s1,
+	&xbee_mode_s2,
+	NULL
+};
 
 void xbee_cleanupMode(struct xbee *xbee) {
 	int i, o;

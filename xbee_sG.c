@@ -24,15 +24,7 @@
 
 #include "internal.h"
 #include "xbee.h"
-#include "xbee_s1.h"
-#include "xbee_s2.h"
-
-/* these are the modes avaliable to the user */
-struct xbee_mode *xbee_modes[] = {
-	&xbee_mode_s1,
-	&xbee_mode_s2,
-	NULL
-};
+#include "xbee_sG.h"
 
 /* ######################################################################### */
 /* these are GENERIC XBee Series 1 & Series 2 compatible functions */
