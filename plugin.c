@@ -33,24 +33,23 @@ int plugins_initialized = 0;
 
 struct plugin_threadInfo {
 	struct xbee *xbee;
-	void (*function)(struct xbee *xbee);
+	void *arg;
+	void (*function)(struct xbee *xbee, void *arg);
 };
 
 void xbee_pluginThread(struct plugin_threadInfo *info) {
-	struct xbee *xbee;
-	void (*function)(struct xbee *xbee);
+	struct plugin_threadInfo i;
 	
 	xsys_thread_detach_self();
 	
-	xbee = info->xbee;
-	function = info->function;
+	memcpy(&i, info, sizeof(struct plugin_threadInfo));
 	free(info);
 	
-	if (!function) return;
-	function(xbee);
+	if (!i.function) return;
+	i.function(i.xbee, i.arg);
 }
 
-EXPORT int xbee_pluginLoad(char *filename, struct xbee *xbee) {
+EXPORT int xbee_pluginLoad(char *filename, struct xbee *xbee, void *arg) {
 	int ret;
 	struct plugin_info *plugin;
 	char *realfilename;
@@ -128,14 +127,17 @@ EXPORT int xbee_pluginLoad(char *filename, struct xbee *xbee) {
 		}
 		threadInfo->function = plugin->features->thread;
 		threadInfo->xbee = xbee;
+		threadInfo->arg = arg;
 	}
+	
+	ll_add_tail(&plugin_list, plugin);
 	
 	if (plugin->features->init) {
 		int ret;
-		if ((ret = plugin->features->init(xbee)) != 0) {
+		if ((ret = plugin->features->init(xbee, arg)) != 0) {
 			xbee_log(2, "Plugin's init() returned non-zero! (%d)...", ret);
 			ret = XBEE_EUNKNOWN;
-			goto die4;
+			goto die5;
 		}
 	}
 	
@@ -143,13 +145,14 @@ EXPORT int xbee_pluginLoad(char *filename, struct xbee *xbee) {
 		if (xsys_thread_create(&plugin->thread, (void *(*)(void*))xbee_pluginThread, threadInfo) != 0) {
 			xbee_log(2, "Failed to start plugin's thread()...");
 			ret = XBEE_ETHREAD;
-			goto die4;
+			goto die5;
 		}
 	}
 	
-	ll_add_tail(&plugin_list, plugin);
 	
 	goto done;
+die5:
+	ll_ext_item(&plugin_list, plugin);
 die4:
 	dlclose(plugin->dlHandle);
 die3:
@@ -161,6 +164,20 @@ done:
 	return ret;
 }
 
-int xbee_pluginModeGet(char *name, struct xbee_mode **mode) {
-	return XBEE_EUNKNOWN;
+struct xbee_mode *xbee_pluginModeGet(char *name) {
+	int i;
+	struct plugin_info *plugin;
+	struct xbee_mode **xbee_modes;
+	if (!name) return NULL;
+	if (!plugins_initialized) return NULL;
+	
+	for (plugin = NULL; (plugin = ll_get_next(&plugin_list, plugin)) != NULL;) {
+		if (!plugin->features->xbee_modes) continue;
+		xbee_modes = plugin->features->xbee_modes;
+		for (i = 0; xbee_modes[i]; i++) {
+			if (!strcasecmp(xbee_modes[i]->name, name)) return xbee_modes[i];
+		}
+	}
+	
+	return NULL;
 }

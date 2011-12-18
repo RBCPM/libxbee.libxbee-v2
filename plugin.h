@@ -29,6 +29,6 @@ struct plugin_info {
 	struct plugin_features *features;
 };
 
-int xbee_pluginModeGet(char *name, struct xbee_mode **mode);
+struct xbee_mode *xbee_pluginModeGet(char *name);
 
 #endif /* __XBEE_PLUGIN_H */

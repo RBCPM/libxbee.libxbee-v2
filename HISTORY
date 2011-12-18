@@ -1,3 +1,7 @@
+v2.0.4 - in progress
+	Modifications / Additions:
+		+ Added plugin framework
+
 v2.0.3 - f953edb71932 - 18 Dec 2011
 	Documentation:
 		+ Added basic user documentation to xbee.h

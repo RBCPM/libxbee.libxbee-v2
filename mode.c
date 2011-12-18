@@ -28,6 +28,7 @@
 #include "ll.h"
 
 #include "conn.h"
+#include "plugin.h"
 #include "xbee_s1.h"
 #include "xbee_s2.h"
 
@@ -141,59 +142,66 @@ EXPORT char **xbee_modeGetList(void) {
 }
 
 EXPORT int xbee_modeSet(struct xbee *xbee, char *name) {
-	struct xbee_mode *mode;
+	struct xbee_mode *mode, *foundMode;
 	struct xbee_conType *conType;
 	int isRx;
 	int ret;
 	int i, o, c;
 	if (!xbee) {
-		if (!xbee_default) return 1;
+		if (!xbee_default) return XBEE_ENOXBEE;
 		xbee = xbee_default;
 	}
-	if (!xbee_validate(xbee)) return 1;
-	if (!name) return 1;
+	if (!xbee_validate(xbee)) return XBEE_ENOXBEE;
+	if (!name) return XBEE_EMISSINGPARAM;
 	
 	ret = 0;
 	xbee_cleanupMode(xbee);
 
+	foundMode = NULL;
 	/* check that the mode specified is in our list of avaliable modes (xbee_sG.c) */
 	for (i = 0; xbee_modes[i]; i++) {
-		if (!strcasecmp(xbee_modes[i]->name, name)) break;
+		if (!strcasecmp(xbee_modes[i]->name, name)) {
+			foundMode = xbee_modes[i];
+			break;
+		}
 	}
-	if (!xbee_modes[i]) return 1;
+	if (!foundMode) {
+		foundMode = xbee_pluginModeGet(name);
+	}
+	if (!foundMode) return XBEE_EFAILED;
 	
-	if (!xbee_modes[i]->conTypes ||
-			!xbee_modes[i]->pktHandlers ||
-			!xbee_modes[i]->name) return 1;
+	if (!foundMode->conTypes ||
+			!foundMode->pktHandlers ||
+			!foundMode->name) return XBEE_EFAILED;
 	
-	if (!xbee_modes[i]->initialized) {
-		for (o = 0; xbee_modes[i]->pktHandlers[o].handler; o++);
-		xbee_modes[i]->pktHandlerCount = o;
+	if (!foundMode->initialized) {
+		for (o = 0; foundMode->pktHandlers[o].handler; o++);
+		foundMode->pktHandlerCount = o;
 		xbee_log(10, "Counted %d packet handlers...", o);
-		for (o = 0; xbee_modes[i]->conTypes[o].name; o++);
-		xbee_modes[i]->conTypeCount = o;
+		for (o = 0; foundMode->conTypes[o].name; o++);
+		foundMode->conTypeCount = o;
 		xbee_log(10, "Counted %d connection types...", o);
-		xbee_modes[i]->initialized = 1;
+		foundMode->initialized = 1;
 	}
 			
 	/* setup a copy of the chosen mode */
 	if ((mode = calloc(1, sizeof(struct xbee_mode))) == NULL) {
-		ret = 1;
+		ret = XBEE_ENOMEM;
 		goto die1;
 	}
-	mode->name = xbee_modes[i]->name; /* this is static... we are happy to link in */
+	mode->name = foundMode->name; /* this is static... we are happy to link in */
 	
-	if ((mode->pktHandlers = calloc(1, sizeof(struct xbee_pktHandler) * (xbee_modes[i]->pktHandlerCount + 1))) == NULL) {
-		ret = 1;
+	if ((mode->pktHandlers = calloc(1, sizeof(struct xbee_pktHandler) * (foundMode->pktHandlerCount + 1))) == NULL) {
+		ret = XBEE_ENOMEM;
 		goto die2;
 	}
-	memcpy(mode->pktHandlers, xbee_modes[i]->pktHandlers, sizeof(struct xbee_pktHandler) * xbee_modes[i]->pktHandlerCount);
+	memcpy(mode->pktHandlers, foundMode->pktHandlers, sizeof(struct xbee_pktHandler) * foundMode->pktHandlerCount);
 	
-	if ((mode->conTypes = calloc(1, sizeof(struct xbee_conType) * (xbee_modes[i]->conTypeCount + 1))) == NULL) {
-		ret = 1;
+	if ((mode->conTypes = calloc(1, sizeof(struct xbee_conType) * (foundMode->conTypeCount + 1))) == NULL) {
+		ret = XBEE_ENOMEM;
 		goto die3;
 	}
-	memcpy(mode->conTypes, xbee_modes[i]->conTypes, sizeof(struct xbee_conType) * xbee_modes[i]->conTypeCount);
+	memcpy(mode->conTypes, foundMode->conTypes, sizeof(struct xbee_conType) * foundMode->conTypeCount);
 	
 	xbee_log(1,"Setting mode to '%s'", name);
 	

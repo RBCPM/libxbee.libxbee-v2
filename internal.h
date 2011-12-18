@@ -187,4 +187,11 @@ struct xbee_mode {
 	int conTypeCount;
 };
 
+/* this struct is for use with plugins... (see samples/plugin) */
+struct plugin_features {
+	int (*init)(struct xbee *xbee, void *arg);
+	void (*thread)(struct xbee *xbee, void *arg);
+	struct xbee_mode **xbee_modes;
+};
+
 #endif /* __XBEE_INTERNAL_H */
