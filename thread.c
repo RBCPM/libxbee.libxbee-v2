@@ -46,9 +46,9 @@ void xbee_threadMonitor(struct xbee *xbee) {
 	xsys_thread_detach_self();
 	
 	for (;xbee->running;) {
-		xsys_sem_timedwait(&xbee->semMonitor, 30, 0);
+		xsys_sem_timedwait(&xbee->semMonitor, 10, 0);
 		
-		xbee_log(10,"Scanning for dead threads...");
+		xbee_log(15,"Scanning for dead threads...");
 		count = 0;
 		joined = 0;
 		restarted = 0;
@@ -56,7 +56,7 @@ void xbee_threadMonitor(struct xbee *xbee) {
 			if (info->running) {
 				if ((ret = xsys_thread_tryjoin(*info->thread, &tRet)) == 0) {
 					info->running = 0;
-					xbee_log(10,"Thread 0x%X died (%s), it returned 0x%X", info->thread, info->funcName, ret);
+					xbee_log(15,"Thread 0x%X died (%s), it returned 0x%X", info->thread, info->funcName, ret);
 					joined++;
 				} else {
 					if (ret == EBUSY) {
@@ -81,7 +81,7 @@ void xbee_threadMonitor(struct xbee *xbee) {
 				}
 			}
 		}
-		xbee_log(10,"Scan complete! joined/restarted/remain %d/%d/%d threads", joined, restarted, count);
+		xbee_log(15,"Scan complete! joined/restarted/remain %d/%d/%d threads", joined, restarted, count);
 	}
 }
 

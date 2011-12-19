@@ -26,6 +26,7 @@
 
 #include "internal.h"
 #include "plugin.h"
+#include "thread.h"
 #include "log.h"
 
 struct ll_head plugin_list;
@@ -35,15 +36,17 @@ struct plugin_threadInfo {
 	struct xbee *xbee;
 	void *arg;
 	void (*function)(struct xbee *xbee, void *arg);
+	int mode;
 };
 
 void xbee_pluginThread(struct plugin_threadInfo *info) {
 	struct plugin_threadInfo i;
 	
-	xsys_thread_detach_self();
-	
 	memcpy(&i, info, sizeof(struct plugin_threadInfo));
-	free(info);
+	if (i.mode != PLUGIN_THREAD_RESPAWN) {
+		xsys_thread_detach_self();
+		free(info);
+	}
 	
 	if (!i.function) return;
 	i.function(i.xbee, i.arg);
@@ -128,6 +131,7 @@ EXPORT int xbee_pluginLoad(char *filename, struct xbee *xbee, void *arg) {
 		threadInfo->function = plugin->features->thread;
 		threadInfo->xbee = xbee;
 		threadInfo->arg = arg;
+		threadInfo->mode = plugin->features->threadMode;
 	}
 	
 	ll_add_tail(&plugin_list, plugin);
@@ -142,10 +146,23 @@ EXPORT int xbee_pluginLoad(char *filename, struct xbee *xbee, void *arg) {
 	}
 	
 	if (plugin->features->thread) {
-		if (xsys_thread_create(&plugin->thread, (void *(*)(void*))xbee_pluginThread, threadInfo) != 0) {
-			xbee_log(2, "Failed to start plugin's thread()...");
-			ret = XBEE_ETHREAD;
-			goto die5;
+		switch (plugin->features->threadMode) {
+			case PLUGIN_THREAD_RESPAWN:
+				xbee_log(5, "Starting plugin's thread() in RESPAWN mode...");
+				if (xbee_threadStartMonitored(xbee, &plugin->thread, xbee_pluginThread, threadInfo)) {
+					xbee_log(1, "xbee_threadStartMonitored(plugin->thread)");
+					ret = XBEE_ETHREAD;
+					goto die5;
+				}
+				break;
+			default:
+				xbee_log(2, "Unknown thread mode, running once...\n");
+			case PLUGIN_THREAD_RUNONCE:
+				if (xsys_thread_create(&plugin->thread, (void *(*)(void*))xbee_pluginThread, threadInfo) != 0) {
+					xbee_log(2, "Failed to start plugin's thread()...");
+					ret = XBEE_ETHREAD;
+					goto die5;
+				}
 		}
 	}
 	

@@ -212,5 +212,6 @@ struct xbee_mode *my_libxbee_mode[] = {
 struct plugin_features libxbee_features = {
 	.init = myInit,
 	.thread = myThread,
+	.threadMode = PLUGIN_THREAD_RESPAWN,
 	.xbee_modes = my_libxbee_mode
 };
