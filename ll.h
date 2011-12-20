@@ -42,6 +42,7 @@ struct ll_info {
 };
 
 int ll_init(struct ll_head *list);
+struct ll_head *ll_alloc(void);
 void ll_destroy(struct ll_head *list, void (*freeCallback)(void*));
 
 int ll_add_head(void *list, void *item);
@@ -56,6 +57,7 @@ void *ll_get_tail(void *list);
 void *ll_get_item(void *list, void *item);
 void *ll_get_next(void *list, void *ref);
 void *ll_get_prev(void *list, void *ref);
+void *ll_get_index(void *list, int index);
 
 void *ll_ext_head(void *list);
 void *ll_ext_tail(void *list);

@@ -25,12 +25,28 @@
 #include "ll.h"
 
 int ll_init(struct ll_head *list) {
+	if (!list) return XBEE_EINVAL;
 	list->is_head = 1;
 	list->head = NULL;
 	list->tail = NULL;
 	list->self = list;
-	if (xsys_mutex_init(&list->mutex)) return 1;
+	if (xsys_mutex_init(&list->mutex)) return XBEE_EMUTEX;
 	return 0;
+}
+
+struct ll_head *ll_alloc(void) {
+	struct ll_head *h;
+	
+	if ((h = calloc(1, sizeof(struct ll_head))) == NULL) {
+		return NULL;
+	}
+	
+	if (ll_init(h) != 0) {
+		free(h);
+		h = NULL;
+	}
+	
+	return h;
 }
 
 void ll_destroy(struct ll_head *list, void (*freeCallback)(void *)) {
@@ -46,6 +62,7 @@ int ll_add_head(void *list, void *item) {
 	struct ll_info *i, *p;
 	int ret;
 	ret = 0;
+	if (!list) return XBEE_EINVAL;
 	i = list;
 	h = i->head;
 	if (!h) goto out2;
@@ -82,6 +99,7 @@ int ll_add_tail(void *list, void *item) {
 	struct ll_info *i, *p;
 	int ret;
 	ret = 0;
+	if (!list) return XBEE_EINVAL;
 	i = list;
 	h = i->head;
 	if (!h) goto out2;
@@ -118,6 +136,7 @@ int ll_add_after(void *list, void *ref, void *item) {
 	struct ll_info *i, *t;
 	int ret;
 	ret = 1;
+	if (!list) return XBEE_EINVAL;
 	i = list;
 	h = i->head;
 	if (!h) goto out2;
@@ -157,6 +176,7 @@ int ll_add_before(void *list, void *ref, void *item) {
 	struct ll_info *i, *t;
 	int ret;
 	ret = 1;
+	if (!list) return XBEE_EINVAL;
 	i = list;
 	h = i->head;
 	if (!h) goto out2;
@@ -197,6 +217,7 @@ void *ll_get_head(void *list) {
 	struct ll_info *i;
 	void *ret;
 	ret = NULL;
+	if (!list) return NULL;
 	i = list;
 	h = i->head;
 	if (h && h->is_head && h->self == h) {
@@ -210,6 +231,7 @@ void *ll_get_tail(void *list) {
 	struct ll_info *i;
 	void *ret;
 	ret = NULL;
+	if (!list) return NULL;
 	i = list;
 	h = i->head;
 	if (h && h->is_head && h->self == h) {
@@ -224,6 +246,7 @@ void *ll_get_item(void *list, void *item) {
 	struct ll_info *i;
 	void *ret;
 	ret = NULL;
+	if (!list) return NULL;
 	i = list;
 	h = i->head;
 	if (!h) goto out2;
@@ -270,11 +293,20 @@ out:
 	return ret;
 }
 
+void *ll_get_index(void *list, int index) {
+	void *ret;
+	
+	for (ret = NULL; (ret = ll_get_next(list, ret)) != NULL && index; index--);
+	
+	return ret;
+}
+
 void *ll_ext_head(void *list) {
 	struct ll_head *h;
 	struct ll_info *i, *p;
 	void *ret;
 	ret = NULL;
+	if (!list) return NULL;
 	i = list;
 	h = i->head;
 	if (!h) goto out;
@@ -298,6 +330,7 @@ void *ll_ext_tail(void *list) {
 	struct ll_info *i, *p;
 	void *ret;
 	ret = NULL;
+	if (!list) return NULL;
 	i = list;
 	h = i->head;
 	if (!h) goto out;
@@ -321,6 +354,7 @@ int ll_ext_item(void *list, void *item) {
 	struct ll_info *i, *p;
 	int ret;
 	ret = 1;
+	if (!list) return XBEE_EINVAL;
 	i = list;
 	h = i->head;
 	if (!item) return 0;
@@ -360,11 +394,22 @@ out2:
 	return ret;
 }
 
+void *ll_ext_index(void *list, int index) {
+	void *ret;
+	
+	for (ret = NULL; (ret = ll_get_next(list, ret)) != NULL && index; index--);
+	
+	if (ll_ext_item(list, ret)) return NULL;
+	
+	return ret;
+}
+
 int ll_count_items(void *list) {
 	struct ll_head *h;
 	struct ll_info *i, *p;
 	int ret;
 	ret = -1;
+	if (!list) return XBEE_EINVAL;
 	i = list;
 	h = i->head;
 	if (!h) goto out;
