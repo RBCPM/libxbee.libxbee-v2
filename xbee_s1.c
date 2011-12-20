@@ -23,7 +23,7 @@
 #include <string.h>
 
 #include "internal.h"
-#include "xbee.h"
+#include "pkt.h"
 #include "xbee_s1.h"
 #include "xbee_sG.h"
 
@@ -97,7 +97,7 @@ int xbee_s1_DataRx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx
 	(*pkt)->datalen = (*buf)->len - (addrLen + 3);
 	if ((*pkt)->datalen > 1) {
 		void *p;
-		if ((p = realloc((*pkt), (sizeof(struct xbee_pkt) - sizeof(struct xbee_pkt_ioData)) + (sizeof(unsigned char) * ((*pkt)->datalen) - 1))) == NULL) {
+		if ((p = realloc((*pkt), sizeof(struct xbee_pkt) + (sizeof(unsigned char) * ((*pkt)->datalen) - 1))) == NULL) {
 			ret = XBEE_ENOMEM;
 			goto die1;
 		}
@@ -182,11 +182,11 @@ done:
 }
 
 int xbee_s1_IO(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) {
-	void *p;
 	int addrLen;
 	int ret = XBEE_ENONE;
 	int sampleCount;
 	int i;
+	int ioMask;
 	unsigned char *t;
 	
 	if (!xbee)         return XBEE_ENOXBEE;
@@ -227,48 +227,38 @@ int xbee_s1_IO(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, st
 	(*pkt)->options = (*buf)->buf[addrLen + 2];
 	
 	sampleCount = (*buf)->buf[addrLen + 3];
-	if (sampleCount > 1) {
-		if ((p = realloc(*pkt, sizeof(struct xbee_pkt) + (sizeof(struct xbee_pkt_ioSample) * (sampleCount - 1)))) == NULL) {
-			ret = XBEE_ENOMEM;
-			goto die1;
-		}
-		*pkt = p;
-	}
-	(*pkt)->ioData_valid = 1;
-	
-	(*pkt)->ioData.sampleCount = sampleCount;
 	
 	t = &((*buf)->buf[addrLen + 4]);
 	
-	(*pkt)->ioData.enable.mask = ((t[0] << 8) & 0xFF00) | (t[1] & 0xFF);
+	ioMask = ((t[0] << 8) & 0xFF00) | (t[1] & 0xFF);
 	t += 2;
 	
 	for (i = 0; i < sampleCount; i++) {
-		(*pkt)->ioData.sample[i].digital.raw = ((t[0] << 8) & 0x0100) | (t[1] & 0xFF);
-		t += 2;
-		if ((*pkt)->ioData.enable.pin.a0) {
-			(*pkt)->ioData.sample[i].a0 = ((t[0] << 8) & 0x3F) | (t[1] & 0xFF);
+		int digitalValue;
+		int mask;
+		
+		digitalValue = ((t[0] << 8) & 0x0100) | (t[1] & 0xFF);
+		
+		if (ioMask & 0x01FF) {
+			mask = 0x0001;
+			for (i = 0; i <= 8; i++, mask <<= 1) {
+				if (ioMask & mask) {
+					if (xbee_pktAddDigital(xbee, (*pkt), i, digitalValue & mask)) {
+						xbee_log(1,"Failed to add digital sample information to packet (channel %d)", i);
+					}
+				}
+			}
 			t += 2;
 		}
-		if ((*pkt)->ioData.enable.pin.a1) {
-			(*pkt)->ioData.sample[i].a1 = ((t[0] << 8) & 0x3F) | (t[1] & 0xFF);
-			t += 2;
-		}
-		if ((*pkt)->ioData.enable.pin.a2) {
-			(*pkt)->ioData.sample[i].a2 = ((t[0] << 8) & 0x3F) | (t[1] & 0xFF);
-			t += 2;
-		}
-		if ((*pkt)->ioData.enable.pin.a3) {
-			(*pkt)->ioData.sample[i].a3 = ((t[0] << 8) & 0x3F) | (t[1] & 0xFF);
-			t += 2;
-		}
-		if ((*pkt)->ioData.enable.pin.a4) {
-			(*pkt)->ioData.sample[i].a4 = ((t[0] << 8) & 0x3F) | (t[1] & 0xFF);
-			t += 2;
-		}
-		if ((*pkt)->ioData.enable.pin.a5) {
-			(*pkt)->ioData.sample[i].a5 = ((t[0] << 8) & 0x3F) | (t[1] & 0xFF);
-			t += 2;
+		
+		mask = 0x0200;
+		for (i = 0; i <= 5; i++, mask <<= 1) {
+			if (ioMask & mask) {
+				if (xbee_pktAddAnalog(xbee, (*pkt), 0, ((t[0] << 8) & 0x3F) | (t[1] & 0xFF))) {
+					xbee_log(1,"Failed to add analog sample information to packet (channel %d)", i);
+				}
+				t += 2;
+			}
 		}
 	}
 	

@@ -53,6 +53,8 @@
 #define XBEE_ETIMEOUT                                      -25
 #define XBEE_EMUTEX                                        -26
 #define XBEE_EINUSE                                        -27
+#define XBEE_ERANGE                                        -28
+#define XBEE_EEXISTS                                       -29
 
 /* from user-space you don't get access to the xbee or xbee_con structs, and should never de-reference thier pointers... sorry */
 struct xbee;
@@ -83,68 +85,8 @@ struct xbee_conOptions {
 	unsigned char broadcastRadius;
 };
 
-/* this struct stores a single I/O sample */
-struct xbee_pkt_ioSample {
-	union {
-		struct {
-			unsigned char d0 : 1;
-			unsigned char d1 : 1;
-			unsigned char d2 : 1;
-			unsigned char d3 : 1;
-			unsigned char d4 : 1;
-			unsigned char d5 : 1;
-			unsigned char d6 : 1;
-			unsigned char d7 : 1;
-			unsigned char d8 : 1;
-			unsigned char __space__ : 7;
-		} pin;
-		unsigned short raw;
-	} digital;
-	unsigned short a0;
-	unsigned short a1;
-	unsigned short a2;
-	unsigned short a3;
-	unsigned short a4;
-	unsigned short a5;
-};
-
-/* this struct stores the I/O data for a packet. the 'sample' field can be longer than 1, check 'sampleCount' */
-struct xbee_pkt_ioData {
-	unsigned char sampleCount;
-	
-	union {
-		struct {
-			unsigned char d0 : 1;
-			unsigned char d1 : 1;
-			unsigned char d2 : 1;
-			unsigned char d3 : 1;
-			unsigned char d4 : 1;
-			unsigned char d5 : 1;
-			unsigned char d6 : 1;
-			unsigned char d7 : 1;
-			unsigned char d8 : 1;
-			unsigned char a0 : 1;
-			unsigned char a1 : 1;
-			unsigned char a2 : 1;
-			unsigned char a3 : 1;
-			unsigned char a4 : 1;
-			unsigned char a5 : 1;
-			unsigned char __space__  : 1;
-		} pin;
-		struct {
-			unsigned short digital : 9; /* this will equate to true if ANY digital inputs are enabled */
-			unsigned short analog  : 6; /* this will equate to true of ANY analog inputs are enabled */
-			unsigned char __space__ : 1;
-		} type;
-		unsigned short mask;
-	} enable;
-
-	struct xbee_pkt_ioSample sample[1];
-};
-
 /* this struct stores the whole packet
  * 'data[]' should only be accessed if 'data_valid' is TRUE.
- * 'ioData' should only be accessed if 'ioData_valid' is TRUE.
  */
 struct xbee_pkt {
 	unsigned char status;
@@ -152,15 +94,13 @@ struct xbee_pkt {
 	unsigned char rssi; /* the RSSI - if 0x28 (40 dec) is given, the signal strength is -40dBm */
 
 	unsigned char data_valid   : 1;
-	unsigned char ioData_valid : 1;
-
 	
 	unsigned char atCommand[2];
 	
-	int datalen; /* if data_valid is TRUE, then this indicates the length of the data stored */
-	/* use EITHER data, or ioData, check the *_valid flags (up) */
+	struct ll_head *dataItems;
+	
+	int datalen;
 	unsigned char data[1];
-	struct xbee_pkt_ioData ioData;
 };
 
 /* ######################################################################### */
@@ -183,6 +123,18 @@ int xbee_setup(char *path, int baudrate, struct xbee **retXbee);
  *-  'xbee' should be the libxbee instance that you wish to shutdown. If this is NULL, then the most recent instance will be used
  */
 void xbee_shutdown(struct xbee *xbee);
+
+/* ######################################################################### */
+/* ######################################################################### */
+/* ######################################################################### */
+/* --- pkt.c --- */
+/* missing
+ */
+int xbee_pktGetAnalog(struct xbee *xbee, struct xbee_pkt *pkt, int index, int channel, int *retVal);
+
+/* missing
+ */
+int xbee_pktGetDigital(struct xbee *xbee, struct xbee_pkt *pkt, int index, int channel, int *retVal);
 
 /* this function will free the given packet memory, and should always succeed
  *-  'pkt' should be a packet previously returned by xbee_conRx(), or given to a callback function as 'pkt'

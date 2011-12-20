@@ -23,7 +23,6 @@
 #include <string.h>
 
 #include "internal.h"
-#include "xbee.h"
 #include "xbee_s2.h"
 #include "xbee_sG.h"
 
@@ -55,7 +54,7 @@ int xbee_s2_txStatus(struct xbee *xbee, struct xbee_pktHandler *handler, char is
 	(*pkt)->status = (*buf)->buf[5];
   
 	(*pkt)->datalen = 2;
-	if ((p = realloc((*pkt), (sizeof(struct xbee_pkt) - sizeof(struct xbee_pkt_ioData)) + (sizeof(unsigned char) * ((*pkt)->datalen) - 1))) == NULL) {
+	if ((p = realloc((*pkt), sizeof(struct xbee_pkt) + (sizeof(unsigned char) * ((*pkt)->datalen) - 1))) == NULL) {
 		ret = XBEE_ENOMEM;
 		goto die1;
 	}
@@ -95,7 +94,7 @@ int xbee_s2_dataRx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx
 	(*pkt)->datalen = (*buf)->len - (12);
 	if ((*pkt)->datalen > 1) {
 		void *p;
-		if ((p = realloc((*pkt), (sizeof(struct xbee_pkt) - sizeof(struct xbee_pkt_ioData)) + (sizeof(unsigned char) * ((*pkt)->datalen) - 1))) == NULL) {
+		if ((p = realloc((*pkt), sizeof(struct xbee_pkt) + (sizeof(unsigned char) * ((*pkt)->datalen) - 1))) == NULL) {
 			ret = XBEE_ENOMEM;
 			goto die1;
 		}
@@ -207,7 +206,7 @@ int xbee_s2_explicitRx(struct xbee *xbee, struct xbee_pktHandler *handler, char 
 	(*pkt)->datalen = (*buf)->len - (18);
 	if ((*pkt)->datalen > 1) {
 		void *p;
-		if ((p = realloc((*pkt), (sizeof(struct xbee_pkt) - sizeof(struct xbee_pkt_ioData)) + (sizeof(unsigned char) * ((*pkt)->datalen) - 1))) == NULL) {
+		if ((p = realloc((*pkt), sizeof(struct xbee_pkt) + (sizeof(unsigned char) * ((*pkt)->datalen) - 1))) == NULL) {
 			ret = XBEE_ENOMEM;
 			goto die1;
 		}

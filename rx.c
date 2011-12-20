@@ -25,6 +25,7 @@
 
 #include "internal.h"
 #include "rx.h"
+#include "pkt.h"
 #include "conn.h"
 #include "frame.h"
 #include "log.h"
@@ -156,8 +157,8 @@ int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
 		
 		if (!pkt) {
 			/* only allocate memory if nessesary (re-use where possible) */
-			if ((pkt = calloc(1, sizeof(struct xbee_pkt))) == NULL) {
-				xbee_perror(1,"calloc()");
+			if ((pkt = xbee_pktAlloc()) == NULL) {
+				xbee_perror(1,"xbee_pktAlloc()");
 				usleep(100000);
 				continue;
 			}

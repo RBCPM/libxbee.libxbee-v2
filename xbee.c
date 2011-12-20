@@ -229,8 +229,3 @@ EXPORT void xbee_shutdown(struct xbee *xbee) {
 	
 	return;
 }
-
-EXPORT void xbee_pktFree(struct xbee_pkt *pkt) {
-	if (!pkt) return;
-	free(pkt);
-}
