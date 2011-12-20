@@ -128,11 +128,21 @@ void xbee_shutdown(struct xbee *xbee);
 /* ######################################################################### */
 /* ######################################################################### */
 /* --- pkt.c --- */
-/* missing
+/* this function provides access to the analog sample data contained within a packet
+ *-  'xbee' should be the libxbee instance that you wish to use. If this is NULL, then the most recent instance will be used
+ *-  'pkt' should be a packet previously returned by xbee_conRx(), or given to a callback function as 'pkt'
+ *-  'index' should be the index of the sample, starting from 0
+ *-  'channel' should be the analog channel you wish to retrieve data from
+ *-  'retVal' should be a pointer to the location you wish to store the retrieved data
  */
 int xbee_pktGetAnalog(struct xbee *xbee, struct xbee_pkt *pkt, int index, int channel, int *retVal);
 
-/* missing
+/* this function provides access to the digital sample data contained within a packet
+ *-  'xbee' should be the libxbee instance that you wish to use. If this is NULL, then the most recent instance will be used
+ *-  'pkt' should be a packet previously returned by xbee_conRx(), or given to a callback function as 'pkt'
+ *-  'index' should be the index of the sample, starting from 0
+ *-  'channel' should be the analog channel you wish to retrieve data from
+ *-  'retVal' should be a pointer to the location you wish to store the retrieved data
  */
 int xbee_pktGetDigital(struct xbee *xbee, struct xbee_pkt *pkt, int index, int channel, int *retVal);
 
