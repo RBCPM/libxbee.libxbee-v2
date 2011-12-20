@@ -92,7 +92,7 @@ int _xbee_rxCallbackThread(struct xbee_callbackInfo *info) {
 		xbee_log(1,"Running callback (func: %p, xbee: %p, con: %p, pkt: %p, userData: %p)",
 		                              callback, xbee, con, pkt, con->userData);
 		callback(xbee, con, &pkt, &con->userData);
-		if (pkt) free(pkt);
+		if (pkt) xbee_pktFree(pkt);
 	}
 	
 	xbee_log(2,"Callback thread terminating (con: %p)", con);
@@ -225,7 +225,7 @@ int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
 		/* flag pkt for a new allocation */
 		pkt = NULL;
 skip:
-		if (pkt) free(pkt);
+		if (pkt) xbee_pktFree(pkt);
 		pkt = NULL;
 		if (buf) free(buf);
 	}
