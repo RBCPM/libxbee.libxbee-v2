@@ -286,6 +286,7 @@ done:
 }
 
 int _xbee_rx(struct xbee *xbee) {
+  static int warnedMode = 0;
 	struct bufData *buf;
 	void *p;
 	unsigned char c;
@@ -298,10 +299,15 @@ int _xbee_rx(struct xbee *xbee) {
 	
 	if (!xbee) return XBEE_ENOXBEE;
 
+	if (!xbee->mode && !warnedMode) sleep(1);
 	if (!xbee->mode) {
-		xbee_log(-999,"libxbee's mode has not been set, please use xbee_setMode()");
+		if (!warnedMode) {
+      xbee_log(-99,"libxbee's mode has not been set, please use xbee_setMode()");
+      warnedMode = 1;
+    }
 		return XBEE_ENOMODE;
 	}
+  warnedMode = 0;
 	
 	buf = NULL;
 	while (xbee->running) {
@@ -415,7 +421,7 @@ int xbee_rx(struct xbee *xbee) {
 	xbee->rxRunning = 1;
 	while (xbee->running) {
 		ret = _xbee_rx(xbee);
-		xbee_log(1,"_xbee_rx() returned %d\n", ret);
+		if (ret != -19) xbee_log(1,"_xbee_rx() returned %d", ret);
 		if (!xbee->running) break;
 		usleep(XBEE_RX_RESTART_DELAY * 1000);
 	}
