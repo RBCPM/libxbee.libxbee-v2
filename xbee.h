@@ -21,6 +21,10 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdio.h>
 #include <stdarg.h>
 
@@ -306,5 +310,9 @@ void _xbee_logDev(const char *file, int line, const char *function, struct xbee 
  */
 #define xbee_log(...) _xbee_logDev(__FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
 #endif /* __XBEE_INTERNAL_H */
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 
 #endif /* __XBEE_H */

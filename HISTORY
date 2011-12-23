@@ -3,6 +3,7 @@ v2.0.4 - in progress
 		+ Added plugin framework, allows for respawnable functions
 		+ Now scans for monitored threads every 10s
 		+ Re-architectured I/O data, more flexible and 'future proof'
+		+ Added 'extern "C"' for use with C++
 
 v2.0.3 - f953edb71932 - 18 Dec 2011
 	Documentation:
