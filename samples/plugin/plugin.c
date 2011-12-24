@@ -45,7 +45,6 @@ void myThread(struct xbee *xbee, void *arg) {
 
 int xbee_sG_atRx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, struct bufData **buf, struct xbee_con *con, struct xbee_pkt **pkt) {
 	int ret = XBEE_ENONE;
-	int offset;
 	
 	if (!xbee)         return XBEE_ENOXBEE;
 	if (!handler)      return XBEE_EMISSINGPARAM;
@@ -59,19 +58,6 @@ int xbee_sG_atRx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, 
 		goto die1;
 	}
 	
-	if ((*buf)->buf[0] == 0x88) {
-		offset = 0;
-	} else if ((*buf)->buf[0] == 0x97) {
-		offset = 10;
-		con->address.addr64_enabled = 1;
-		memcpy(con->address.addr64, &((*buf)->buf[2]), 8);
-		con->address.addr16_enabled = 1;
-		memcpy(con->address.addr16, &((*buf)->buf[10]), 2);
-	} else {
-		ret = XBEE_EINVAL;
-		goto die1;
-	}
-	
 	if ((*buf)->len < 5) {
 		ret = XBEE_ELENGTH;
 		goto die1;
@@ -80,20 +66,24 @@ int xbee_sG_atRx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, 
 	con->frameID_enabled = 1;
 	con->frameID = (*buf)->buf[1];
 	
-	(*pkt)->atCommand[0] = (*buf)->buf[offset + 2];
-	(*pkt)->atCommand[1] = (*buf)->buf[offset + 3];
+	(*pkt)->atCommand[0] = (*buf)->buf[2];
+	(*pkt)->atCommand[1] = (*buf)->buf[3];
 	
-	(*pkt)->status = (*buf)->buf[offset + 4];
+	(*pkt)->status = (*buf)->buf[4];
 	
-	(*pkt)->datalen = (*buf)->len - (offset + 5);
+	(*pkt)->datalen = (*buf)->len - 5;
 	if ((*pkt)->datalen > 1) {
 		void *p;
-		if ((p = realloc((*pkt), sizeof(struct xbee_pkt) - sizeof(struct xbee_pkt_ioData) + (sizeof(unsigned char) * ((*pkt)->datalen) - 1))) == NULL) {
+		if ((p = realloc((*pkt), sizeof(struct xbee_pkt) + (sizeof(unsigned char) * ((*pkt)->datalen)))) == NULL) {
 			ret = XBEE_ENOMEM;
 			goto die1;
 		}
+		(*pkt) = p;
 	}
-	if ((*pkt)->datalen) memcpy((*pkt)->data, &((*buf)->buf[offset + 5]), (*pkt)->datalen);
+	if ((*pkt)->datalen) {
+		memcpy((*pkt)->data, &((*buf)->buf[5]), (*pkt)->datalen);
+		(*pkt)->data[(*pkt)->datalen] = '\0';
+	}
 	
 	goto done;
 die1:
@@ -125,43 +115,12 @@ int xbee_sG_atTx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, 
 		nBuf->buf[1] = con->frameID;
 	}
 	
-	/* local AT (0x09 = queued) */
-	if (nBuf->buf[0] == 0x08 ||
-	    nBuf->buf[0] == 0x09) {
-		offset = 0;
-	
-	/* remote AT */
-	} else if (nBuf->buf[0] == 0x17) {
-		if (con->address.addr64_enabled) {
-			memcpy(&(nBuf->buf[2]), con->address.addr64, 8);
-			nBuf->buf[10] = 0xFF;
-			nBuf->buf[11] = 0xFE;
-		} else if (con->address.addr16_enabled) {
-			/* 64-bit address is ignored if 16-bit address isn't 0xFFFE */
-			if (con->address.addr16[0] == 0xFF &&
-			    con->address.addr16[1] == 0xFE) {
-				ret = XBEE_EINVAL;
-				goto die2;
-			}
-			memcpy(&(nBuf->buf[10]), con->address.addr16, 2);
-		} else {
-			ret = XBEE_EINVAL;
-			goto die2;
-		}
-		if (!con->options.queueChanges) nBuf->buf[12] |= 0x02;
-		offset = 11;
-	
-	} else {
-		ret = XBEE_EINVAL;
-		goto die2;
-	}
-	
-	nBuf->len = offset + 2 + (*buf)->len;
+	nBuf->len = 2 + (*buf)->len;
 	if (nBuf->len > XBEE_MAX_PACKETLEN) {
 		ret = XBEE_ELENGTH;
 		goto die2;
 	}
-	memcpy(&(nBuf->buf[offset + 2]), (*buf)->buf, (*buf)->len);
+	memcpy(&(nBuf->buf[2]), (*buf)->buf, (*buf)->len);
 	
 	/* try (and ignore failure) to realloc buf to the correct length */
 	if ((p = realloc(nBuf, sizeof(struct bufData) + (sizeof(unsigned char) * (nBuf->len - 1)))) != NULL) nBuf = p;

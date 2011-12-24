@@ -35,19 +35,10 @@ void myCB(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt **pkt, void *
 		return;
 	}
 	
-	if ((*pkt)->datalen == 0) {
-		printf("Scan complete!\n");
-		if (userData && *userData) sem_post(*userData);
-		return;
-	}
-
-	if ((*pkt)->datalen < 11) {
-		printf("Short value...\n");
-		return;
-	}
-
 	/* what did the message say? */
-	printf("They said this: %*s\n", (*pkt)->datalen - 11, &((*pkt)->data[10]));
+	printf("The node identifier is: [%s]\n", (*pkt)->data);
+
+	sem_post((sem_t*)*userData);
 }
 
 
@@ -105,7 +96,7 @@ int main(int argc, char *argv[]) {
 	xbee_conAttachCallback(xbee, con, myCB, NULL);
 
 	/* send the request */
-	if ((ret = xbee_conTx(xbee, con, "ND")) != 0) {
+	if ((ret = xbee_conTx(xbee, con, "NI")) != 0) {
 		xbee_log(xbee,-1,"Something went wrong... (%d)", ret);
 	} else {
 		sem_wait(&sem);
