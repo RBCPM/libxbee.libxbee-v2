@@ -111,7 +111,10 @@ struct xbee_pkt {
 /* ######################################################################### */
 /* ######################################################################### */
 /* --- xbee.c --- */
-/* this function will return 1 if the given 'xbee' is a valid handle . Otherwise it will return 0 */
+/* this function will return 1 if the given 'xbee' is a valid handle. Otherwise it will return 0
+ *-  'xbee' should be the libxbee instance that you wish to use. If this is NULL, then the most recent instance will be used
+ *-  'con' should be the connection that was returned by xbee_conNew()
+ */
 int xbee_validate(struct xbee *xbee);
 
 /* this function will return 0 on success, or an error number on error
@@ -179,6 +182,12 @@ int xbee_modeSet(struct xbee *xbee, char *name);
 /* ######################################################################### */
 /* ######################################################################### */
 /* --- conn.c --- */
+/* this function will return 1 if the given 'con' is a valid handle for the 'xbee' instance. Otherwise it will return 0
+ *-  'xbee' should be the libxbee instance that you wish to use. If this is NULL, then the most recent instance will be used
+ *-  'con' should be the connection that was returned by xbee_conNew()
+ */
+int xbee_conValidate(struct xbee *xbee, struct xbee_con *con);
+
 /* this function acts similarly to xbee_modeGetList(). it will return the avaliable connection types for the given xbee (see samples/modes)
  *-  'xbee' should be the libxbee instance that you wish to use. If this is NULL, then the most recent instance will be used
  */

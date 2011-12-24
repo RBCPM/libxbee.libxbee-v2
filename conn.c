@@ -162,13 +162,14 @@ got2:
 	return con;
 }
 
-int xbee_conValidate(struct xbee *xbee, struct xbee_con *con, struct xbee_conType **conType) {
+int _xbee_conValidate(struct xbee *xbee, struct xbee_con *con, struct xbee_conType **conType) {
 	int i;
 	if (!xbee) {
 		if (!xbee_default) return XBEE_ENOXBEE;
 		xbee = xbee_default;
 	}
 	if (!xbee_validate(xbee)) return XBEE_ENOXBEE;
+	if (!xbee->mode) return XBEE_ENOMODE;
 	if (!con) return XBEE_EMISSINGPARAM;
 	
 	for (i = 0; xbee->mode->conTypes[i].name; i++) {
@@ -181,6 +182,10 @@ int xbee_conValidate(struct xbee *xbee, struct xbee_con *con, struct xbee_conTyp
 	
 	if (conType) *conType = &(xbee->mode->conTypes[i]);
 	return XBEE_ENONE;
+}
+
+EXPORT int xbee_conValidate(struct xbee *xbee, struct xbee_con *con) {
+	return _xbee_conValidate(xbee, con, NULL);
 }
 
 EXPORT int xbee_conNew(struct xbee *xbee, struct xbee_con **retCon, unsigned char id, struct xbee_conAddress *address, void *userData) {
@@ -260,7 +265,7 @@ EXPORT struct xbee_pkt *xbee_conRx(struct xbee *xbee, struct xbee_con *con) {
 	if (!xbee_validate(xbee)) return NULL;
 	if (!con) return NULL;
 	
-	if (xbee_conValidate(xbee, con, NULL)) return NULL;
+	if (_xbee_conValidate(xbee, con, NULL)) return NULL;
 	
 	/* you aren't allowed at the packets this way if a callback is enabled... */
 	if (con->callback) {
@@ -307,7 +312,7 @@ EXPORT int xbee_connTx(struct xbee *xbee, struct xbee_con *con, char *data, int 
 	if (!xbee_validate(xbee)) return XBEE_ENOXBEE;
 	if (!con) return XBEE_EMISSINGPARAM;
 	
-	if (xbee_conValidate(xbee, con, &conType)) return XBEE_EINVAL;
+	if (_xbee_conValidate(xbee, con, &conType)) return XBEE_EINVAL;
 	if (!conType->txHandler) return XBEE_ECANTTX;
 	
 	if ((buf = calloc(1, sizeof(struct bufData) + (sizeof(unsigned char) * (length - 1)))) == NULL) {
@@ -365,7 +370,7 @@ done:
 
 int xbee_conFree(struct xbee *xbee, struct xbee_con *con, int skipChecks) {
 	if (!xbee) return XBEE_ENOXBEE;
-	if (!skipChecks) if (xbee_conValidate(xbee,con,NULL)) return XBEE_EINVAL;
+	if (!skipChecks) if (_xbee_conValidate(xbee,con,NULL)) return XBEE_EINVAL;
 	xsys_mutex_destroy(&con->txMutex);
 	xsys_sem_destroy(&con->callbackSem);
 	ll_destroy(&con->rxList, (void(*)(void*))xbee_pktFree);
@@ -384,7 +389,7 @@ EXPORT int xbee_conEnd(struct xbee *xbee, struct xbee_con *con, void **userData)
 	if (!xbee_validate(xbee)) return XBEE_ENOXBEE;
 	if (!con) return XBEE_EMISSINGPARAM;
 	
-	if (xbee_conValidate(xbee, con, &conType)) return XBEE_EINVAL;
+	if (_xbee_conValidate(xbee, con, &conType)) return XBEE_EINVAL;
 	if (ll_ext_item(&(conType->conList), con)) return XBEE_EINVAL;
 	
 	for (i = 0; (pkt = ll_ext_head(&(con->rxList))) != NULL; i++) {
@@ -415,7 +420,7 @@ EXPORT int xbee_conGetCallback(struct xbee *xbee, struct xbee_con *con, void **c
 	if (!con) return XBEE_EMISSINGPARAM;
 	if (!callback) return XBEE_EMISSINGPARAM;
 	
-	if (xbee_conValidate(xbee, con, &conType)) return XBEE_EINVAL;
+	if (_xbee_conValidate(xbee, con, &conType)) return XBEE_EINVAL;
 	
 	*callback = con->callback;
 	
@@ -431,7 +436,7 @@ EXPORT int xbee_conAttachCallback(struct xbee *xbee, struct xbee_con *con, void(
 	if (!xbee_validate(xbee)) return XBEE_ENOXBEE;
 	if (!con) return XBEE_EMISSINGPARAM;
 	
-	if (xbee_conValidate(xbee, con, &conType)) return XBEE_EINVAL;
+	if (_xbee_conValidate(xbee, con, &conType)) return XBEE_EINVAL;
 	
 	if (prevCallback) *prevCallback = con->callback;
 	con->callback = callback;
@@ -457,7 +462,7 @@ EXPORT int xbee_conOptions(struct xbee *xbee, struct xbee_con *con, struct xbee_
 	if (!xbee_validate(xbee)) return XBEE_ENOXBEE;
 	if (!con) return XBEE_EMISSINGPARAM;
 	
-	if (xbee_conValidate(xbee, con, NULL)) return XBEE_EINVAL;
+	if (_xbee_conValidate(xbee, con, NULL)) return XBEE_EINVAL;
 
 	if (getOptions) memcpy(getOptions, &con->options, sizeof(struct xbee_conOptions));
 	if (setOptions) memcpy(&con->options, setOptions, sizeof(struct xbee_conOptions));
@@ -473,7 +478,7 @@ EXPORT void *xbee_conGetData(struct xbee *xbee, struct xbee_con *con) {
 	if (!xbee_validate(xbee)) return NULL;
 	if (!con) return NULL;
 	
-	if (xbee_conValidate(xbee, con, NULL)) return NULL;
+	if (_xbee_conValidate(xbee, con, NULL)) return NULL;
 	
 	return con->userData;
 }
@@ -486,7 +491,7 @@ EXPORT int xbee_conSetData(struct xbee *xbee, struct xbee_con *con, void *data) 
 	if (!xbee_validate(xbee)) return XBEE_ENOXBEE;
 	if (!con) return XBEE_EMISSINGPARAM;
 	
-	if (xbee_conValidate(xbee, con, NULL)) return XBEE_EINVAL;
+	if (_xbee_conValidate(xbee, con, NULL)) return XBEE_EINVAL;
 	
 	con->userData = data;
 	return XBEE_ENONE;
@@ -500,7 +505,7 @@ EXPORT int xbee_conSleep(struct xbee *xbee, struct xbee_con *con, int wakeOnRx) 
 	if (!xbee_validate(xbee)) return XBEE_ENOXBEE;
 	if (!con) return XBEE_EMISSINGPARAM;
 
-	if (xbee_conValidate(xbee, con, NULL)) return XBEE_EINVAL;
+	if (_xbee_conValidate(xbee, con, NULL)) return XBEE_EINVAL;
 
 	con->sleeping = 1;
 	con->wakeOnRx = !!wakeOnRx;
@@ -516,7 +521,7 @@ EXPORT int xbee_conWake(struct xbee *xbee, struct xbee_con *con) {
 	if (!xbee_validate(xbee)) return XBEE_ENOXBEE;
 	if (!con) return XBEE_EMISSINGPARAM;
 
-	if (xbee_conValidate(xbee, con, NULL)) return XBEE_EINVAL;
+	if (_xbee_conValidate(xbee, con, NULL)) return XBEE_EINVAL;
 
 	con->sleeping = 0;
 
