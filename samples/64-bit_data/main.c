@@ -166,7 +166,7 @@ int main(int argc, char *argv[]) {
 	/* shutdown the connection, 'p' here gets set to the user data (see inside the callback) */
 	xbee_conEnd(xbee, con, &p);
 	if (p) {
-		printf("p says: %s\n",p);
+		printf("p says: %s\n",(char*)p);
 		free(p);
 	}
 	

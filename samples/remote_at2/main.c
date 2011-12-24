@@ -140,7 +140,7 @@ int main(int argc, char *argv[]) {
     /* enable waitForAck... this allows us to see if the packet was sent successfully! */
     xbee_conOptions(xbee, con, &opts, NULL);
     opts.waitForAck = 1;
-		opts.applyChanges = 1;
+		opts.queueChanges = 0;
     xbee_conOptions(xbee, con, NULL, &opts);
 	}
 	/* attach the callback */
@@ -158,6 +158,8 @@ int main(int argc, char *argv[]) {
 		fflush(stdout);
 	}
 
+#warning The I/O data handling needs re-working after 5c88c6859e458053634ad8417b9f3731dc4972b3
+#if 0
 	/* print out the data recieved (in friendly form) */
 	io = (struct xbee_pkt_ioData *)pkt->data;
 	
@@ -197,7 +199,8 @@ int main(int argc, char *argv[]) {
 		if (io->enable.pin.a0) printf("a0: %d\n", io->sample[0].a4);
 		if (io->enable.pin.a0) printf("a0: %d\n", io->sample[0].a5);
 	}
-	
+#endif
+
 	xbee_pktFree(pkt);
 	
 die:
