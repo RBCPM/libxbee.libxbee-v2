@@ -7,6 +7,9 @@ LIBFULLREV:=$(LIBMAJ).$(LIBMIN).$(LIBREV)
 BUILDDIR:=.build
 DESTDIR:=lib
 
+SYS_LIBDIR:=/usr/lib
+SYS_INCDIR:=/usr/include
+
 SRCS:=conn io ll log mode frame rx tx xbee xbee_s1 xbee_s2 xbee_sG xsys thread plugin pkt
 RELEASE_ITEMS:=lib/libxbee.so.$(LIBFULLREV) \
                lib/libxbee.so \
@@ -45,14 +48,14 @@ install: all
 	sudo make install_sudo
 
 install_sudo: all
-	cp -f $(DESTDIR)/$(LIBOUT).so.$(LIBFULLREV) /usr/lib/$(LIBOUT).so.$(LIBFULLREV)
-	chmod 644 /usr/lib/$(LIBOUT).so.$(LIBFULLREV)
-	ln -fs /usr/lib/$(LIBOUT).so.$(LIBFULLREV) /usr/lib/$(LIBOUT).so
-	cp -f $(DESTDIR)/$(LIBOUT).a.$(LIBFULLREV) /usr/lib
-	chmod 644 /usr/lib/$(LIBOUT).a.$(LIBFULLREV)
-	ln -fs /usr/lib/$(LIBOUT).a.$(LIBFULLREV) /usr/lib/$(LIBOUT).a
-	cp -f xbee.h /usr/include/xbee.h
-	chmod 644 /usr/include/xbee.h
+	cp -f $(DESTDIR)/$(LIBOUT).so.$(LIBFULLREV) $(SYS_LIBDIR)/$(LIBOUT).so.$(LIBFULLREV)
+	chmod 644 $(SYS_LIBDIR)/$(LIBOUT).so.$(LIBFULLREV)
+	ln -fs $(SYS_LIBDIR)/$(LIBOUT).so.$(LIBFULLREV) $(SYS_LIBDIR)/$(LIBOUT).so
+	cp -f $(DESTDIR)/$(LIBOUT).a.$(LIBFULLREV) $(SYS_LIBDIR)
+	chmod 644 $(SYS_LIBDIR)/$(LIBOUT).a.$(LIBFULLREV)
+	ln -fs $(SYS_LIBDIR)/$(LIBOUT).a.$(LIBFULLREV) $(SYS_LIBDIR)/$(LIBOUT).a
+	cp -f xbee.h $(SYS_INCDIR)/xbee.h
+	chmod 644 $(SYS_INCDIR)/xbee.h
 
 new: clean
 	@$(MAKE) --no-print-directory all
