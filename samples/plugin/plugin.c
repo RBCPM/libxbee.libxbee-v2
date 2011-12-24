@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <internal.h>
+#include "../../internal.h"
 
 int myInit(struct xbee *xbee, void *arg) {
 	int ret;
