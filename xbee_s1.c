@@ -97,14 +97,17 @@ int xbee_s1_DataRx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx
 	(*pkt)->datalen = (*buf)->len - (addrLen + 3);
 	if ((*pkt)->datalen > 1) {
 		void *p;
-		if ((p = realloc((*pkt), sizeof(struct xbee_pkt) + (sizeof(unsigned char) * ((*pkt)->datalen) - 1))) == NULL) {
+		if ((p = realloc((*pkt), sizeof(struct xbee_pkt) + (sizeof(unsigned char) * (*pkt)->datalen))) == NULL) {
 			ret = XBEE_ENOMEM;
 			goto die1;
 		}
 		(*pkt) = p;
 	}
 	(*pkt)->data_valid = 1;
-	if ((*pkt)->datalen) memcpy((*pkt)->data, &((*buf)->buf[addrLen + 3]), (*pkt)->datalen);
+	if ((*pkt)->datalen) {
+		memcpy((*pkt)->data, &((*buf)->buf[addrLen + 3]), (*pkt)->datalen);
+		(*pkt)->data[(*pkt)->datalen] = '\0';
+	}
 	
 	goto done;
 die1:

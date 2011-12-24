@@ -5,6 +5,8 @@ v2.0.4 - in progress
 		+ Re-architectured I/O data, more flexible and 'future proof'
 		+ Added 'extern "C"' for use with C++
 		+ Exposed xbee_conValidate() to developers
+		+ Added '\0' terminator to all received data
+		+ Fixed SEGFAULT in xbee_sG.c (AT receive)
 
 v2.0.3 - f953edb71932 - 18 Dec 2011
 	Documentation:

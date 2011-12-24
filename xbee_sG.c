@@ -96,12 +96,17 @@ int xbee_sG_atRx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, 
 	(*pkt)->datalen = (*buf)->len - (offset + 5);
 	if ((*pkt)->datalen > 1) {
 		void *p;
-		if ((p = realloc((*pkt), sizeof(struct xbee_pkt) + (sizeof(unsigned char) * ((*pkt)->datalen) - 1))) == NULL) {
+		if ((p = realloc((*pkt), sizeof(struct xbee_pkt) + (sizeof(unsigned char) * (*pkt)->datalen))) == NULL) {
 			ret = XBEE_ENOMEM;
 			goto die1;
 		}
+		(*pkt) = p;
 	}
-	if ((*pkt)->datalen) memcpy((*pkt)->data, &((*buf)->buf[offset + 5]), (*pkt)->datalen);
+	(*pkt)->data_valid = 1;
+	if ((*pkt)->datalen) {
+		memcpy((*pkt)->data, &((*buf)->buf[offset + 5]), (*pkt)->datalen);
+		(*pkt)->data[(*pkt)->datalen] = '\0';
+	}
 	
 	goto done;
 die1:
