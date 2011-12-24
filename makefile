@@ -27,8 +27,9 @@ CFLAGS:=-Wall -Wstrict-prototypes -Wno-variadic-macros -c -fPIC -fvisibility=hid
 #CFLAGS+=-pedantic
 CLINKS:=$(addprefix -l,$(LIBS)) $(DEBUG)
 
-### un-commend to remove ALL logging (smaller & faster binary)
+### un-comment to remove ALL logging (smaller & faster binary)
 #CFLAGS+=-DXBEE_DISABLE_LOGGING
+### un-comment to turn off hardware flow control
 #CFLAGS+=-DXBEE_NO_RTSCTS
 
 ###############################################################################
@@ -57,11 +58,12 @@ new: clean
 	@$(MAKE) --no-print-directory all
 
 clean:
-	rm -rdf $(BUILDDIR) .$(BUILDDIR).dir
-	rm -rdf $(DESTDIR) .$(DESTDIR).dir
+	rm -rdf $(BUILDDIR)/*.o
+	rm -rdf $(DESTDIR)/*
 
 spotless: clean
-	rm -f .*.d
+	rm -rdf $(BUILDDIR) .$(BUILDDIR).dir
+	rm -rdf $(DESTDIR) .$(DESTDIR).dir
 
 
 release: all
@@ -88,14 +90,14 @@ $(DESTDIR)/$(LIBOUT).a: $(DESTDIR)/$(LIBOUT).a.$(LIBFULLREV)
 $(DESTDIR)/$(LIBOUT).a.$(LIBFULLREV): .$(DESTDIR).dir $(DESTDIR)/$(LIBOUT).o
 	$(AR) rcs $@ $(filter %.o,$^)
 
-$(DESTDIR)/$(LIBOUT).o: .$(DESTDIR).dir $(addprefix .,$(addsuffix .d,$(SRCS))) $(OBJS)
+$(DESTDIR)/$(LIBOUT).o: .$(DESTDIR).dir $(addprefix $(BUILDDIR)/,$(addsuffix .d,$(SRCS))) $(OBJS)
 	$(LD) -r $(filter %.o,$^) -o $@
 
 
-.%.d: %.c
+$(BUILDDIR)/%.d: .$(BUILDDIR).dir %.c
 	$(GCC) -MM -MT $(addprefix $(BUILDDIR)/,$(filter %.o,$(^:.c=.o))) $(filter %.c,$^) -o $@
 
 $(BUILDDIR)/%.o: .$(BUILDDIR).dir %.c
 	$(GCC) $(CFLAGS) $(firstword $(filter %.c,$^)) -o $@
 
-include $(wildcard .*.d)
+include $(wildcard $(BUILDDIR)/*.d)
