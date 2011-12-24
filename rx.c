@@ -299,7 +299,7 @@ int _xbee_rx(struct xbee *xbee) {
 	
 	if (!xbee) return XBEE_ENOXBEE;
 
-	if (!xbee->mode && !warnedMode) sleep(1);
+	if (!xbee->mode && !warnedMode) usleep(1000);
 	if (!xbee->mode) {
 		if (!warnedMode) {
       xbee_log(-99,"libxbee's mode has not been set, please use xbee_setMode()");
