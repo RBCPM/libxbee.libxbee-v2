@@ -10,7 +10,7 @@ DESTDIR:=lib
 SYS_LIBDIR:=/usr/lib
 SYS_INCDIR:=/usr/include
 
-SRCS:=conn io ll log mode frame rx tx xbee xbee_s1 xbee_s2 xbee_sG xsys thread plugin pkt
+SRCS:=conn io ll log mode frame rx tx xbee xbee_s1 xbee_s2 xbee_sG xsys thread plugin pkt ver
 RELEASE_ITEMS:=lib/libxbee.so.$(LIBFULLREV) \
                lib/libxbee.so \
                lib/libxbee.so.$(LIBFULLREV).dbg \
@@ -99,6 +99,9 @@ $(DESTDIR)/$(LIBOUT).o: .$(DESTDIR).dir $(addprefix $(BUILDDIR)/,$(addsuffix .d,
 
 $(BUILDDIR)/%.d: .$(BUILDDIR).dir %.c
 	$(GCC) -MM -MT $(addprefix $(BUILDDIR)/,$(filter %.o,$(^:.c=.o))) $(filter %.c,$^) -o $@
+
+$(BUILDDIR)/ver.o: .$(BUILDDIR).dir *.c *.h
+	$(GCC) $(CFLAGS) -DLIBXBEE_REVISION=\"$(LIBFULLREV)\" -DLIBXBEE_COMMIT=\"$(shell git log -1 --format="%H")\" ver.c -o $@
 
 $(BUILDDIR)/%.o: .$(BUILDDIR).dir %.c
 	$(GCC) $(CFLAGS) $(firstword $(filter %.c,$^)) -o $@

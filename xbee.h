@@ -28,6 +28,9 @@ extern "C" {
 #include <stdio.h>
 #include <stdarg.h>
 
+extern const char libxbee_revision[];
+extern const char libxbee_commit[];
+
 /* this is a list of all the errors that libxbee functions can return */
 #define XBEE_ENONE                                           0
 #define XBEE_EUNKNOWN                                       -1
