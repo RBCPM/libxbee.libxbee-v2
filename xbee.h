@@ -28,8 +28,11 @@ extern "C" {
 #include <stdio.h>
 #include <stdarg.h>
 
+/* --- ver.c --- */
 extern const char libxbee_revision[];
 extern const char libxbee_commit[];
+extern const char libxbee_committer[];
+extern const char libxbee_buildtime[];
 
 /* this is a list of all the errors that libxbee functions can return */
 #define XBEE_ENONE                                           0
