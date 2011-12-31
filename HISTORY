@@ -8,6 +8,7 @@ v2.0.4 - in progress
 		+ Added '\0' terminator to all received data
 		+ Fixed SEGFAULT in xbee_sG.c (AT receive)
 		+ Added 'libxbee_revision', 'libxbee_commit', 'libxbee_committer' and 'libxbee_buildtime' strings to binary
+		+ Added 'dual instance' sample
 
 v2.0.3 - f953edb71932 - 18 Dec 2011
 	Documentation:
