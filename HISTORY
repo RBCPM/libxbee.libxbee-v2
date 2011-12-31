@@ -1,4 +1,4 @@
-v2.0.4 - in progress
+v2.0.4 - ___ - 31 Dec 2011
 	Modifications / Additions:
 		+ Added plugin framework, allows for respawnable functions
 		+ Now scans for monitored threads every 10s
