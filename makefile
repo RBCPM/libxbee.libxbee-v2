@@ -93,17 +93,17 @@ $(DESTDIR)/$(LIBOUT).a: $(DESTDIR)/$(LIBOUT).a.$(LIBFULLREV)
 $(DESTDIR)/$(LIBOUT).a.$(LIBFULLREV): .$(DESTDIR).dir $(DESTDIR)/$(LIBOUT).o
 	$(AR) rcs $@ $(filter %.o,$^)
 
-$(DESTDIR)/$(LIBOUT).o: .$(DESTDIR).dir $(addprefix $(BUILDDIR)/,$(addsuffix .d,$(SRCS))) $(OBJS)
+$(DESTDIR)/$(LIBOUT).o: .$(DESTDIR).dir $(OBJS)
 	$(LD) -r $(filter %.o,$^) -o $@
 
 
 $(BUILDDIR)/%.d: .$(BUILDDIR).dir %.c
 	$(GCC) -MM -MT $(addprefix $(BUILDDIR)/,$(filter %.o,$(^:.c=.o))) $(filter %.c,$^) -o $@
 
-$(BUILDDIR)/ver.o: .$(BUILDDIR).dir *.c *.h
+$(BUILDDIR)/ver.o: .$(BUILDDIR).dir $(BUILDDIR)/ver.d *.c *.h
 	$(GCC) $(CFLAGS) -DLIBXBEE_REVISION="\"$(LIBFULLREV)\"" -DLIBXBEE_COMMIT="\"$(shell git log -1 --format="%H")\"" -DLIBXBEE_COMMITTER="\"$(shell git log -1 --format="%cn <%ce>")\"" -DLIBXBEE_BUILDTIME="\"$(shell date)\"" ver.c -o $@
 
-$(BUILDDIR)/%.o: .$(BUILDDIR).dir %.c
+$(BUILDDIR)/%.o: .$(BUILDDIR).dir $(BUILDDIR)/%.d %.c
 	$(GCC) $(CFLAGS) $(firstword $(filter %.c,$^)) -o $@
 
 include $(wildcard $(BUILDDIR)/*.d)
