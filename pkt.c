@@ -143,7 +143,6 @@ int xbee_pktGetKey(struct xbee *xbee, struct xbee_pkt *pkt, char *key, int id, s
 
 int xbee_pktGetInfo(struct xbee *xbee, struct xbee_pkt *pkt, char *key, int id, int index, void **retItem) {
 	struct pkt_infoKey *p;
-	void *i;
 	
 	if (!xbee) {
 		if (!xbee_default) return XBEE_ENOXBEE;
@@ -164,11 +163,10 @@ int xbee_pktGetInfo(struct xbee *xbee, struct xbee_pkt *pkt, char *key, int id, 
 		return XBEE_ERANGE;
 	}
 	
-	if ((i = ll_get_index(&p->items, index)) == NULL) {
-		return XBEE_EFAILED;
+	if ((*retItem = ll_get_index(&p->items, index)) == NULL) {
+		return XBEE_ENULL;
 	}
 	
-	*retItem = i;
 	return 0;
 }
 
@@ -176,7 +174,7 @@ EXPORT int xbee_pktGetAnalog(struct xbee *xbee, struct xbee_pkt *pkt, int channe
 	void *val;
 	int ret;
 	
-	if ((ret = xbee_pktGetInfo(xbee, pkt, "analog", channel, index, &val)) != 0) {
+	if (((ret = xbee_pktGetInfo(xbee, pkt, "analog", channel, index, &val)) != 0) && ret != XBEE_ENULL) {
 		return ret;
 	}
 	
@@ -188,7 +186,7 @@ EXPORT int xbee_pktGetDigital(struct xbee *xbee, struct xbee_pkt *pkt, int chann
 	void *val;
 	int ret;
 	
-	if ((ret = xbee_pktGetInfo(xbee, pkt, "digital", channel, index, &val)) != 0) {
+	if (((ret = xbee_pktGetInfo(xbee, pkt, "digital", channel, index, &val)) != 0) && ret != XBEE_ENULL) {
 		return ret;
 	}
 	
