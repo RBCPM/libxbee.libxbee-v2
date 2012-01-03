@@ -172,7 +172,7 @@ int xbee_pktGetInfo(struct xbee *xbee, struct xbee_pkt *pkt, char *key, int id, 
 	return 0;
 }
 
-EXPORT int xbee_pktGetAnalog(struct xbee *xbee, struct xbee_pkt *pkt, int index, int channel, int *retVal) {
+EXPORT int xbee_pktGetAnalog(struct xbee *xbee, struct xbee_pkt *pkt, int channel, int index, int *retVal) {
 	void *val;
 	int ret;
 	
@@ -184,7 +184,7 @@ EXPORT int xbee_pktGetAnalog(struct xbee *xbee, struct xbee_pkt *pkt, int index,
 	return 0;
 }
 
-EXPORT int xbee_pktGetDigital(struct xbee *xbee, struct xbee_pkt *pkt, int index, int channel, int *retVal) {
+EXPORT int xbee_pktGetDigital(struct xbee *xbee, struct xbee_pkt *pkt, int channel, int index, int *retVal) {
 	void *val;
 	int ret;
 	

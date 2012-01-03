@@ -1,5 +1,5 @@
 v2.0.5 - in progress
-		...
+		+ Swapped xbee_pktGet[Analog|Digital]() channel & index parameters
 
 v2.0.4 - ada265100533 - 31 Dec 2011
 	Modifications / Additions:
