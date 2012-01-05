@@ -29,7 +29,7 @@
 
 static int xbee_s1_parseIO(struct xbee *xbee, struct bufData *buf, struct xbee_pkt *pkt, int startIndex) {
 	int sampleCount;
-	int i;
+	int i, o;
 	int ioMask;
 	unsigned char *t;
 
@@ -48,10 +48,10 @@ static int xbee_s1_parseIO(struct xbee *xbee, struct bufData *buf, struct xbee_p
 
 		if (ioMask & 0x01FF) {
 			mask = 0x0001;
-			for (i = 0; i <= 8; i++, mask <<= 1) {
+			for (o = 0; o <= 8; o++, mask <<= 1) {
 				if (ioMask & mask) {
-					if (xbee_pktAddDigital(xbee, pkt, i, digitalValue & mask)) {
-						xbee_log(1,"Failed to add digital sample information to packet (channel D%d)", i);
+					if (xbee_pktAddDigital(xbee, pkt, o, digitalValue & mask)) {
+						xbee_log(1,"Failed to add digital sample information to packet (channel D%d)", o);
 					}
 				}
 			}
@@ -59,10 +59,10 @@ static int xbee_s1_parseIO(struct xbee *xbee, struct bufData *buf, struct xbee_p
 		}
 
 		mask = 0x0200;
-		for (i = 0; i <= 5; i++, mask <<= 1) {
+		for (o = 0; o <= 5; o++, mask <<= 1) {
 			if (ioMask & mask) {
 				if (xbee_pktAddAnalog(xbee, pkt, 0, ((t[0] << 8) & 0x3F) | (t[1] & 0xFF))) {
-					xbee_log(1,"Failed to add analog sample information to packet (channel A%d)", i);
+					xbee_log(1,"Failed to add analog sample information to packet (channel A%d)", o);
 				}
 				t += 2;
 			}
@@ -84,7 +84,7 @@ int xbee_s1_atRx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx, 
 		} else if ((*buf)->buf[0] == 0x97) {
 			start = 15;
 		}
-		if (start != -1) {
+		if (start != -1 && (*pkt)->status == 0) {
 			int count;
 			count = xbee_s1_parseIO(xbee, *buf, *pkt, start);
 			if (count >= 0) {
