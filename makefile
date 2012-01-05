@@ -37,7 +37,7 @@ CLINKS:=$(addprefix -l,$(LIBS)) $(DEBUG)
 
 ###############################################################################
 
-.PHONY: all install install_sudo clean spotless new release .%.dir
+.PHONY: all install install_dbg install_sudo install_dbg_sudo clean spotless new release .%.dir
 .PRECIOUS: .%.dir $(BUILDDIR)/%.d
 
 OBJS:=$(addprefix $(BUILDDIR)/,$(addsuffix .o,$(SRCS)))
@@ -46,6 +46,9 @@ all: $(DESTDIR)/$(LIBOUT).so $(DESTDIR)/$(LIBOUT).a
 
 install: all
 	sudo make install_sudo
+
+install_dbg: all
+	sudo make install_dbg_sudo
 
 install_sudo: all
 	cp -f $(DESTDIR)/$(LIBOUT).so.$(LIBFULLREV) $(SYS_LIBDIR)/$(LIBOUT).so.$(LIBFULLREV)
@@ -56,6 +59,10 @@ install_sudo: all
 	ln -fs $(SYS_LIBDIR)/$(LIBOUT).a.$(LIBFULLREV) $(SYS_LIBDIR)/$(LIBOUT).a
 	cp -f xbee.h $(SYS_INCDIR)/xbee.h
 	chmod 644 $(SYS_INCDIR)/xbee.h
+
+install_dbg_sudo: install_sudo
+	cp -f $(DESTDIR)/$(LIBOUT).so.$(LIBFULLREV).dbg $(SYS_LIBDIR)/$(LIBOUT).so.$(LIBFULLREV).dbg
+	chmod 644 $(SYS_LIBDIR)/$(LIBOUT).so.$(LIBFULLREV).dbg
 
 new: clean
 	@$(MAKE) --no-print-directory all

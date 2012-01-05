@@ -2,6 +2,7 @@ v2.0.5 - in progress
 		+ Swapped xbee_pktGet[Analog|Digital]() channel & index parameters
 		+ Added XBEE_ENULL for when a pointer is not necessarily used as a pointer (e.g. in a linked list)
 		+ Added parsing of I/O data to Series 1 AT packets
+		+ Added 'make install_dbg' to install debugging symbols too
 
 v2.0.4 - ada265100533 - 31 Dec 2011
 	Modifications / Additions:
