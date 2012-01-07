@@ -250,6 +250,8 @@ EXPORT int xbee_conNew(struct xbee *xbee, struct xbee_con **retCon, unsigned cha
 	
 	xbee_log(2,"Created new '%s' connection @ %p", conType->name, con);
 	
+	xbee_conLogAddress(xbee, address);
+
 	goto done;
 die1:
 done:
@@ -526,4 +528,18 @@ EXPORT int xbee_conWake(struct xbee *xbee, struct xbee_con *con) {
 	con->sleeping = 0;
 
 	return XBEE_ENONE;
+}
+
+void xbee_conLogAddress(struct xbee *xbee, struct xbee_conAddress *address) {
+	if (address->addr16_enabled) {
+		xbee_log(6,"16-bit address: 0x%02X%02X", address->addr16[0], address->addr16[1]);
+	}
+	if (address->addr64_enabled) {
+		xbee_log(6,"64-bit address: 0x%02X%02X%02X%02X 0x%02X%02X%02X%02X",
+							 address->addr64[0], address->addr64[1], address->addr64[2], address->addr64[3],
+							 address->addr64[4], address->addr64[5], address->addr64[6], address->addr64[7]);
+	}
+	if (address->endpoints_enabled) {
+		xbee_log(6,"Endpoints (local/remote): 0x%02X/0x%02X", address->local_endpoint, address->remote_endpoint);
+	}
 }

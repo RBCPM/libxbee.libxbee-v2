@@ -190,17 +190,7 @@ int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
 		    !con.address.addr16_enabled &&
 		    !con.address.addr64_enabled) goto skip;
 		
-		if (con.address.addr16_enabled) {
-			xbee_log(4,"16-bit address: 0x%02X%02X", con.address.addr16[0], con.address.addr16[1]);
-		}
-		if (con.address.addr64_enabled) {
-			xbee_log(4,"64-bit address: 0x%02X%02X%02X%02X 0x%02X%02X%02X%02X",
-			           con.address.addr64[0], con.address.addr64[1], con.address.addr64[2], con.address.addr64[3],
-			           con.address.addr64[4], con.address.addr64[5], con.address.addr64[6], con.address.addr64[7]);
-		}
-		if (con.address.endpoints_enabled) {
-			xbee_log(4,"Endpoints (local/remote): 0x%02X/0x%02X", con.address.local_endpoint, con.address.remote_endpoint);
-		}
+		xbee_conLogAddress(xbee, &con.address);
 		
 		if ((rxCon = xbee_conFromAddress(xbee, pktHandler->conType, &con.address)) == NULL) {
 			xbee_log(3,"No connection for packet...");
