@@ -1,8 +1,4 @@
-LIBOUT:=libxbee
-LIBMAJ:=2
-LIBMIN:=0
-LIBREV:=4
-LIBFULLREV:=$(LIBMAJ).$(LIBMIN).$(LIBREV)
+include makefile.version
 
 BUILDDIR:=.build
 DESTDIR:=lib
