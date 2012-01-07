@@ -19,6 +19,7 @@
 */
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <xbee.h>
 
@@ -48,7 +49,7 @@ int main(int argc, char *argv[]) {
 	xbee_logSetLevel(100);
 	/* make a lixbee instance, and connect it to /dev/ttyUSB1 @ 57600 baud
 	   you don't have to keep hold of the returned xbee, in which case you can pass NULL and the most recently started instance will be used! */
-	if ((ret = xbee_setup("/dev/ttyUSB2", 57600, &xbee)) != 0) {
+	if ((ret = xbee_setup("/dev/ttyUSB1", 57600, &xbee)) != 0) {
 		fprintf(stderr, "xbee_setup(): failed... (%d)\n", ret);
 		exit(1);
 	}
@@ -61,6 +62,8 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 	
+	/* clear the address field */
+	memset(&addr, 0, sizeof(addr));
 	/* build a connection to the following address */
 	addr.addr64_enabled = 1;
 	/* this is the address for my coordinator */

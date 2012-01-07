@@ -19,6 +19,7 @@
 */
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <xbee.h>
 
@@ -66,6 +67,8 @@ int setupXbee(struct xbee **xbee, char *port, struct xbee_con **con, unsigned in
 		return 2;
 	}
 	
+	/* clear the address field */
+	memset(&addr, 0, sizeof(addr));
 	/* build a connection to the following address */
 	addr.addr64_enabled = 1;
 	addr.addr64[0] = ((addrH >> 24) & 0xFF);

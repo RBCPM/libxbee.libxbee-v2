@@ -19,6 +19,7 @@
 */
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <semaphore.h>
 
 #include <xbee.h>
@@ -86,9 +87,9 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 	
+	/* clear the address field */
+	memset(&addr, 0, sizeof(addr));
 	/* build a connection to the following address */
-	addr.addr16_enabled = 0;
-	addr.addr64_enabled = 0;
 	if ((ret = xbee_conNew(xbee, &con, conType, &addr, &sem)) != 0) {
 		xbee_log(xbee,-1,"xbee_newcon(): failed... (%d)", ret);
 		exit(1);

@@ -19,6 +19,7 @@
 */
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #define __USE_GNU
 #include <pthread.h>
 #undef __USE_GNU
@@ -119,8 +120,9 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 	
+	/* clear the address field */
+	memset(&addr, 0, sizeof(addr));
 	/* build a connection to the following address */
-	addr.addr16_enabled = 0;
 	addr.addr64_enabled = 1;
 	addr.addr64[0] = 0x00;
 	addr.addr64[1] = 0x13;
