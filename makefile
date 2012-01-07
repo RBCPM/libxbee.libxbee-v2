@@ -1,4 +1,4 @@
-include makefile.version
+include makefile.generic
 
 BUILDDIR:=.build
 DESTDIR:=lib
@@ -6,7 +6,6 @@ DESTDIR:=lib
 SYS_LIBDIR:=/usr/lib
 SYS_INCDIR:=/usr/include
 
-SRCS:=conn io ll log mode frame rx tx xbee xbee_s1 xbee_s2 xbee_sG xsys thread plugin pkt ver
 RELEASE_ITEMS:=lib/libxbee.so.$(LIBFULLREV) \
                lib/libxbee.so \
                lib/libxbee.so.$(LIBFULLREV).dbg \
