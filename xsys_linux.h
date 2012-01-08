@@ -39,7 +39,6 @@
 typedef pthread_t         xsys_thread;
 
 typedef pthread_mutex_t   xsys_mutex;
-#define XSYS_MUTEX_INIT   PTHREAD_MUTEX_INITIALIZER
 
 typedef sem_t             xsys_sem;
 typedef size_t            xsys_size_t;

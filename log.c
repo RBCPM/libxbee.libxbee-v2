@@ -33,19 +33,21 @@
 static FILE *xbee_logf = NULL;
 static int xbee_logLevel = 0;
 static int xbee_logReady = 0;
-static xsys_mutex xbee_logMutex = XSYS_MUTEX_INIT;
+static xsys_mutex xbee_logMutex;
 #define XBEE_LOG_BUFFERLEN 1024
 static char xbee_logBuffer[XBEE_LOG_BUFFERLEN];
 
 static int xbee_logPrepare(void) {
 	int l;
 	char *e;
-	xsys_mutex_lock(&xbee_logMutex);
 	if (xbee_logReady) {
-		xsys_mutex_unlock(&xbee_logMutex);
+		while (xbee_logReady == 2) {
+			usleep(1000);
+		}
 		return 0;
 	}
 
+	xsys_mutex_init(&xbee_logMutex);
 	xbee_logf = XBEE_LOG_DEFAULT_TARGET;
 
 	/* get the log level from the environment */
@@ -57,7 +59,6 @@ static int xbee_logPrepare(void) {
 	}
 
 	xbee_logReady = 1;
-	xsys_mutex_unlock(&xbee_logMutex);
 	return 0;
 }
 
