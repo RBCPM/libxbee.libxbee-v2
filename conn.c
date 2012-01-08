@@ -24,6 +24,7 @@
 
 #include "internal.h"
 #include "conn.h"
+#include "log.h"
 #include "frame.h"
 #include "rx.h"
 #include "ll.h"

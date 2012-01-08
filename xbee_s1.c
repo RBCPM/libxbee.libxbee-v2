@@ -26,6 +26,7 @@
 #include "pkt.h"
 #include "xbee_s1.h"
 #include "xbee_sG.h"
+#include "log.h"
 
 static int xbee_s1_parseIO(struct xbee *xbee, struct bufData *buf, struct xbee_pkt *pkt, int startIndex) {
 	int sampleCount;
