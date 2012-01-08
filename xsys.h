@@ -33,9 +33,7 @@
 #endif /* ---------------------- */
 #undef __XBEE_XSYS_LOAD_H
 
-#include "log.h"
-
-/* file I/O */
+/* file I/O --- needs the following functions:
 int xsys_open(char *path, int flags);
 int xsys_lockf(int fd);
 int xsys_close(int fd);
@@ -55,35 +53,39 @@ int xsys_feof(FILE *stream);
 int xsys_select(FILE *stream, struct timeval *timeout);
 
 int xsys_disableBuffer(FILE *stream);
+*/
 
 
 /* configuration */
 int xsys_setupSerial(struct xbee *xbee);
 
 
-/* threads */
+/* threads --- needs the following functions:
 int xsys_thread_create(xsys_thread *thread, void*(*start_routine)(void*), void *arg);
 int xsys_thread_cancel(xsys_thread thread);
 int xsys_thread_join(xsys_thread thread, void **retval);
 int xsys_thread_tryjoin(xsys_thread thread, void **retval);
 int xsys_thread_detach_self(void);
 int xsys_thread_iAm(xsys_thread thread);
+*/
 
 
-/* mutexes */
+/* mutexes --- needs the following functions:
 int xsys_mutex_init(xsys_mutex *mutex);
 int xsys_mutex_destroy(xsys_mutex *mutex);
 int xsys_mutex_lock(xsys_mutex *mutex);
 int xsys_mutex_trylock(xsys_mutex *mutex);
 int xsys_mutex_unlock(xsys_mutex *mutex);
+*/
 
 
-/* semaphores */
+/* semaphores --- needs the following functions:
 int xsys_sem_init(xsys_sem *sem);
 int xsys_sem_destroy(xsys_sem *sem);
 int xsys_sem_wait(xsys_sem *sem);
 int xsys_sem_timedwait(xsys_sem *sem, time_t sec, long nsec);
 int xsys_sem_post(xsys_sem *sem);
 int xsys_sem_getvalue(xsys_sem *sem, int *value);
+*/
 
 #endif /* __XBEE_XSYS_H */

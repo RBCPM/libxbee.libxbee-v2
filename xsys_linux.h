@@ -33,6 +33,9 @@
 #undef __USE_GNU
 #include <semaphore.h>
 
+
+/* ######################################################################### */
+
 typedef pthread_t         xsys_thread;
 
 typedef pthread_mutex_t   xsys_mutex;
@@ -43,5 +46,62 @@ typedef size_t            xsys_size_t;
 typedef ssize_t           xsys_ssize_t;
 
 #define EXPORT __attribute__((visibility ("default")))
+
+
+/* ######################################################################### */
+/* file I/O */
+
+#define xsys_open(path, flags)                open((path),(flags))
+int xsys_lockf(int fd);
+#define xsys_close(fd)                        close((fd))
+#define xsys_read(fd, buf, count)             read((fd),(buf),(count))
+#define xsys_write(fd, buf, count)            write((fd),(buf),(count))
+
+#define xsys_fopen(path, mode)                fopen((path),(mode))
+#define xsys_fdopen(fd, mode)                 fdopen((fd),(mode))
+#define xsys_fclose(stream)                   fclose((stream))
+#define xsys_fread(ptr, size, nmemb, stream)  fread((ptr),(size),(nmemb),(stream))
+#define xsys_fwrite(ptr, size, nmemb, stream) fwrite((ptr),(size),(nmemb),(stream))
+#define xsys_fflush(stream)                   fflush((stream))
+#define xsys_ferror(stream)                   ferror((stream))
+#define xsys_feof(stream)                     feof((stream))
+
+int xsys_select(FILE *stream, struct timeval *timeout);
+
+#define xsys_disableBuffer(stream)            setvbuf((stream), NULL, _IONBF, BUFSIZ)
+
+
+/* ######################################################################### */
+/* threads */
+
+#define xsys_thread_create(thread, start_routine, arg) \
+                                              pthread_create((pthread_t*)(thread), NULL, (start_routine), (arg))
+#define xsys_thread_cancel(thread)            pthread_cancel((pthread_t)(thread))
+#define xsys_thread_join(thread, retval)      pthread_join((pthread_t)(thread), (retval))
+#define xsys_thread_tryjoin(thread, retval)   pthread_tryjoin_np((pthread_t)(thread), (retval))
+#define xsys_thread_detach_self()             pthread_detach(pthread_self())
+#define xsys_thread_iAm(thread)               pthread_equal(pthread_self(), (thread))
+
+
+/* ######################################################################### */
+/* mutexes */
+
+#define xsys_mutex_init(mutex)                pthread_mutex_init((pthread_mutex_t*)(mutex), NULL)
+#define xsys_mutex_destroy(mutex)             pthread_mutex_destroy((pthread_mutex_t*)(mutex))
+#define xsys_mutex_lock(mutex)                pthread_mutex_lock((pthread_mutex_t*)(mutex))
+#define xsys_mutex_trylock(mutex)             pthread_mutex_trylock((pthread_mutex_t*)(mutex))
+#define xsys_mutex_unlock(mutex)              pthread_mutex_unlock((pthread_mutex_t*)(mutex))
+
+
+/* ######################################################################### */
+/* semaphores */
+
+#define xsys_sem_init(sem)                    sem_init((sem_t*)(sem), 0, 0)
+#define xsys_sem_destroy(sem)                 sem_destroy((sem_t*)(sem))
+#define xsys_sem_wait(sem)                    sem_wait((sem_t*)(sem))
+int xsys_sem_timedwait(xsys_sem *sem, time_t sec, long nsec);
+#define xsys_sem_post(sem)                    sem_post((sem_t*)(sem))
+#define xsys_sem_getvalue(sem, value)         sem_getvalue((sem), (value))
+
 
 #endif /* __XBEE_XSYS_LINUX_H */
