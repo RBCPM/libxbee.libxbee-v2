@@ -202,6 +202,7 @@ EXPORT void xbee_pktFree(struct xbee_pkt *pkt) {
 	if (pkt->dataItems) {
 		for (; (key = ll_ext_head(pkt->dataItems)) != NULL;) {
 			ll_destroy(&key->items, key->freeCallback);
+			free(key);
 		}
 	}
 	
