@@ -221,6 +221,8 @@ skip:
 		if (buf) free(buf);
 	}
 	
+	if (pkt) xbee_pktFree(pkt);
+
 	data->threadRunning = 0;
 	return 0;
 }
