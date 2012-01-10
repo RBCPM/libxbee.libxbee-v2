@@ -63,6 +63,9 @@ void xbee_cleanupMode(struct xbee *xbee) {
 			
 			if (con->callbackRunning) {
 				xbee_log(5,"---- Terminating callback thread...");
+				con->destroySelf = 1;
+				xsys_sem_post(&con->callbackSem);
+				while (con->callbackRunning);
 				xsys_thread_cancel(con->callbackThread);
 			}
 			
@@ -86,6 +89,9 @@ void xbee_cleanupMode(struct xbee *xbee) {
 			
 			if (pktHandler->rxData->threadRunning) {
 				xbee_log(5,"---- Terminating handler thread");
+				pktHandler->rxData->threadShutdown = 1;
+				xsys_sem_post(&pktHandler->rxData->sem);
+				while (pktHandler->rxData->threadRunning);
 				xsys_thread_cancel(pktHandler->rxData->thread);
 			}
 			

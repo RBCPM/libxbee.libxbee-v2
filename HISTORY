@@ -1,4 +1,7 @@
 v2.0.5 - in progress
+	Buf fixes:
+		+ Fixed memory leaks
+	Modifications / Additions:
 		+ Swapped xbee_pktGet[Analog|Digital]() channel & index parameters
 		+ Added XBEE_ENULL for when a pointer is not necessarily used as a pointer (e.g. in a linked list)
 		+ Added parsing of I/O data to Series 1 AT packets
