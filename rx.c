@@ -41,7 +41,7 @@ struct xbee_callbackInfo {
 /* ######################################################################### */
 
 int _xbee_rxCallbackThread(struct xbee_callbackInfo *info) {
-	struct xbee_pkt *pkt;
+	struct xbee_pkt *pkt, *opkt;
 	struct xbee *xbee;
 	struct xbee_con *con;
 	void(*callback)(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt **pkt, void **userData);
@@ -92,8 +92,18 @@ int _xbee_rxCallbackThread(struct xbee_callbackInfo *info) {
 		}
 		xbee_log(1,"Running callback (func: %p, xbee: %p, con: %p, pkt: %p, userData: %p)",
 		                              callback, xbee, con, pkt, con->userData);
+
+		opkt = pkt;
 		callback(xbee, con, &pkt, &con->userData);
-		if (pkt) xbee_pktFree(pkt);
+		if (pkt) {
+			if (pkt != opkt) {
+				xbee_log(-10,"Connection callback for con: %p returned different packet... not attempting to free unknown pointer", con);
+			} else {
+				xbee_pktFree(pkt);
+			}
+		} else {
+			printf("null pkt returned!\n");
+		}
 	}
 	
 	xbee_log(2,"Callback thread terminating (con: %p)", con);
@@ -155,6 +165,12 @@ int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
 			continue;
 		}
 		
+		buf = ll_ext_head(&data->list);
+		if (!buf) {
+			xbee_log(1,"No buffer!");
+			continue;
+		}
+		
 		if (!pkt) {
 			/* only allocate memory if nessesary (re-use where possible) */
 			if ((pkt = xbee_pktAlloc()) == NULL) {
@@ -162,12 +178,6 @@ int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
 				usleep(100000);
 				continue;
 			}
-		}
-		
-		buf = ll_ext_head(&data->list);
-		if (!buf) {
-			xbee_log(1,"No buffer!");
-			continue;
 		}
 		
 		xbee_log(2,"Processing packet @ %p", buf);
