@@ -194,17 +194,14 @@ EXPORT int xbee_pktGetDigital(struct xbee *xbee, struct xbee_pkt *pkt, int chann
 	return 0;
 }
 
+static inline void xbee_pktFreeData(struct pkt_infoKey *key) {
+	ll_destroy(&key->items, key->freeCallback);
+	free(key);
+}
 EXPORT void xbee_pktFree(struct xbee_pkt *pkt) {
-	struct pkt_infoKey *key;
-	
 	if (!pkt) return;
 	
-	if (pkt->dataItems) {
-		for (; (key = ll_ext_head(pkt->dataItems)) != NULL;) {
-			ll_destroy(&key->items, key->freeCallback);
-			free(key);
-		}
-	}
+	if (pkt->dataItems) ll_free(pkt->dataItems, (void(*)(void*))xbee_pktFreeData);
 	
 	free(pkt);
 }
