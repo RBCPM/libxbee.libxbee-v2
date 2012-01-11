@@ -303,6 +303,21 @@ int xbee_pluginLoad(char *filename, struct xbee *xbee, void *arg);
 /* ######################################################################### */
 /* ######################################################################### */
 /* ######################################################################### */
+/* --- net.c --- */
+/* this function allows you to listen for libxbeed connections over TCP/IP
+ *-  'xbee' should be the libxbee instance that you wish to use. If this is NULL, then the most recent instance will be used
+ *-  'port' is the TCP port you would like to listen on
+ */
+int xbee_netStart(struct xbee *xbee, int port);
+
+/* this function will close the existing listening connection, and all active connections
+ *-  'xbee' should be the libxbee instance that you wish to use. If this is NULL, then the most recent instance will be used
+ */
+int xbee_netStop(struct xbee *xbee);
+
+/* ######################################################################### */
+/* ######################################################################### */
+/* ######################################################################### */
 /* --- log.c --- */
 /* this function allows you to specify where the libxbee log should be written to
  *-  'f' is a valid FILE* that is open for writing. ALL libxbee logging will be written here

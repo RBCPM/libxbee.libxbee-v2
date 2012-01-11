@@ -29,6 +29,11 @@ extern struct xbee *xbee_default;
 
 /* ######################################################################### */
 
+struct xbee_netInfo {
+	int fd;
+	xsys_thread rxThread;
+	struct ll_head conList;
+};
 struct xbee_device {
 	char *path;
 	int fd;
@@ -62,6 +67,8 @@ struct xbee {
 	xsys_thread rxThread;
 	void *rxBuf;
 	int rxRunning;
+	
+	struct xbee_netInfo *net;
 };
 
 /* ######################################################################### */
