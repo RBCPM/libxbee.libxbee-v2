@@ -2,7 +2,7 @@
 #error This source should be included by xsys.c only
 #endif /* __XBEE_XSYS_LOAD_C */
 /*
-  libxbee - a C library to aid the use of Digi's Series 1 XBee modules
+  libxbee - a C library to aid the use of Digi's XBee wireless modules
             running in API mode (AP=2).
 
   Copyright (C) 2009  Attie Grande (attie@attie.co.uk)
