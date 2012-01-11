@@ -41,8 +41,10 @@ struct ll_info {
 	void *item;
 };
 
-int ll_init(struct ll_head *list);
 struct ll_head *ll_alloc(void);
+void ll_free(struct ll_head *list, void (*freeCallback)(void *));
+
+int ll_init(struct ll_head *list);
 void ll_destroy(struct ll_head *list, void (*freeCallback)(void*));
 
 int ll_add_head(void *list, void *item);

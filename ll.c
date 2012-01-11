@@ -24,16 +24,6 @@
 #include "internal.h"
 #include "ll.h"
 
-int ll_init(struct ll_head *list) {
-	if (!list) return XBEE_EINVAL;
-	list->is_head = 1;
-	list->head = NULL;
-	list->tail = NULL;
-	list->self = list;
-	if (xsys_mutex_init(&list->mutex)) return XBEE_EMUTEX;
-	return 0;
-}
-
 struct ll_head *ll_alloc(void) {
 	struct ll_head *h;
 	
@@ -47,6 +37,21 @@ struct ll_head *ll_alloc(void) {
 	}
 	
 	return h;
+}
+
+void ll_free(struct ll_head *list, void (*freeCallback)(void *)) {
+	ll_destroy(list, freeCallback);
+	free(list);
+}
+
+int ll_init(struct ll_head *list) {
+	if (!list) return XBEE_EINVAL;
+	list->is_head = 1;
+	list->head = NULL;
+	list->tail = NULL;
+	list->self = list;
+	if (xsys_mutex_init(&list->mutex)) return XBEE_EMUTEX;
+	return 0;
 }
 
 void ll_destroy(struct ll_head *list, void (*freeCallback)(void *)) {
