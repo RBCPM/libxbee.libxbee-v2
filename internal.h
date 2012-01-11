@@ -198,4 +198,7 @@ struct plugin_features {
 	struct xbee_mode **xbee_modes;
 };
 
+/* xbee.c */
+int _xbee_validate(struct xbee *xbee, int acceptShutdown);
+
 #endif /* __XBEE_INTERNAL_H */

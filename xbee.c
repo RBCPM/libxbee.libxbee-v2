@@ -33,15 +33,21 @@
 
 struct xbee *xbee_default = NULL;
 static struct ll_head xbee_list;
+static struct ll_head xbee_listShutdown;
 static int xbee_initialized = 0;
 
 int xbee_validate(struct xbee *xbee) {
+	return _xbee_validate(xbee, 0);
+}
+int _xbee_validate(struct xbee *xbee, int acceptShutdown) {
 	if (!xbee_initialized) {
 		ll_init(&xbee_list);
+		ll_init(&xbee_listShutdown);
 		xbee_initialized = 1;
 	}
 	
 	if (ll_get_item(&xbee_list, xbee)) return 1;
+	if (acceptShutdown && ll_get_item(&xbee_listShutdown, xbee)) return 2;
 	return 0;
 }
 
@@ -182,7 +188,9 @@ EXPORT void xbee_shutdown(struct xbee *xbee) {
 	xbee->running = 0;
 	xbee->device.ready = 0;
 	xbee_log(2,"Shutting down libxbee...");
+	ll_add_tail(&xbee_listShutdown, xbee);
 	ll_ext_item(&xbee_list, xbee);
+	xbee_default = ll_get_tail(&xbee_list);
 	
 	/* cleanup txThread */
 	xbee_log(5,"- Terminating txThread...");
@@ -225,7 +233,7 @@ EXPORT void xbee_shutdown(struct xbee *xbee) {
 	free(xbee);
 	xbee_log(2,"Shutdown complete!");
 	
-	xbee_default = ll_get_tail(&xbee_list);
+	ll_ext_item(&xbee_listShutdown, xbee);
 	
 	return;
 }
