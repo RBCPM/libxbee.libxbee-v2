@@ -371,9 +371,8 @@ done:
 	return ret;
 }
 
-int xbee_conFree(struct xbee *xbee, struct xbee_con *con, int skipChecks) {
+int xbee_conFree(struct xbee *xbee, struct xbee_con *con) {
 	if (!xbee) return XBEE_ENOXBEE;
-	if (!skipChecks) if (_xbee_conValidate(xbee,con,NULL)) return XBEE_EINVAL;
 	xsys_mutex_destroy(&con->txMutex);
 	xsys_sem_destroy(&con->callbackSem);
 	ll_destroy(&con->rxList, (void(*)(void*))xbee_pktFree);
@@ -408,7 +407,7 @@ EXPORT int xbee_conEnd(struct xbee *xbee, struct xbee_con *con, void **userData)
 		return XBEE_ECALLBACK;
 	}
 	
-	xbee_conFree(xbee, con, 1);
+	xbee_conFree(xbee, con);
 	
 	return XBEE_ENONE;
 }
