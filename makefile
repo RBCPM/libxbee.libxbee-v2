@@ -6,11 +6,11 @@ DESTDIR:=lib
 SYS_LIBDIR:=/usr/lib
 SYS_INCDIR:=/usr/include
 
-RELEASE_ITEMS:=lib/libxbee.so.$(LIBFULLREV) \
-               lib/libxbee.so \
-               lib/libxbee.so.$(LIBFULLREV).dbg \
-               lib/libxbee.a.$(LIBFULLREV) \
-               lib/libxbee.a \
+RELEASE_ITEMS:=$(DESTDIR)/$(LIBOUT).so.$(LIBFULLREV) \
+               $(DESTDIR)/$(LIBOUT).so \
+               $(DESTDIR)/$(LIBOUT).so.$(LIBFULLREV).dbg \
+               $(DESTDIR)/$(LIBOUT).a.$(LIBFULLREV) \
+               $(DESTDIR)/$(LIBOUT).a \
                xbee.h
 LIBS:=rt pthread dl
 
@@ -72,7 +72,7 @@ spotless: clean
 
 
 release: all
-	tar -cjvf libxbee_v$(LIBFULLREV)_`date +%Y-%m-%d`_`git rev-parse --verify --short HEAD`_`uname -m`.tar.bz2 $(RELEASE_ITEMS)
+	tar -cjvf $(LIBOUT)_v$(LIBFULLREV)_`date +%Y-%m-%d`_`git rev-parse --verify --short HEAD`_`uname -m`.tar.bz2 $(RELEASE_ITEMS)
 
 
 .%.dir:
