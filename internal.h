@@ -31,7 +31,8 @@ extern struct xbee *xbee_default;
 
 struct xbee_netInfo {
 	int fd;
-	xsys_thread rxThread;
+	int listenPort;
+	xsys_thread listenThread;
 	struct ll_head conList;
 };
 struct xbee_device {
