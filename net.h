@@ -31,11 +31,18 @@ struct xbee_netClientThreadInfo {
 };
 
 struct xbee_netClientInfo {
-  int fd;
+	int fd;
+	xsys_mutex fdTxMutex;
+
 	char addr[INET_ADDRSTRLEN];
-  struct ll_head conList;
-  xsys_thread rxThread;
+	unsigned short port;
+
+	struct ll_head conList;
+	xsys_thread rxThread;
 };
+
+int xbee_netSend(int fd, unsigned char *buf, int len, int flags);
+int xbee_netRecv(int fd, unsigned char *buf, int len, int flags);
 
 void xbee_netClientRxThread(struct xbee_netClientThreadInfo *info);
 
