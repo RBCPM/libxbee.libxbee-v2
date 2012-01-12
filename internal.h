@@ -33,7 +33,7 @@ struct xbee_netInfo {
 	int fd;
 	int listenPort;
 	xsys_thread listenThread;
-	struct ll_head conList;
+	struct ll_head clientList;
 };
 struct xbee_device {
 	char *path;

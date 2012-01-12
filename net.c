@@ -20,18 +20,85 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
 #include "internal.h"
+#include "net.h"
+#include "net_client.h"
 #include "log.h"
 #include "thread.h"
 
+static int xbee_netAuthorizeAddress(struct xbee *xbee, char *addr) {
+	/* checks IP address, returns 0 to allow, else deny. not yet implemented */
+	return 0;
+}
+
 static void xbee_netListenThread(struct xbee *xbee) {
-	for (;;) {
-		printf("netListenThread...\n");
-		sleep(1);
+	struct sockaddr_in addrinfo;
+	socklen_t addrlen;
+	char addr[INET_ADDRSTRLEN];
+
+	struct xbee_netClientThreadInfo *tinfo;
+
+	int confd;
+
+	while (xbee->net) {
+		xbee_log(-100, "net: listenThread...");
+
+		addrlen = sizeof(addrinfo);
+		if ((confd = accept(xbee->net->fd, (struct sockaddr *)&addrinfo, &addrlen)) < 0) {
+			xbee_perror(5, "accept()");
+			usleep(750000);
+			goto die1;
+		}
+		if (!xbee->net) break;
+		memset(addr, 0, sizeof(addr));
+		if (inet_ntop(AF_INET, (const void *)&addrinfo.sin_addr, addr, sizeof(addr)) == NULL) {
+			xbee_perror(5, "inet_ntop()");
+			goto die2;
+		}
+
+		if (xbee_netAuthorizeAddress(xbee, addr)) {
+			xbee_log(1, "*** Connection from %s was blocked ***", addr);
+			goto die2;
+		}
+
+		xbee_log(1, "Accepted connection from %s", addr);
+
+		if ((tinfo = calloc(1, sizeof(*tinfo))) == NULL) {
+			xbee_log(5, "calloc(): no memory");
+			goto die2;
+		}
+		tinfo->xbee = xbee;
+		if ((tinfo->client = calloc(1, sizeof(*tinfo->client))) == NULL) {
+			xbee_log(5, "calloc(): no memory");
+			goto die3;
+		}
+
+		tinfo->client->fd = confd;
+		memcpy(tinfo->client->addr, addr, sizeof(addr));
+		ll_init(&tinfo->client->conList);
+
+		if (xsys_thread_create(&tinfo->client->rxThread, (void*(*)(void*))xbee_netClientRxThread, (void*)tinfo)) {
+			xbee_log(5, "xsys_thread_create(): failed to start client thread...");
+			goto die4;
+		}
+
+		ll_add_tail(&xbee->net->clientList, tinfo->client);
+
+		continue;
+die4:
+		free(tinfo->client);
+die3:
+		free(tinfo);
+die2:
+		shutdown(confd, SHUT_RDWR);
+		close(confd);
+die1:
+		usleep(250000);
 	}
 }
 
@@ -55,12 +122,12 @@ EXPORT int xbee_netStart(struct xbee *xbee, int port) {
 		goto die1;
 	}
 
-	if ((net = calloc(sizeof(struct xbee_netInfo), 1)) == NULL) {
+	if ((net = calloc(1, sizeof(struct xbee_netInfo))) == NULL) {
 		ret = XBEE_ENOMEM;
 		goto die1;
 	}
 	net->listenPort = port;
-	ll_init(&net->conList);
+	ll_init(&net->clientList);
 
 	if ((net->fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
 		xbee_perror(1, "socket()");
@@ -127,7 +194,7 @@ EXPORT int xbee_netStop(struct xbee *xbee) {
 	xbee_threadStopMonitored(xbee, &net->listenThread, NULL, NULL);
 	close(net->fd);
 
-	ll_destroy(&net->conList, xbee_netClientKill);
+	ll_destroy(&net->clientList, xbee_netClientKill);
 
 	free(net);
 

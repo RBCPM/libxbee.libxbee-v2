@@ -1,5 +1,5 @@
-#ifndef __XBEE_NET_H
-#define __XBEE_NET_H
+#ifndef __XBEE_NET_CLIENT_H
+#define __XBEE_NET_CLIENT_H
 
 /*
   libxbee - a C library to aid the use of Digi's XBee wireless modules
@@ -21,4 +21,22 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#endif /* __XBEE_NET_H */
+#ifndef INET_ADDRSTRLEN
+#define INET_ADDRSTRLEN 16
+#endif
+
+struct xbee_netClientThreadInfo {
+	struct xbee *xbee;
+	struct xbee_netClientInfo *client;
+};
+
+struct xbee_netClientInfo {
+  int fd;
+	char addr[INET_ADDRSTRLEN];
+  struct ll_head conList;
+  xsys_thread rxThread;
+};
+
+void xbee_netClientRxThread(struct xbee_netClientThreadInfo *info);
+
+#endif /* __XBEE_NET_CLIENT_H */
