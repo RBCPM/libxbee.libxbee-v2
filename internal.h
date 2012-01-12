@@ -134,7 +134,7 @@ struct rxData {
 	xsys_thread thread;
 };
 
-/* ADD_HANDLER(packetID, dataStarts, functionName) */
+/* ADD_HANDLER(packetID, functionName) */
 #define ADD_HANDLER(a, b) \
 	{ (a), (#b), (b), NULL, NULL }
 #define ADD_HANDLER_TERMINATOR() \
