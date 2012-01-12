@@ -30,6 +30,8 @@
 
 		{<size>|<data>}
 			<size> is a 2 byte unsigned integer
+			<data> is 1 byte identifier
+			          remaining passed to handler
 
 	e.g: (through `echo`)
 		{\0000\0017|abcdefghijklmno}
@@ -85,6 +87,11 @@ int xbee_netClientRx(struct xbee *xbee, struct xbee_netClientInfo *client) {
 			goto next;
 		}
 		buf->buf[buf->len] = '\0';
+
+		if (buf->len < 1) {
+			xbee_log(1, "empty packet recieved...");
+			goto next;
+		}
 
 		printf("Got: [%s]\n", buf->buf);
 
