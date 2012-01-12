@@ -26,10 +26,76 @@
 #include "net_client.h"
 #include "log.h"
 
+/* protocol is as follows:
+
+		{<size>|<data>}
+			<size> is a 2 byte unsigned integer
+
+	e.g: (through `echo`)
+		{\0000\0017|abcdefghijklmno}
+
+*/
 int xbee_netClientRx(struct xbee *xbee, struct xbee_netClientInfo *client) {
-	printf("Hello!\n");
-	sleep(1);
-return 15;
+	int ret;
+	int iret;
+	unsigned char c;
+	unsigned char rawLen[3];
+	unsigned short len;
+	struct bufData *buf;
+
+	ret = 0;
+
+	for (;;) {
+		if (read(client->fd, &c, 1) < 1) {
+			xbee_perror(1, "read()");
+			goto die1;
+		}
+
+		if (c != '{') continue;
+
+		if (read(client->fd, rawLen, 3) < 3) {
+			xbee_perror(1, "read()");
+			goto die1;
+		}
+
+		if (rawLen[2] != '|') {
+			xbee_log(1, "invalid data recieved...");
+			goto next;
+		}
+		len = ((rawLen[0] << 8) & 0xFF00) | (rawLen[1] & 0xFF);
+
+		if ((buf = calloc(1, sizeof(*buf) + len)) == NULL) {
+			xbee_log(1, "ENOMEM - data lost");
+			goto next;
+		}
+
+		buf->len = len;
+
+		len += 1; /* so that we read the closing '}' */
+		do {
+			if ((iret = read(client->fd, buf->buf, len)) == -1) {
+				xbee_perror(1, "read()");
+				goto die1;
+			}
+			len -= iret;
+		} while (len);
+
+		if (buf->buf[buf->len] != '}') {
+			xbee_log(1, "invalid data recieved...");
+			goto next;
+		}
+		buf->buf[buf->len] = '\0';
+
+		printf("Got: [%s]\n", buf->buf);
+
+next:
+		free(buf);
+		continue;
+die1:
+    sleep(1);
+	}
+
+	return ret;
 }
 
 void xbee_netClientRxThread(struct xbee_netClientThreadInfo *info) {
