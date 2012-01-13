@@ -254,6 +254,7 @@ int xbee_conGetCallback(struct xbee *xbee, struct xbee_con *con, void **callback
  *-  'xbee' should be the libxbee instance that you wish to use. If this is NULL, then the most recent instance will be used
  *-  'con' should be the connection that was returned by xbee_conNew()
  *-  'callback' should be the address of the callback function. if this is NULL, then callbacks are disabled for this connection
+ *-  'prevCallbac' is an optional pointer to a void* that allows you to retrieve the current callback function's address before applying the new callback
  */
 int xbee_conAttachCallback(struct xbee *xbee, struct xbee_con *con, void(*callback)(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt **pkt, void **userData), void **prevCallback);
 

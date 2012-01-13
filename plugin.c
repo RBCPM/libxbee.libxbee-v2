@@ -48,7 +48,6 @@ void xbee_pluginThread(struct plugin_threadInfo *info) {
 		free(info);
 	}
 	
-	if (!i.function) return;
 	i.function(i.xbee, i.arg);
 }
 
@@ -80,7 +79,7 @@ EXPORT int xbee_pluginLoad(char *filename, struct xbee *xbee, void *arg) {
 		ret = XBEE_EFAILED;
 		goto die3;
 	}
-	/* reallocate the the correct lenght (and ignore failure) */
+	/* reallocate the the correct length (and ignore failure) */
 	if ((p = realloc(realfilename, sizeof(char) * (strlen(realfilename) + 1))) != NULL) realfilename = p;
 	
 	for (plugin = NULL; (plugin = ll_get_next(&plugin_list, plugin)) != NULL;) {
