@@ -21,12 +21,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
 #include "internal.h"
 #include "net.h"
+#include "net_handlers.h"
 #include "log.h"
 #include "thread.h"
 
@@ -56,7 +58,11 @@ int xbee_netRecv(int fd, unsigned char *buf, int len, int flags) {
 
 	for (i = 0; i < len; i += j) {
 		if ((j = recv(fd, &buf[i], len, flags)) == -1) {
-			ret = -1;
+			if (errno == EBADF) {
+				ret = -2;
+			} else {
+				ret = -1;
+			}
 			goto done;
 		} else if (j == 0) {
 			ret = -2;
@@ -68,6 +74,19 @@ int xbee_netRecv(int fd, unsigned char *buf, int len, int flags) {
 done:
 	return ret;
 }
+
+/* ######################################################################### */
+
+void xbee_netCallback(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt **pkt, void **userData) {
+	if (!userData) {
+		xbee_conAttachCallback(xbee, con, NULL, NULL);
+		return;
+	}
+	
+#warning TODO
+}
+
+/* ######################################################################### */
 
 /* protocol is as follows:
 
@@ -83,6 +102,7 @@ done:
 int xbee_netClientRx(struct xbee *xbee, struct xbee_netClientInfo *client) {
 	int ret;
 	int iret;
+	int pos;
 	unsigned char c;
 	unsigned char rawLen[3];
 	unsigned short len;
@@ -139,7 +159,18 @@ int xbee_netClientRx(struct xbee *xbee, struct xbee_netClientInfo *client) {
 			goto next;
 		}
 
-		printf("Got: [%s]\n", buf->buf);
+		for (pos = 0; netHandlers[pos].handler; pos++ ) {
+			if (netHandlers[pos].id == buf->buf[0]) break;
+		}
+		if (!netHandlers[pos].handler) {
+			xbee_log(1, "Unknown message received / no packet handler (0x%02X)", buf->buf[0]);
+			goto next;
+		}
+		xbee_log(2, "Received %d byte message (0x%02X - '%s') @ %p", buf->len, buf->buf[0], netHandlers[pos].handlerName, buf);
+		
+		if ((iret = netHandlers[pos].handler(xbee, client, buf)) != 0) {
+			xbee_log(2, "netHandler '%s' returned %d for client %s:%hu", netHandlers[pos].handlerName, iret, client->addr, client->port);
+		}
 
 next:
 		free(buf);
