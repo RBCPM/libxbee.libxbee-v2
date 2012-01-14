@@ -111,7 +111,8 @@ struct xbee_pkt {
 	struct ll_head *dataItems;
 	
 	int datalen;
-	unsigned char data[1];
+	unsigned char data[1]; /* this should be '\0', or if there is data present (datalen > 0), then
+	                          the last byte should be '\0' to allow a simple printf("%s"...) call */
 };
 
 /* ######################################################################### */
