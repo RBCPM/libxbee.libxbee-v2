@@ -78,12 +78,54 @@ done:
 /* ######################################################################### */
 
 void xbee_netCallback(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt **pkt, void **userData) {
+	struct xbee_netClientInfo *client;
+	struct bufData *buf;
+	int i;
+	unsigned int dataLen;
+
 	if (!userData) {
 		xbee_conAttachCallback(xbee, con, NULL, NULL);
 		return;
 	}
-	
-#warning TODO
+	client = *userData;
+
+	dataLen = sizeof(struct xbee_pkt) + (*pkt)->datalen;
+	if ((buf = calloc(1, 6 + dataLen)) == NULL) { /* 6 bytes = {00|.} */
+		xbee_log(0, "calloc() failed...");
+		return;
+	}
+	buf->len = dataLen;
+
+	i = 4;
+
+	buf->buf[0] = '{';
+	buf->buf[1] = 0;
+	buf->buf[2] = 0;
+	buf->buf[3] = '|';
+	buf->buf[i] = 0x02; /* type ID (in this case conRx) */
+	i++;
+	memcpy(&buf->buf[i], *pkt, dataLen);
+	i += dataLen;
+	buf->buf[i] = '}';
+
+#warning TODO - add handling of any dataItems...
+
+	if (dataLen & ~0xFFFF) {
+		xbee_log(0, "data too long... (%u bytes)", dataLen);
+		goto die1;
+	}
+
+	buf->buf[1] = (dataLen >> 8) & 0xFF;
+	buf->buf[2] = (dataLen) & 0xFF;
+
+	xsys_mutex_lock(&client->fdTxMutex);
+
+	xbee_netSend(client->fd, buf->buf, buf->len, 0);
+
+	xsys_mutex_unlock(&client->fdTxMutex);
+
+die1:
+	free(buf);
 }
 
 /* ######################################################################### */
@@ -141,6 +183,7 @@ int xbee_netClientRx(struct xbee *xbee, struct xbee_netClientInfo *client) {
 		buf->len = len;
 
 		len += 1; /* so that we read the closing '}' */
+
 		if ((iret = xbee_netRecv(client->fd, buf->buf, len, MSG_WAITALL)) == -1) {
 			xbee_perror(1, "xbee_netRecv()");
 			goto retry;
@@ -202,6 +245,8 @@ void xbee_netClientRxThread(struct xbee_netClientThreadInfo *info) {
 	if (!xbee_validate(xbee)) goto die4;
 	if (!xbee->net) goto die4;
 
+	free(info); info = NULL;
+
 	if ((ret = xbee_netClientRx(xbee, client)) != 0) {
 		xbee_log(5, "xbee_netClientRx() returned %d", ret);
 	}
@@ -225,7 +270,7 @@ die3:
 	ll_destroy(&client->conList, NULL);
 	free(client);
 die2:
-	free(info);
+	if (info) free(info);
 die1:;
 }
 
@@ -264,7 +309,6 @@ static void xbee_netListenThread(struct xbee *xbee) {
 		}
 		port = ntohs(addrinfo.sin_port);
 
-
 		if (xbee_netAuthorizeAddress(xbee, addr)) {
 			xbee_log(0, "*** connection from %s:%hu was blocked ***", addr, port);
 			goto die2;
@@ -285,18 +329,21 @@ static void xbee_netListenThread(struct xbee *xbee) {
 		}
 
 		tinfo->client->fd = confd;
+		if (xsys_mutex_init(&tinfo->client->fdTxMutex)) goto die4;
 		memcpy(tinfo->client->addr, addr, sizeof(addr));
 		tinfo->client->port = port;
 		ll_init(&tinfo->client->conList);
 
 		if (xsys_thread_create(&tinfo->client->rxThread, (void*(*)(void*))xbee_netClientRxThread, (void*)tinfo)) {
 			xbee_log(1, "xsys_thread_create(): failed to start client thread...");
-			goto die4;
+			goto die5;
 		}
 
 		ll_add_tail(&xbee->net->clientList, tinfo->client);
 
 		continue;
+die5:
+		xsys_mutex_destroy(&tinfo->client->fdTxMutex);
 die4:
 		free(tinfo->client);
 die3:
@@ -383,10 +430,36 @@ done:
 	return ret;
 }
 
-void xbee_netClientKill(void *x) { }
+int xbee_netClientKill(struct xbee *xbee, struct xbee_netClientInfo *client) {
+	struct xbee_con *con;
+
+	if (ll_ext_item(&xbee->net->clientList, client)) {
+		xbee_log(1, "tried to remove missing client... %p", client);
+		return XBEE_EINVAL;
+	}
+
+	xsys_thread_cancel(client->rxThread);
+
+	shutdown(client->fd, SHUT_RDWR);
+	close(client->fd);
+
+	xbee_log(2, "connection from %s:%hu killed", client->addr, client->port);
+
+	while ((con = ll_ext_head(&client->conList)) != NULL) {
+		void *p;
+		xbee_conEnd(xbee, con, &p);
+		if (p) free(p);
+	}
+	ll_destroy(&client->conList, NULL);
+	xsys_mutex_destroy(&client->fdTxMutex);
+	free(client);
+
+	return 0;
+}
 
 EXPORT int xbee_netStop(struct xbee *xbee) {
 	struct xbee_netInfo *net;
+	struct xbee_netClientInfo *client;
 
   if (!xbee) {
     if (!xbee_default) return XBEE_ENOXBEE;
@@ -403,7 +476,10 @@ EXPORT int xbee_netStop(struct xbee *xbee) {
 	shutdown(net->fd, SHUT_RDWR);
 	close(net->fd);
 
-	ll_destroy(&net->clientList, xbee_netClientKill);
+	while ((client = ll_ext_head(&net->clientList)) != NULL) {
+		xbee_netClientKill(xbee, client);
+	}
+	ll_destroy(&net->clientList, NULL);
 
 	free(net);
 

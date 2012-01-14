@@ -31,10 +31,6 @@ static int xbee_netH_connTx(struct xbee *xbee, struct xbee_netClientInfo *client
 	return 1;
 }
 
-static int xbee_netH_conRx(struct xbee *xbee, struct xbee_netClientInfo *client, struct bufData *buf) {
-	return 1;
-}
-
 static int xbee_netH_conNew(struct xbee *xbee, struct xbee_netClientInfo *client, struct bufData *buf) {
 	return 1;
 }
@@ -83,7 +79,7 @@ static int xbee_netH_echo(struct xbee *xbee, struct xbee_netClientInfo *client, 
 struct xbee_netHandler netHandlers[] = {
 	/* frequently used functions at the front */
 	ADD_NET_HANDLER(0x01, xbee_netH_connTx),            /* xbee_connTx() */
-	ADD_NET_HANDLER(0x02, xbee_netH_conRx),             /* xbee_conRx() */
+	//ADD_NET_HANDLER(0x02, xbee_netH_conRx),             /* xbee_conRx() */ <-- this is not necessary... data is sent to the client as soon as it arrives!
 	ADD_NET_HANDLER(0x03, xbee_netH_conNew),            /* xbee_conNew() */
 	ADD_NET_HANDLER(0x04, xbee_netH_conEnd),            /* xbee_conEnd() */
 	
