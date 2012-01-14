@@ -48,8 +48,8 @@ int main(int argc, char *argv[]) {
 	}
 	
 	/* allow the server to run for 30 seconds */
-	sleep(3);
-	//sleep(30);
+	//sleep(3);
+	sleep(30);
 	
 	/* stop the server, and close all active connections */
 	//xbee_netStop(xbee);
