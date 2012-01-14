@@ -130,6 +130,7 @@ void xbee_netCallback(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt *
 	buf->len = dataLen;
 
 	memcpy(buf->buf, *pkt, dataLen);
+#warning TODO - currently doesnt transmit the dataItems
 
 	xbee_netClientTx(xbee, *userData, 0x02, buf);
 
@@ -145,7 +146,7 @@ void xbee_netCallback(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt *
 			<id>   is a 1 byte type identifier
 			<data> is raw data
 
-	e.g: (through `echo`)
+	e.g: message with id of 'x' and 6 bytes of data (pass the following through `echo`)
 		{\0000\0006|x123456}
 
 */
