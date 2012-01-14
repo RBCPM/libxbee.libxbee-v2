@@ -27,50 +27,50 @@
 #include "net_handlers.h"
 #include "log.h"
 
-static int xbee_netH_connTx(struct xbee *xbee, struct xbee_netClientInfo *client, struct bufData *buf) {
+static int xbee_netH_connTx(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf) {
 	return 1;
 }
 
-static int xbee_netH_conNew(struct xbee *xbee, struct xbee_netClientInfo *client, struct bufData *buf) {
+static int xbee_netH_conNew(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf) {
 	return 1;
 }
 
-static int xbee_netH_conEnd(struct xbee *xbee, struct xbee_netClientInfo *client, struct bufData *buf) {
+static int xbee_netH_conEnd(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf) {
 	return 1;
 }
 
-static int xbee_netH_conOptions(struct xbee *xbee, struct xbee_netClientInfo *client, struct bufData *buf) {
+static int xbee_netH_conOptions(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf) {
 	return 1;
 }
 
-static int xbee_netH_conSleep(struct xbee *xbee, struct xbee_netClientInfo *client, struct bufData *buf) {
+static int xbee_netH_conSleep(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf) {
 	return 1;
 }
 
-static int xbee_netH_conWake(struct xbee *xbee, struct xbee_netClientInfo *client, struct bufData *buf) {
+static int xbee_netH_conWake(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf) {
 	return 1;
 }
 
-static int xbee_netH_conValidate(struct xbee *xbee, struct xbee_netClientInfo *client, struct bufData *buf) {
+static int xbee_netH_conValidate(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf) {
 	return 1;
 }
 
-static int xbee_netH_conGetTypeList(struct xbee *xbee, struct xbee_netClientInfo *client, struct bufData *buf) {
+static int xbee_netH_conGetTypeList(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf) {
 	return 1;
 }
 
-static int xbee_netH_conTypeIdFromName(struct xbee *xbee, struct xbee_netClientInfo *client, struct bufData *buf) {
+static int xbee_netH_conTypeIdFromName(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf) {
 	return 1;
 }
 
 /* ######################################################################### */
 
-static int xbee_netH_modeGet(struct xbee *xbee, struct xbee_netClientInfo *client, struct bufData *buf) {
+static int xbee_netH_modeGet(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf) {
 	return 1;
 }
 
-static int xbee_netH_echo(struct xbee *xbee, struct xbee_netClientInfo *client, struct bufData *buf) {
-	xbee_netSend(client->fd, buf->buf, buf->len, 0);
+static int xbee_netH_echo(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf) {
+	xbee_netClientTx(xbee, client, 0x00, buf);
 	return 0;
 }
 

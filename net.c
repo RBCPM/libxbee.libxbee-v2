@@ -77,54 +77,62 @@ done:
 
 /* ######################################################################### */
 
+int xbee_netClientTx(struct xbee *xbee, struct xbee_netClient *client, unsigned char id, struct bufData *buf) {
+	int ret;
+	unsigned char ibuf[6];
+
+	ret = 0;
+
+	ibuf[0] = '{';
+	ibuf[1] = (buf->len >> 8) & 0xFF;
+	ibuf[2] = (buf->len) & 0xFF;
+	ibuf[3] = '|';
+	ibuf[4] = id;
+	ibuf[5] = '}';
+
+	xsys_mutex_lock(&client->fdTxMutex);
+
+	if (xbee_netSend(client->fd, ibuf, 5, MSG_WAITALL))             { ret = XBEE_EIO; goto die1; }
+	if (xbee_netSend(client->fd, buf->buf, buf->len, MSG_WAITALL))  { ret = XBEE_EIO; goto die1; }
+	if (xbee_netSend(client->fd, &ibuf[5], 1, MSG_WAITALL))         { ret = XBEE_EIO; goto die1; }
+
+die1:
+	xsys_mutex_unlock(&client->fdTxMutex);
+
+	return ret;
+}
+
+/* ######################################################################### */
+
 void xbee_netCallback(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt **pkt, void **userData) {
-	struct xbee_netClientInfo *client;
+	struct xbee_netClient *client;
 	struct bufData *buf;
-	int i;
 	unsigned int dataLen;
 
 	if (!userData) {
+		xbee_log(1, "missing userData... for con @ %p", con);
 		xbee_conAttachCallback(xbee, con, NULL, NULL);
 		return;
 	}
 	client = *userData;
 
 	dataLen = sizeof(struct xbee_pkt) + (*pkt)->datalen;
-	if ((buf = calloc(1, 6 + dataLen)) == NULL) { /* 6 bytes = {00|.} */
+
+	if (dataLen & ~0xFFFF) {
+		xbee_log(0, "data too long... (%u bytes) for con @ %p", dataLen, con);
+		return;
+	}
+
+	if ((buf = calloc(1, dataLen)) == NULL) {
 		xbee_log(0, "calloc() failed...");
 		return;
 	}
 	buf->len = dataLen;
 
-	i = 4;
+	memcpy(buf->buf, *pkt, dataLen);
 
-	buf->buf[0] = '{';
-	buf->buf[1] = 0;
-	buf->buf[2] = 0;
-	buf->buf[3] = '|';
-	buf->buf[i] = 0x02; /* type ID (in this case conRx) */
-	i++;
-	memcpy(&buf->buf[i], *pkt, dataLen);
-	i += dataLen;
-	buf->buf[i] = '}';
+	xbee_netClientTx(xbee, *userData, 0x02, buf);
 
-#warning TODO - add handling of any dataItems...
-
-	if (dataLen & ~0xFFFF) {
-		xbee_log(0, "data too long... (%u bytes)", dataLen);
-		goto die1;
-	}
-
-	buf->buf[1] = (dataLen >> 8) & 0xFF;
-	buf->buf[2] = (dataLen) & 0xFF;
-
-	xsys_mutex_lock(&client->fdTxMutex);
-
-	xbee_netSend(client->fd, buf->buf, buf->len, 0);
-
-	xsys_mutex_unlock(&client->fdTxMutex);
-
-die1:
 	free(buf);
 }
 
@@ -132,21 +140,22 @@ die1:
 
 /* protocol is as follows:
 
-		{<size>|<data>}
-			<size> is a 2 byte unsigned integer
-			<data> is 1 byte identifier
-			          remaining passed to handler
+		{<size>|<id><data>}
+			<size> is a 2 byte unsigned integer. indicates length of data
+			<id>   is a 1 byte type identifier
+			<data> is raw data
 
 	e.g: (through `echo`)
-		{\0000\0017|abcdefghijklmno}
+		{\0000\0006|x123456}
 
 */
-int xbee_netClientRx(struct xbee *xbee, struct xbee_netClientInfo *client) {
+int xbee_netClientRx(struct xbee *xbee, struct xbee_netClient *client) {
 	int ret;
 	int iret;
 	int pos;
 	unsigned char c;
-	unsigned char rawLen[3];
+	unsigned char ibuf[4];
+	unsigned char id;
 	unsigned short len;
 	struct bufData *buf;
 
@@ -162,27 +171,28 @@ int xbee_netClientRx(struct xbee *xbee, struct xbee_netClientInfo *client) {
 
 		if (c != '{') continue;
 
-		if ((iret = xbee_netRecv(client->fd, rawLen, 3, MSG_WAITALL)) == -1) {
+		if ((iret = xbee_netRecv(client->fd, ibuf, 4, MSG_WAITALL)) == -1) {
 			xbee_perror(1, "xbee_netRecv()");
 			goto retry;
 		} else if (iret == -2) {
 			break;
 		}
 
-		if (rawLen[2] != '|') {
+		if (ibuf[2] != '|') {
 			xbee_log(1, "invalid data recieved...");
 			goto next;
 		}
-		len = ((rawLen[0] << 8) & 0xFF00) | (rawLen[1] & 0xFF);
+		len = ((ibuf[0] << 8) & 0xFF00) | (ibuf[1] & 0xFF);
+		id = ibuf[3];
 
 		if ((buf = calloc(1, sizeof(*buf) + len)) == NULL) {
 			xbee_log(1, "ENOMEM - data lost");
 			goto next;
 		}
-
 		buf->len = len;
 
-		len += 1; /* so that we read the closing '}' */
+		len += 1; /* +1 so that we read the closing '}'
+		             this will later be overwritten with a '\0', and is included in the sizeof(struct bufData) */
 
 		if ((iret = xbee_netRecv(client->fd, buf->buf, len, MSG_WAITALL)) == -1) {
 			xbee_perror(1, "xbee_netRecv()");
@@ -211,7 +221,7 @@ int xbee_netClientRx(struct xbee *xbee, struct xbee_netClientInfo *client) {
 		}
 		xbee_log(2, "Received %d byte message (0x%02X - '%s') @ %p", buf->len, buf->buf[0], netHandlers[pos].handlerName, buf);
 		
-		if ((iret = netHandlers[pos].handler(xbee, client, buf)) != 0) {
+		if ((iret = netHandlers[pos].handler(xbee, client, id, buf)) != 0) {
 			xbee_log(2, "netHandler '%s' returned %d for client %s:%hu", netHandlers[pos].handlerName, iret, client->addr, client->port);
 		}
 
@@ -228,7 +238,7 @@ retry:
 void xbee_netClientRxThread(struct xbee_netClientThreadInfo *info) {
 	struct xbee *xbee;
 	struct xbee_con *con;
-	struct xbee_netClientInfo *client;
+	struct xbee_netClient *client;
 	int ret;
 
 	xsys_thread_detach_self();
@@ -430,7 +440,7 @@ done:
 	return ret;
 }
 
-int xbee_netClientKill(struct xbee *xbee, struct xbee_netClientInfo *client) {
+int xbee_netClientKill(struct xbee *xbee, struct xbee_netClient *client) {
 	struct xbee_con *con;
 
 	if (ll_ext_item(&xbee->net->clientList, client)) {
@@ -459,7 +469,7 @@ int xbee_netClientKill(struct xbee *xbee, struct xbee_netClientInfo *client) {
 
 EXPORT int xbee_netStop(struct xbee *xbee) {
 	struct xbee_netInfo *net;
-	struct xbee_netClientInfo *client;
+	struct xbee_netClient *client;
 
   if (!xbee) {
     if (!xbee_default) return XBEE_ENOXBEE;

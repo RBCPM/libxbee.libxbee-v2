@@ -29,7 +29,7 @@
 struct xbee_netHandler {
 	unsigned char id;
 	char *handlerName;
-	int (*handler)(struct xbee *xbee, struct xbee_netClientInfo *client, struct bufData *buf);
+	int (*handler)(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf);
 };
 
 extern struct xbee_netHandler netHandlers[];

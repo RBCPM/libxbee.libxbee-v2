@@ -27,10 +27,10 @@
 
 struct xbee_netClientThreadInfo {
 	struct xbee *xbee;
-	struct xbee_netClientInfo *client;
+	struct xbee_netClient *client;
 };
 
-struct xbee_netClientInfo {
+struct xbee_netClient {
 	int fd;
 	xsys_mutex fdTxMutex;
 
@@ -41,8 +41,7 @@ struct xbee_netClientInfo {
 	xsys_thread rxThread;
 };
 
-int xbee_netSend(int fd, unsigned char *buf, int len, int flags);
-int xbee_netRecv(int fd, unsigned char *buf, int len, int flags);
+int xbee_netClientTx(struct xbee *xbee, struct xbee_netClient *client, unsigned char id, struct bufData *buf);
 
 void xbee_netClientRxThread(struct xbee_netClientThreadInfo *info);
 
