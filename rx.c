@@ -102,7 +102,7 @@ int _xbee_rxCallbackThread(struct xbee_callbackInfo *info) {
 				xbee_pktFree(pkt);
 			}
 		} else {
-			printf("null pkt returned!\n");
+			xbee_log(20, "null pkt returned by callback for con %p!\n", con);
 		}
 	}
 	

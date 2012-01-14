@@ -167,7 +167,7 @@ int xbee_s1_DataRx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx
 	(*pkt)->options = (*buf)->buf[addrLen + 2];
 	
 	(*pkt)->datalen = (*buf)->len - (addrLen + 3);
-	if ((*pkt)->datalen > 1) {
+	if ((*pkt)->datalen > 0) {
 		void *p;
 		if ((p = realloc((*pkt), sizeof(struct xbee_pkt) + (sizeof(unsigned char) * (*pkt)->datalen))) == NULL) {
 			ret = XBEE_ENOMEM;

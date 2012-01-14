@@ -92,7 +92,7 @@ int xbee_s2_dataRx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx
 	(*pkt)->options = (*buf)->buf[11];
 
 	(*pkt)->datalen = (*buf)->len - (12);
-	if ((*pkt)->datalen > 1) {
+	if ((*pkt)->datalen > 0) {
 		void *p;
 		if ((p = realloc((*pkt), sizeof(struct xbee_pkt) + (sizeof(unsigned char) * (*pkt)->datalen))) == NULL) {
 			ret = XBEE_ENOMEM;
@@ -207,7 +207,7 @@ int xbee_s2_explicitRx(struct xbee *xbee, struct xbee_pktHandler *handler, char 
 	(*pkt)->options = (*buf)->buf[17];
 
 	(*pkt)->datalen = (*buf)->len - (18);
-	if ((*pkt)->datalen > 1) {
+	if ((*pkt)->datalen > 0) {
 		void *p;
 		if ((p = realloc((*pkt), sizeof(struct xbee_pkt) + (sizeof(unsigned char) * (*pkt)->datalen))) == NULL) {
 			ret = XBEE_ENOMEM;
