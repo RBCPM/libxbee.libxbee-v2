@@ -25,6 +25,7 @@
 #include "internal.h"
 #include "mode.h"
 #include "thread.h"
+#include "plugin.h"
 #include "io.h"
 #include "ll.h"
 #include "log.h"
@@ -36,15 +37,19 @@ static struct ll_head xbee_list;
 static struct ll_head xbee_listShutdown;
 static int xbee_initialized = 0;
 
-int xbee_validate(struct xbee *xbee) {
-	return _xbee_validate(xbee, 0);
-}
-int _xbee_validate(struct xbee *xbee, int acceptShutdown) {
+static xbee_init(void) {
 	if (!xbee_initialized) {
 		ll_init(&xbee_list);
 		ll_init(&xbee_listShutdown);
 		xbee_initialized = 1;
 	}
+}
+
+int xbee_validate(struct xbee *xbee) {
+	return _xbee_validate(xbee, 0);
+}
+int _xbee_validate(struct xbee *xbee, int acceptShutdown) {
+	if (!xbee_initialized) xbee_init();
 	
 	if (ll_get_item(&xbee_list, xbee)) return 1;
 	if (acceptShutdown && ll_get_item(&xbee_listShutdown, xbee)) return 2;
@@ -56,10 +61,7 @@ EXPORT int xbee_setup(char *path, int baudrate, struct xbee **retXbee) {
 	int i;
 	int ret = XBEE_ENONE;
 	
-	if (!xbee_initialized) {
-		ll_init(&xbee_list);
-		xbee_initialized = 1;
-	}
+	if (!xbee_initialized) xbee_init();
 	
 	if ((xbee = calloc(1, sizeof(struct xbee))) == NULL) {
 		ret = XBEE_ENOMEM;
@@ -97,6 +99,11 @@ EXPORT int xbee_setup(char *path, int baudrate, struct xbee **retXbee) {
 	if (xsys_sem_init(&xbee->semMonitor)) {
 		ret = XBEE_ESEMAPHORE;
 		goto die6;
+	}
+	
+	if (ll_init(&xbee->pluginList)) {
+		ret = XBEE_ELINKEDLIST;
+		goto die6_5;
 	}
 	
 	if (ll_init(&xbee->threadList)) {
@@ -156,6 +163,8 @@ die9:
 die8:
 	ll_destroy(&xbee->threadList, xbee_threadKillMonitored);
 die7:
+	ll_destroy(&xbee->pluginList, NULL);
+die6_5:
 	xsys_sem_destroy(&xbee->semMonitor);
 die6:
 	xsys_mutex_destroy(&xbee->frameIdMutex);
@@ -177,6 +186,7 @@ done:
 
 EXPORT void xbee_shutdown(struct xbee *xbee) {
 	int i;
+	struct plugin_info *plugin;
 	
 	if (!xbee) {
 		if (!xbee_default) return;
@@ -194,7 +204,18 @@ EXPORT void xbee_shutdown(struct xbee *xbee) {
 	
 	/* shutdown the net interface */
 	if (xbee->net) xbee_netStop(xbee);
-
+	
+	/* cleanup plugins */
+	for (plugin = NULL; (plugin = ll_get_next(&xbee->pluginList, plugin)) != NULL;) {
+		if (plugin->xbee != xbee) {
+			xbee_log(-1, "Misplaced plugin...");
+			continue;
+		}
+		if (_xbee_pluginUnload(plugin, 1)) {
+			xbee_log(-1, "Error while unloading plugin... application may be unstable");
+		}
+	}
+	
 	/* cleanup txThread */
 	xbee_log(5,"- Terminating txThread...");
 	xbee_threadStopMonitored(xbee, &xbee->txThread, NULL, NULL);

@@ -69,6 +69,8 @@ struct xbee {
 	void *rxBuf;
 	int rxRunning;
 	
+	struct ll_head pluginList;
+	
 	struct xbee_netInfo *net;
 };
 
@@ -200,8 +202,9 @@ struct xbee_mode {
 
 /* this struct is for use with plugins... (see samples/plugin) */
 struct plugin_features {
-	int (*init)(struct xbee *xbee, void *arg);
-	void (*thread)(struct xbee *xbee, void *arg);
+	int (*init)(struct xbee *xbee, void *arg, void **pluginData);
+	void (*thread)(struct xbee *xbee, void *arg, void **pluginData);
+	int (*remove)(struct xbee *xbee, void *arg, void **pluginData);
 	int threadMode;
 	struct xbee_mode **xbee_modes;
 };
