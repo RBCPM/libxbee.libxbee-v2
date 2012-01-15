@@ -208,7 +208,7 @@ EXPORT void xbee_shutdown(struct xbee *xbee) {
 			xbee_log(-1, "Misplaced plugin...");
 			continue;
 		}
-		if (_xbee_pluginUnload(plugin)) {
+		if (_xbee_pluginUnload(plugin, 1)) {
 			xbee_log(-1, "Error while unloading plugin... application may be unstable");
 		}
 	}

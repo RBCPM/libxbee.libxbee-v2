@@ -34,7 +34,7 @@ struct plugin_info {
 	struct plugin_features *features;
 };
 
-int _xbee_pluginUnload(struct plugin_info *plugin);
+int _xbee_pluginUnload(struct plugin_info *plugin, int acceptShutdown);
 struct xbee_mode *xbee_pluginModeGet(char *name);
 
 #endif /* __XBEE_PLUGIN_H */

@@ -185,7 +185,7 @@ done:
 	return ret;
 }
 
-int _xbee_pluginUnload(struct plugin_info *plugin) {
+int _xbee_pluginUnload(struct plugin_info *plugin, int acceptShutdown) {
 	struct xbee *xbee;
 	int ret;
 	
@@ -194,8 +194,8 @@ int _xbee_pluginUnload(struct plugin_info *plugin) {
 	
 	if (plugin->features->thread) {
 		if (plugin->features->threadMode == PLUGIN_THREAD_RESPAWN) {
-			if (plugin->xbee && !xbee_validate(plugin->xbee)) {
-				xbee_log(-1, "Cannot remove plugin with respawning thread... xbee instance missing!");
+			if (plugin->xbee && !_xbee_validate(plugin->xbee, acceptShutdown)) {
+				xbee_log(-1, "Cannot remove plugin with respawning thread... xbee instance missing! %p", xbee);
 				ret = XBEE_EINVAL;
 				goto die1;
 			}
@@ -241,7 +241,7 @@ EXPORT int xbee_pluginUnload(char *filename, struct xbee *xbee) {
 		if (plugin->xbee == xbee && !strcmp(realfilename, plugin->filename)) break;
 	}
 	
-	if (plugin) ret = _xbee_pluginUnload(plugin);
+	if (plugin) ret = _xbee_pluginUnload(plugin, 0);
 	
 die2:
 	free(realfilename);
