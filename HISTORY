@@ -8,6 +8,7 @@ v2.0.5 - in progress
 		+ Added parsing of I/O data to Series 1 AT packets
 		+ Added 'make install_dbg' to install debugging symbols too
 		+ Removed 'mapping' functions from xsys_linux.c, and added mapping macros instead (saved ~1.5k)
+		+ Implemented xbee_pluginUnload() and added pluginData storage for plugins
 
 v2.0.4 - ada265100533 - 31 Dec 2011
 	Modifications / Additions:

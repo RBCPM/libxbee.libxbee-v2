@@ -25,6 +25,7 @@
 #include "internal.h"
 #include "mode.h"
 #include "thread.h"
+#include "plugin.h"
 #include "io.h"
 #include "ll.h"
 #include "log.h"
@@ -99,6 +100,11 @@ EXPORT int xbee_setup(char *path, int baudrate, struct xbee **retXbee) {
 		goto die6;
 	}
 	
+	if (ll_init(&xbee->pluginList)) {
+		ret = XBEE_ELINKEDLIST;
+		goto die6_5;
+	}
+	
 	if (ll_init(&xbee->threadList)) {
 		ret = XBEE_ELINKEDLIST;
 		goto die7;
@@ -156,6 +162,8 @@ die9:
 die8:
 	ll_destroy(&xbee->threadList, xbee_threadKillMonitored);
 die7:
+	ll_destroy(&xbee->pluginList, NULL);
+die6_5:
 	xsys_sem_destroy(&xbee->semMonitor);
 die6:
 	xsys_mutex_destroy(&xbee->frameIdMutex);
@@ -177,6 +185,7 @@ done:
 
 EXPORT void xbee_shutdown(struct xbee *xbee) {
 	int i;
+	struct plugin_info *plugin;
 	
 	if (!xbee) {
 		if (!xbee_default) return;
@@ -191,6 +200,17 @@ EXPORT void xbee_shutdown(struct xbee *xbee) {
 	ll_add_tail(&xbee_listShutdown, xbee);
 	ll_ext_item(&xbee_list, xbee);
 	xbee_default = ll_get_tail(&xbee_list);
+	
+	/* cleanup plugins */
+	for (plugin = NULL; (plugin = ll_get_next(&xbee->pluginList, plugin)) != NULL;) {
+		if (plugin->xbee != xbee) {
+			xbee_log(-1, "Misplaced plugin...");
+			continue;
+		}
+		if (_xbee_pluginUnload(plugin)) {
+			xbee_log(-1, "Error while unloading plugin... application may be unstable");
+		}
+	}
 	
 	/* cleanup txThread */
 	xbee_log(5,"- Terminating txThread...");

@@ -302,6 +302,12 @@ int xbee_conWake(struct xbee *xbee, struct xbee_con *con);
  */
 int xbee_pluginLoad(char *filename, struct xbee *xbee, void *arg);
 
+/* this function allows you to unload a previously loaded plugin
+ *-  'filename' must resolve to the same file matched by the call to xbee_pluginLoad()
+ *-  'xbee' may be NULL or a valid xbee instance. This must match the call to xbee_pluginLoad()
+ */
+int xbee_pluginUnload(char *filename, struct xbee *xbee);
+
 /* ######################################################################### */
 /* ######################################################################### */
 /* ######################################################################### */

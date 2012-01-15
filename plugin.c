@@ -34,21 +34,20 @@ int plugins_initialized = 0;
 
 struct plugin_threadInfo {
 	struct xbee *xbee;
-	void *arg;
-	void (*function)(struct xbee *xbee, void *arg);
-	int mode;
+	struct plugin_info *plugin;
 };
 
 void xbee_pluginThread(struct plugin_threadInfo *info) {
 	struct plugin_threadInfo i;
 	
 	memcpy(&i, info, sizeof(struct plugin_threadInfo));
-	if (i.mode != PLUGIN_THREAD_RESPAWN) {
+	if (i.plugin->features->threadMode != PLUGIN_THREAD_RESPAWN) {
 		xsys_thread_detach_self();
 		free(info);
 	}
 	
-	i.function(i.xbee, i.arg);
+	
+	i.plugin->features->thread(i.plugin->xbee, i.plugin->arg, &i.plugin->pluginData);
 }
 
 EXPORT int xbee_pluginLoad(char *filename, struct xbee *xbee, void *arg) {
@@ -98,6 +97,7 @@ EXPORT int xbee_pluginLoad(char *filename, struct xbee *xbee, void *arg) {
 	}
 	
 	plugin->xbee = xbee;
+	plugin->arg = arg;
 	plugin->filename = realfilename;
 	
 	if (xbee) {
@@ -123,21 +123,25 @@ EXPORT int xbee_pluginLoad(char *filename, struct xbee *xbee, void *arg) {
 	}
 	
 	if (plugin->features->thread) {
+		if (plugin->features->threadMode == PLUGIN_THREAD_RESPAWN && !xbee) {
+			xbee_log(2, "Cannot load plugin with respawning thread without an xbee instance!");
+			ret = XBEE_EINVAL;
+			goto die4;
+		}
 		if ((threadInfo = calloc(1, sizeof(struct plugin_threadInfo))) == NULL) {
 			ret = XBEE_ENOMEM;
 			goto die4;
 		}
-		threadInfo->function = plugin->features->thread;
 		threadInfo->xbee = xbee;
-		threadInfo->arg = arg;
-		threadInfo->mode = plugin->features->threadMode;
+		threadInfo->plugin = plugin;
 	}
 	
 	ll_add_tail(&plugin_list, plugin);
+	if (xbee) ll_add_tail(&xbee->pluginList, plugin);
 	
 	if (plugin->features->init) {
 		int ret;
-		if ((ret = plugin->features->init(xbee, arg)) != 0) {
+		if ((ret = plugin->features->init(xbee, plugin->arg, &plugin->pluginData)) != 0) {
 			xbee_log(2, "Plugin's init() returned non-zero! (%d)...", ret);
 			ret = XBEE_EUNKNOWN;
 			goto die5;
@@ -168,6 +172,7 @@ EXPORT int xbee_pluginLoad(char *filename, struct xbee *xbee, void *arg) {
 	
 	goto done;
 die5:
+	if (xbee) ll_ext_item(&xbee->pluginList, plugin);
 	ll_ext_item(&plugin_list, plugin);
 die4:
 	dlclose(plugin->dlHandle);
@@ -177,6 +182,70 @@ die2:
 	free(realfilename);
 die1:
 done:
+	return ret;
+}
+
+int _xbee_pluginUnload(struct plugin_info *plugin) {
+	struct xbee *xbee;
+	int ret;
+	
+	ret = 0;
+	xbee = plugin->xbee;
+	
+	if (plugin->features->thread) {
+		if (plugin->features->threadMode == PLUGIN_THREAD_RESPAWN) {
+			if (plugin->xbee && !xbee_validate(plugin->xbee)) {
+				xbee_log(-1, "Cannot remove plugin with respawning thread... xbee instance missing!");
+				ret = XBEE_EINVAL;
+				goto die1;
+			}
+			xbee_threadStopMonitored(plugin->xbee, &plugin->thread, NULL, NULL);
+		} else {
+			xsys_thread_cancel(&plugin->thread);
+		}
+	}
+
+	if (plugin->xbee) ll_ext_item(&plugin->xbee->pluginList, plugin);
+	
+	ll_ext_item(&plugin_list, plugin);
+	
+	if (plugin->features->remove) plugin->features->remove(plugin->xbee, plugin->arg, &plugin->pluginData);
+	
+	dlclose(plugin->dlHandle);
+	
+	free(plugin);
+	
+die1:
+	return ret;
+}
+EXPORT int xbee_pluginUnload(char *filename, struct xbee *xbee) {
+	int ret;
+	char *realfilename;
+	struct plugin_info *plugin;
+	void *p;
+	
+	ret = 0;
+	
+	if ((realfilename = calloc(1, PATH_MAX + 1)) == NULL) {
+		ret = XBEE_ENOMEM;
+		goto die1;
+	}
+	if (realpath(filename, realfilename) == NULL) {
+		ret = XBEE_EFAILED;
+		goto die2;
+	}
+	/* reallocate the the correct length (and ignore failure) */
+	if ((p = realloc(realfilename, sizeof(char) * (strlen(realfilename) + 1))) != NULL) realfilename = p;
+	
+	for (plugin = NULL; (plugin = ll_get_next(&plugin_list, plugin)) != NULL;) {
+		if (plugin->xbee == xbee && !strcmp(realfilename, plugin->filename)) break;
+	}
+	
+	if (plugin) ret = _xbee_pluginUnload(plugin);
+	
+die2:
+	free(realfilename);
+die1:
 	return ret;
 }
 

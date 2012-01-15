@@ -24,11 +24,17 @@
 struct plugin_info {
 	char *filename;
 	void *dlHandle;
+	
 	struct xbee *xbee;
+	void *arg;
+	
 	xsys_thread thread;
+	
+	void *pluginData;
 	struct plugin_features *features;
 };
 
+int _xbee_pluginUnload(struct plugin_info *plugin);
 struct xbee_mode *xbee_pluginModeGet(char *name);
 
 #endif /* __XBEE_PLUGIN_H */
