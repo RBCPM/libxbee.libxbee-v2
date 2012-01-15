@@ -21,6 +21,18 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define PLUGIN_THREAD_RUNONCE 0
+#define PLUGIN_THREAD_RESPAWN 1
+
+/* this struct is for use with plugins... (see samples/plugin) */
+struct plugin_features {
+	int (*init)(struct xbee *xbee, void *arg, void **pluginData);
+	void (*thread)(struct xbee *xbee, void *arg, void **pluginData);
+	int (*remove)(struct xbee *xbee, void *arg, void **pluginData);
+	int threadMode;
+	struct xbee_mode **xbee_modes;
+};
+
 struct plugin_info {
 	char *filename;
 	void *dlHandle;
