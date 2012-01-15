@@ -189,18 +189,6 @@ struct xbee_mode {
 	int conTypeCount;
 };
 
-#define PLUGIN_THREAD_RUNONCE 0
-#define PLUGIN_THREAD_RESPAWN 1
-
-/* this struct is for use with plugins... (see samples/plugin) */
-struct plugin_features {
-	int (*init)(struct xbee *xbee, void *arg, void **pluginData);
-	void (*thread)(struct xbee *xbee, void *arg, void **pluginData);
-	int (*remove)(struct xbee *xbee, void *arg, void **pluginData);
-	int threadMode;
-	struct xbee_mode **xbee_modes;
-};
-
 /* xbee.c */
 int _xbee_validate(struct xbee *xbee, int acceptShutdown);
 
