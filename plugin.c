@@ -76,7 +76,7 @@ EXPORT int xbee_pluginLoad(char *filename, struct xbee *xbee, void *arg) {
 	}
 	if (realpath(filename, realfilename) == NULL) {
 		ret = XBEE_EFAILED;
-		goto die3;
+		goto die2;
 	}
 	/* reallocate the the correct length (and ignore failure) */
 	if ((p = realloc(realfilename, sizeof(char) * (strlen(realfilename) + 1))) != NULL) realfilename = p;
