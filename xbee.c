@@ -37,15 +37,19 @@ static struct ll_head xbee_list;
 static struct ll_head xbee_listShutdown;
 static int xbee_initialized = 0;
 
-int xbee_validate(struct xbee *xbee) {
-	return _xbee_validate(xbee, 0);
-}
-int _xbee_validate(struct xbee *xbee, int acceptShutdown) {
+static xbee_init(void) {
 	if (!xbee_initialized) {
 		ll_init(&xbee_list);
 		ll_init(&xbee_listShutdown);
 		xbee_initialized = 1;
 	}
+}
+
+int xbee_validate(struct xbee *xbee) {
+	return _xbee_validate(xbee, 0);
+}
+int _xbee_validate(struct xbee *xbee, int acceptShutdown) {
+	if (!xbee_initialized) xbee_init();
 	
 	if (ll_get_item(&xbee_list, xbee)) return 1;
 	if (acceptShutdown && ll_get_item(&xbee_listShutdown, xbee)) return 2;
@@ -57,10 +61,7 @@ EXPORT int xbee_setup(char *path, int baudrate, struct xbee **retXbee) {
 	int i;
 	int ret = XBEE_ENONE;
 	
-	if (!xbee_initialized) {
-		ll_init(&xbee_list);
-		xbee_initialized = 1;
-	}
+	if (!xbee_initialized) xbee_init();
 	
 	if ((xbee = calloc(1, sizeof(struct xbee))) == NULL) {
 		ret = XBEE_ENOMEM;
