@@ -202,17 +202,6 @@ EXPORT void xbee_shutdown(struct xbee *xbee) {
 	ll_ext_item(&xbee_list, xbee);
 	xbee_default = ll_get_tail(&xbee_list);
 	
-	/* cleanup plugins */
-	for (plugin = NULL; (plugin = ll_get_next(&xbee->pluginList, plugin)) != NULL;) {
-		if (plugin->xbee != xbee) {
-			xbee_log(-1, "Misplaced plugin...");
-			continue;
-		}
-		if (_xbee_pluginUnload(plugin, 1)) {
-			xbee_log(-1, "Error while unloading plugin... application may be unstable");
-		}
-	}
-	
 	/* cleanup txThread */
 	xbee_log(5,"- Terminating txThread...");
 	xbee_threadStopMonitored(xbee, &xbee->txThread, NULL, NULL);
@@ -230,6 +219,18 @@ EXPORT void xbee_shutdown(struct xbee *xbee) {
 	xsys_thread_cancel(xbee->threadMonitor);
 	ll_destroy(&xbee->threadList, xbee_threadKillMonitored);
 	xsys_sem_destroy(&xbee->semMonitor);
+	
+	/* cleanup plugins */
+	xbee_log(5,"- Cleanup plugins...");
+	for (plugin = NULL; (plugin = ll_get_next(&xbee->pluginList, plugin)) != NULL;) {
+		if (plugin->xbee != xbee) {
+			xbee_log(-1, "Misplaced plugin...");
+			continue;
+		}
+		if (_xbee_pluginUnload(plugin, 1)) {
+			xbee_log(-1, "Error while unloading plugin... application may be unstable");
+		}
+	}
 	
 	/* cleanup the frameID ACK system */
 	xbee_log(5,"- Destroying frameID control...");

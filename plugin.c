@@ -46,7 +46,6 @@ void xbee_pluginThread(struct plugin_threadInfo *info) {
 		free(info);
 	}
 	
-	
 	i.plugin->features->thread(i.plugin->xbee, i.plugin->arg, &i.plugin->pluginData);
 }
 
@@ -168,7 +167,6 @@ EXPORT int xbee_pluginLoad(char *filename, struct xbee *xbee, void *arg) {
 				}
 		}
 	}
-	
 	
 	goto done;
 die5:
