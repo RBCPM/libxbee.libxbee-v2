@@ -104,41 +104,6 @@ die1:
 
 /* ######################################################################### */
 
-void xbee_netCallback(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt **pkt, void **userData) {
-	struct xbee_netClient *client;
-	struct bufData *buf;
-	unsigned int dataLen;
-
-	if (!userData) {
-		xbee_log(1, "missing userData... for con @ %p", con);
-		xbee_conAttachCallback(xbee, con, NULL, NULL);
-		return;
-	}
-	client = *userData;
-
-	dataLen = sizeof(struct xbee_pkt) + (*pkt)->datalen;
-
-	if (dataLen & ~0xFFFF) {
-		xbee_log(0, "data too long... (%u bytes) for con @ %p", dataLen, con);
-		return;
-	}
-
-	if ((buf = calloc(1, dataLen)) == NULL) {
-		xbee_log(0, "calloc() failed...");
-		return;
-	}
-	buf->len = dataLen;
-
-	memcpy(buf->buf, *pkt, dataLen);
-#warning TODO - currently doesnt transmit the dataItems
-
-	xbee_netClientTx(xbee, *userData, 0x02, buf);
-
-	free(buf);
-}
-
-/* ######################################################################### */
-
 /* protocol is as follows:
 
 		{<size>|<id><data>}
