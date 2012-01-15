@@ -23,20 +23,25 @@
 
 #include "../../internal.h"
 
-int myInit(struct xbee *xbee, void *arg) {
+int myInit(struct xbee *xbee, void *arg, void **pluginData) {
 	int ret;
 	printf("Hello!! from myInit() xbee=%p\n", xbee);
 	ret = xbee_modeSet(xbee,"myplugin");
 	printf("xbee_modeSet() returned %d\n", ret);
+	*pluginData = (void*)15;
 	return 0;
 }
 
-void myThread(struct xbee *xbee, void *arg) {
+void myThread(struct xbee *xbee, void *arg, void **pluginData) {
 	int i = 5;
 	for (; i; i--) {
-		printf("Hello!! from myThread() xbee=%p i=%d\n", xbee, i);
+		printf("Hello!! from myThread() xbee=%p i=%d pluginData=%d\n", xbee, i, (int)*pluginData);
 		sleep(1);
 	}
+}
+
+int myRemove(struct xbee *xbee, void *arg, void **pluginData) {
+	printf("Bye bye from myRemove()!\n");
 }
 
 /* ######################################################################### *\
@@ -171,6 +176,7 @@ struct xbee_mode *my_libxbee_mode[] = {
 struct plugin_features libxbee_features = {
 	.init = myInit,
 	.thread = myThread,
+	.remove = myRemove,
 	.threadMode = PLUGIN_THREAD_RESPAWN,
 	.xbee_modes = my_libxbee_mode
 };
