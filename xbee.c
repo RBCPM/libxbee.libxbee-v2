@@ -37,7 +37,7 @@ static struct ll_head xbee_list;
 static struct ll_head xbee_listShutdown;
 static int xbee_initialized = 0;
 
-static xbee_init(void) {
+static void xbee_init(void) {
 	if (!xbee_initialized) {
 		ll_init(&xbee_list);
 		ll_init(&xbee_listShutdown);
