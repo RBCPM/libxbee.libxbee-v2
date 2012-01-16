@@ -231,7 +231,7 @@ static int xbee_netH_conGetTypeList(struct xbee *xbee, struct xbee_netClient *cl
 
 	if ((ret = _xbee_conGetTypeList(xbee, &list, &len)) != 0) return ret;
 
-	len -= (int)list[0] - (int)list;
+	len -= (void*)list[0] - (void*)list;
 	if (len < 0) {
 		free(list);
 		return XBEE_EUNKNOWN;
