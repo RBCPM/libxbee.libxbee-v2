@@ -120,7 +120,7 @@ int xbee_netGetCon(struct xbee *xbee, struct xbee_netClient *client, unsigned sh
 	int ret;
 	struct xbee_con *con;
 
-	if (!xbee || !client || !rCon) return XBEE_EMISSINGPARAM;
+	if (!xbee || !client) return XBEE_EMISSINGPARAM;
 	if (!xbee->net) return XBEE_EINVAL;
 
 	ret = 0;
@@ -128,9 +128,9 @@ int xbee_netGetCon(struct xbee *xbee, struct xbee_netClient *client, unsigned sh
 	for (con = NULL; (con = ll_get_next(&client->conList, con)) != NULL;) {
 		if (((struct xbee_netConData *)con->userData)->key == key) break;
 	}
-	if (!con) return XBEE_EUNKNOWN;
+	if (!con) return 1;
 
-	*rCon = con;
+	if (rCon) *rCon = con;
 
 	return ret;
 }

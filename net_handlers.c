@@ -88,7 +88,18 @@ static int xbee_netH_conWake(struct xbee *xbee, struct xbee_netClient *client, u
 }
 
 static int xbee_netH_conValidate(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf, struct bufData **rBuf) {
-	return 1;
+	int key;
+	
+	if (buf->len != 4) return XBEE_EUNKNOWN;
+	
+	key  = (buf->buf[0] << 24) & 0xFF000000;
+	key |= (buf->buf[1] << 16) & 0x00FF0000;
+	key |= (buf->buf[2] << 8 ) & 0x0000FF00;
+	key |= (buf->buf[3]      ) & 0x000000FF;
+	
+	xbee_log(5, "searching for connection 0x%08X...", key);
+	
+	return xbee_netGetCon(xbee, client, key, NULL);
 }
 
 static int xbee_netH_conGetTypeList(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf, struct bufData **rBuf) {
