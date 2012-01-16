@@ -41,7 +41,7 @@ struct xbee_netClient {
 	xsys_thread rxThread;
 };
 
-int xbee_netClientTx(struct xbee *xbee, struct xbee_netClient *client, unsigned char id, struct bufData *buf);
+int xbee_netClientTx(struct xbee *xbee, struct xbee_netClient *client, unsigned char id, unsigned char returnValue, struct bufData *buf);
 
 void xbee_netClientRxThread(struct xbee_netClientThreadInfo *info);
 

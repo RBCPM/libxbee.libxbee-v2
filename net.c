@@ -77,9 +77,9 @@ done:
 
 /* ######################################################################### */
 
-int xbee_netClientTx(struct xbee *xbee, struct xbee_netClient *client, unsigned char id, struct bufData *buf) {
+int xbee_netClientTx(struct xbee *xbee, struct xbee_netClient *client, unsigned char id, unsigned char returnValue, struct bufData *buf) {
 	int ret;
-	unsigned char ibuf[6];
+	unsigned char ibuf[7];
 
 	ret = 0;
 
@@ -99,13 +99,14 @@ int xbee_netClientTx(struct xbee *xbee, struct xbee_netClient *client, unsigned 
 	}
 	ibuf[3] = '|';
 	ibuf[4] = id;
-	ibuf[5] = '}';
+	ibuf[5] = returnValue;
+	ibuf[6] = '}';
 
 	xsys_mutex_lock(&client->fdTxMutex);
 
-	         if (xbee_netSend(client->fd, ibuf, 5, MSG_WAITALL))             { ret = XBEE_EIO; goto die1; }
-	if (buf) if (xbee_netSend(client->fd, buf->buf, buf->len, MSG_WAITALL))  { ret = XBEE_EIO; goto die1; }
-	         if (xbee_netSend(client->fd, &ibuf[5], 1, MSG_WAITALL))         { ret = XBEE_EIO; goto die1; }
+	         if (xbee_netSend(client->fd, ibuf, 6, MSG_WAITALL) != 6)                    { ret = XBEE_EIO; goto die1; }
+	if (buf) if (xbee_netSend(client->fd, buf->buf, buf->len, MSG_WAITALL) != buf->len)  { ret = XBEE_EIO; goto die1; }
+	         if (xbee_netSend(client->fd, &ibuf[6], 1, MSG_WAITALL) != 1)                { ret = XBEE_EIO; goto die1; }
 
 die1:
 	xsys_mutex_unlock(&client->fdTxMutex);
@@ -135,7 +136,7 @@ int xbee_netClientRx(struct xbee *xbee, struct xbee_netClient *client) {
 	unsigned char ibuf[4];
 	unsigned char id;
 	unsigned short len;
-	struct bufData *buf;
+	struct bufData *buf, *rBuf;
 
 	ret = 0;
 
@@ -199,9 +200,16 @@ int xbee_netClientRx(struct xbee *xbee, struct xbee_netClient *client) {
     	xbee_log(20,"  %2d: 0x%02X '%c'", i, buf->buf[i], ((buf->buf[i] >= ' ' && buf->buf[i] <= '~')?buf->buf[i]:'.'));
   	}
 
-		if ((iret = netHandlers[pos].handler(xbee, client, id, buf)) != 0) {
+		rBuf = NULL;
+		if ((iret = netHandlers[pos].handler(xbee, client, id, buf, &rBuf)) != 0) {
 			xbee_log(2, "netHandler '%s' returned %d for client %s:%hu", netHandlers[pos].handlerName, iret, client->addr, client->port);
 		}
+
+		if ((iret = xbee_netClientTx(xbee, client, id, iret, rBuf)) != 0) {
+			xbee_log(1, "WARNING! response failed (%d)", iret);
+		}
+
+		if (rBuf && rBuf != buf) free(rBuf);
 
 next:
 		free(buf);

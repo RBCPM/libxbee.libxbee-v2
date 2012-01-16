@@ -55,61 +55,58 @@ void xbee_netCallback(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt *
 	memcpy(buf->buf, *pkt, dataLen);
 #warning TODO - currently doesnt transmit the dataItems
 
-	xbee_netClientTx(xbee, *userData, 0x02, buf);
+	xbee_netClientTx(xbee, *userData, 0x02, 0, buf);
 
 	free(buf);
 }
 
 /* ######################################################################### */
 
-static int xbee_netH_connTx(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf) {
+static int xbee_netH_connTx(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf, struct bufData **rBuf) {
 	return 1;
 }
 
-static int xbee_netH_conNew(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf) {
+static int xbee_netH_conNew(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf, struct bufData **rBuf) {
 	return 1;
 }
 
-static int xbee_netH_conEnd(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf) {
+static int xbee_netH_conEnd(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf, struct bufData **rBuf) {
 	return 1;
 }
 
-static int xbee_netH_conOptions(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf) {
+static int xbee_netH_conOptions(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf, struct bufData **rBuf) {
 	return 1;
 }
 
-static int xbee_netH_conSleep(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf) {
+static int xbee_netH_conSleep(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf, struct bufData **rBuf) {
 	return 1;
 }
 
-static int xbee_netH_conWake(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf) {
+static int xbee_netH_conWake(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf, struct bufData **rBuf) {
 	return 1;
 }
 
-static int xbee_netH_conValidate(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf) {
+static int xbee_netH_conValidate(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf, struct bufData **rBuf) {
 	return 1;
 }
 
-static int xbee_netH_conGetTypeList(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf) {
+static int xbee_netH_conGetTypeList(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf, struct bufData **rBuf) {
 	return 1;
 }
 
-static int xbee_netH_conTypeIdFromName(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf) {
+static int xbee_netH_conTypeIdFromName(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf, struct bufData **rBuf) {
 	return 1;
 }
 
 /* ######################################################################### */
 
-static int xbee_netH_modeGet(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf) {
+static int xbee_netH_modeGet(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf, struct bufData **rBuf) {
 	char *mode;
 	struct bufData *ibuf;
 
 	mode = xbee_modeGet(xbee);
 
-	if (!mode) {
-		xbee_netClientTx(xbee, client, id, NULL);
-		return 0;
-	}
+	if (!mode) return 0;
 
 	if ((ibuf = malloc(sizeof(*buf) + strlen(mode))) == NULL) {
 		return XBEE_ENOMEM;
@@ -120,10 +117,12 @@ static int xbee_netH_modeGet(struct xbee *xbee, struct xbee_netClient *client, u
 	ibuf->buf[ibuf->len] = '\0';
 	ibuf->len++;
 
-	return xbee_netClientTx(xbee, client, id, ibuf);
+	*rBuf = ibuf;
+
+	return 0;
 }
 
-static int xbee_netH_echo(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf) {
+static int xbee_netH_echo(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf, struct bufData **rBuf) {
 	int i;
 
 	xbee_log(3,"Message: (%d bytes)", buf->len);
@@ -131,7 +130,9 @@ static int xbee_netH_echo(struct xbee *xbee, struct xbee_netClient *client, unsi
 		xbee_log(3,"  %2d: 0x%02X '%c'", i, buf->buf[i], ((buf->buf[i] >= ' ' && buf->buf[i] <= '~')?buf->buf[i]:'.'));
 	}
 
-	return xbee_netClientTx(xbee, client, id, buf);
+	*rBuf = buf;
+
+	return 0;
 }
 
 /* ######################################################################### */
