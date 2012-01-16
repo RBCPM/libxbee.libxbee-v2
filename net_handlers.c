@@ -99,6 +99,8 @@ static int xbee_netH_conNew(struct xbee *xbee, struct xbee_netClient *client, un
 	userData->key = client->conKeyCount++;
 	
 	xbee_conSetData(xbee, con, userData);
+	xbee_conAttachCallback(xbee, con, xbee_netCallback, NULL);
+	
 	ll_add_tail(&client->conList, con);
 	
 	ibuf->len = 4;
@@ -118,7 +120,23 @@ done:
 }
 
 static int xbee_netH_conEnd(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf, struct bufData **rBuf) {
-	return 1;
+	int key;
+	int ret;
+	struct xbee_con *con;
+	struct xbee_netConData *userData;
+	
+	if (buf->len != 4) return XBEE_EINVAL;
+	
+	key = xbee_netKeyFromBytes(&buf->buf[0]);
+	
+	if ((ret = xbee_netGetCon(xbee, client, key, &con)) != 0) return ret;
+	
+	if ((ret = xbee_conEnd(xbee, con, (void**)&userData)) != 0) return ret;
+	
+	ll_ext_item(&client->conList, con);
+	free(userData);
+	
+	return 0;
 }
 
 static int xbee_netH_conOptions(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf, struct bufData **rBuf) {

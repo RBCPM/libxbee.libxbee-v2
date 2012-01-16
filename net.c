@@ -128,7 +128,7 @@ int xbee_netGetCon(struct xbee *xbee, struct xbee_netClient *client, unsigned sh
 	for (con = NULL; (con = ll_get_next(&client->conList, con)) != NULL;) {
 		if (((struct xbee_netConData *)con->userData)->key == key) break;
 	}
-	if (!con) return 1;
+	if (!con) return XBEE_EFAILED;
 
 	if (rCon) *rCon = con;
 
