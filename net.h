@@ -45,6 +45,7 @@ struct xbee_netClient {
 
 struct xbee_netConData {
 	int key;
+	struct xbee_netClient *client;
 };
 
 int xbee_netClientTx(struct xbee *xbee, struct xbee_netClient *client, unsigned char id, unsigned char returnValue, struct bufData *buf);

@@ -56,7 +56,7 @@ void xbee_netCallback(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt *
 	memcpy(buf->buf, *pkt, dataLen);
 #warning TODO - currently doesnt transmit the dataItems
 
-	xbee_netClientTx(xbee, *userData, 0x02, 0, buf);
+	xbee_netClientTx(xbee, ((struct xbee_netConData*)(*userData))->client, 0x02, 0, buf);
 
 	free(buf);
 }
@@ -107,6 +107,7 @@ static int xbee_netH_conNew(struct xbee *xbee, struct xbee_netClient *client, un
 	}
 	
 	userData->key = client->conKeyCount++;
+	userData->client = client;
 	
 	xbee_conSetData(xbee, con, userData);
 	xbee_conAttachCallback(xbee, con, xbee_netCallback, NULL);
