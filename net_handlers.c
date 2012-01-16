@@ -121,7 +121,29 @@ static int xbee_netH_conGetTypeList(struct xbee *xbee, struct xbee_netClient *cl
 }
 
 static int xbee_netH_conTypeIdFromName(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf, struct bufData **rBuf) {
-	return 1;
+	unsigned char typeId;
+	int ret;
+	struct bufData *ibuf;
+
+	/* check for NUL termination */
+	if (buf->buf[buf->len] != '\0') {
+		return XBEE_EINVAL;
+	}
+
+	if ((ret = xbee_conTypeIdFromName(xbee, (char*)buf->buf, &typeId)) != 0) {
+		return ret;
+	}
+
+	if ((ibuf = malloc(sizeof(*ibuf))) == NULL) {
+		return XBEE_ENOMEM;
+	}
+
+	ibuf->len = 1;
+	ibuf->buf[0] = typeId;
+
+	*rBuf = ibuf;
+
+	return 0;
 }
 
 /* ######################################################################### */
