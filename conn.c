@@ -232,12 +232,13 @@ EXPORT int xbee_conNew(struct xbee *xbee, struct xbee_con **retCon, unsigned cha
 		return XBEE_EINVAL;
 	}
 	
-	ret = XBEE_ENONE;
 	if ((con = xbee_conFromAddress(xbee, conType, address)) != NULL && !con->sleeping) {
 		*retCon = con;
+		ret = XBEE_EEXISTS;
 		goto done;
 	}
 	
+	ret = XBEE_ENONE;
 	if ((con = calloc(1, sizeof(struct xbee_con))) == NULL) {
 		ret = XBEE_ENOMEM;
 		goto die1;

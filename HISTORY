@@ -1,5 +1,5 @@
 v2.0.5 - in progress
-	Buf fixes:
+	Bug fixes:
 		+ Fixed memory leaks
 		+ Remove O_NONBLOCK from serial port open, fixing hardware flow control implementation
 		+ Fixed xbee_listShutdown initialization bug
@@ -10,6 +10,7 @@ v2.0.5 - in progress
 		+ Added 'make install_dbg' to install debugging symbols too
 		+ Removed 'mapping' functions from xsys_linux.c, and added mapping macros instead (saved ~1.5k)
 		+ Implemented xbee_pluginUnload() and added pluginData storage for plugins
+		+ xbee_conNew() now returns XBEE_EEXISTS if a connection already exists (still returns the *con)
 
 v2.0.4 - ada265100533 - 31 Dec 2011
 	Modifications / Additions:
