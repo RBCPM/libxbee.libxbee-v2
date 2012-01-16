@@ -47,6 +47,8 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 	
+	printf("Running...\n");
+	
 	/* allow the server to run for 30 seconds */
 	//sleep(3);
 	sleep(30);

@@ -105,6 +105,11 @@ static int xbee_netH_modeGet(struct xbee *xbee, struct xbee_netClient *client, u
 }
 
 static int xbee_netH_echo(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf) {
+	int i;
+	xbee_log(3,"Message: (%d bytes)", buf->len);
+	for (i = 0; i < buf->len; i++) {
+		xbee_log(3,"  %2d: 0x%02X '%c'", i, buf->buf[i], ((buf->buf[i] >= ' ' && buf->buf[i] <= '~')?buf->buf[i]:'.'));
+	}
 	xbee_netClientTx(xbee, client, id, buf);
 	return 0;
 }

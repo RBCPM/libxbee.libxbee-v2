@@ -179,13 +179,13 @@ int xbee_netClientRx(struct xbee *xbee, struct xbee_netClient *client) {
 		}
 
 		for (pos = 0; netHandlers[pos].handler; pos++ ) {
-			if (netHandlers[pos].id == buf->buf[0]) break;
+			if (netHandlers[pos].id == id) break;
 		}
 		if (!netHandlers[pos].handler) {
-			xbee_log(1, "Unknown message received / no packet handler (0x%02X)", buf->buf[0]);
+			xbee_log(1, "Unknown message received / no packet handler (0x%02X)", id);
 			goto next;
 		}
-		xbee_log(2, "Received %d byte message (0x%02X - '%s') @ %p", buf->len, buf->buf[0], netHandlers[pos].handlerName, buf);
+		xbee_log(2, "Received %d byte message (0x%02X - '%s') @ %p", buf->len, id, netHandlers[pos].handlerName, buf);
 		
 		if ((iret = netHandlers[pos].handler(xbee, client, id, buf)) != 0) {
 			xbee_log(2, "netHandler '%s' returned %d for client %s:%hu", netHandlers[pos].handlerName, iret, client->addr, client->port);
