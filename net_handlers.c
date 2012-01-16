@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include "internal.h"
+#include "conn.h"
 #include "net.h"
 #include "net_handlers.h"
 #include "log.h"
@@ -91,7 +92,32 @@ static int xbee_netH_conValidate(struct xbee *xbee, struct xbee_netClient *clien
 }
 
 static int xbee_netH_conGetTypeList(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf, struct bufData **rBuf) {
-	return 1;
+	char **list;
+	int len;
+	int ret;
+	struct bufData *ibuf;
+
+	if ((ret = _xbee_conGetTypeList(xbee, &list, &len)) != 0) {
+		return ret;
+	}
+
+	len -= (int)list[0] - (int)list;
+	if (len < 0) {
+		free(list);
+		return XBEE_EUNKNOWN;
+	}
+
+	if ((ibuf = malloc(sizeof(*ibuf) + len)) == NULL) {
+		return XBEE_ENOMEM;
+	}
+
+	ibuf->len = len;
+	memcpy(ibuf->buf, list[0], len);
+	free(list);
+
+	*rBuf = ibuf;
+
+	return 0;
 }
 
 static int xbee_netH_conTypeIdFromName(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf, struct bufData **rBuf) {
