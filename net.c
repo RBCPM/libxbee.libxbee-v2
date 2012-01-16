@@ -84,17 +84,22 @@ int xbee_netClientTx(struct xbee *xbee, struct xbee_netClient *client, unsigned 
 	ret = 0;
 
 	ibuf[0] = '{';
-	ibuf[1] = (buf->len >> 8) & 0xFF;
-	ibuf[2] = (buf->len) & 0xFF;
+	if (!buf) {
+		ibuf[1] = 0;
+		ibuf[2] = 0;
+	} else {
+		ibuf[1] = (buf->len >> 8) & 0xFF;
+		ibuf[2] = (buf->len) & 0xFF;
+	}
 	ibuf[3] = '|';
 	ibuf[4] = id;
 	ibuf[5] = '}';
 
 	xsys_mutex_lock(&client->fdTxMutex);
 
-	if (xbee_netSend(client->fd, ibuf, 5, MSG_WAITALL))             { ret = XBEE_EIO; goto die1; }
-	if (xbee_netSend(client->fd, buf->buf, buf->len, MSG_WAITALL))  { ret = XBEE_EIO; goto die1; }
-	if (xbee_netSend(client->fd, &ibuf[5], 1, MSG_WAITALL))         { ret = XBEE_EIO; goto die1; }
+	         if (xbee_netSend(client->fd, ibuf, 5, MSG_WAITALL))             { ret = XBEE_EIO; goto die1; }
+	if (buf) if (xbee_netSend(client->fd, buf->buf, buf->len, MSG_WAITALL))  { ret = XBEE_EIO; goto die1; }
+	         if (xbee_netSend(client->fd, &ibuf[5], 1, MSG_WAITALL))         { ret = XBEE_EIO; goto die1; }
 
 die1:
 	xsys_mutex_unlock(&client->fdTxMutex);
@@ -172,11 +177,6 @@ int xbee_netClientRx(struct xbee *xbee, struct xbee_netClient *client) {
 			goto next;
 		}
 		buf->buf[buf->len] = '\0';
-
-		if (buf->len < 1) {
-			xbee_log(1, "empty packet recieved...");
-			goto next;
-		}
 
 		for (pos = 0; netHandlers[pos].handler; pos++ ) {
 			if (netHandlers[pos].id == id) break;
