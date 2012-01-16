@@ -87,9 +87,15 @@ int xbee_netClientTx(struct xbee *xbee, struct xbee_netClient *client, unsigned 
 	if (!buf) {
 		ibuf[1] = 0;
 		ibuf[2] = 0;
+	  xbee_log(20,"Tx message: (0 bytes)");
 	} else {
+		int i;
 		ibuf[1] = (buf->len >> 8) & 0xFF;
 		ibuf[2] = (buf->len) & 0xFF;
+	  xbee_log(20,"Tx message: (%d bytes)", buf->len);
+	  for (i = 0; i < buf->len; i++) {
+    	xbee_log(20,"  %2d: 0x%02X '%c'", i, buf->buf[i], ((buf->buf[i] >= ' ' && buf->buf[i] <= '~')?buf->buf[i]:'.'));
+  	}
 	}
 	ibuf[3] = '|';
 	ibuf[4] = id;
@@ -124,6 +130,7 @@ int xbee_netClientRx(struct xbee *xbee, struct xbee_netClient *client) {
 	int ret;
 	int iret;
 	int pos;
+	int i;
 	unsigned char c;
 	unsigned char ibuf[4];
 	unsigned char id;
@@ -186,7 +193,12 @@ int xbee_netClientRx(struct xbee *xbee, struct xbee_netClient *client) {
 			goto next;
 		}
 		xbee_log(2, "Received %d byte message (0x%02X - '%s') @ %p", buf->len, id, netHandlers[pos].handlerName, buf);
-		
+
+	  xbee_log(20,"Rx message: (%d bytes)", buf->len);
+	  for (i = 0; i < buf->len; i++) {
+    	xbee_log(20,"  %2d: 0x%02X '%c'", i, buf->buf[i], ((buf->buf[i] >= ' ' && buf->buf[i] <= '~')?buf->buf[i]:'.'));
+  	}
+
 		if ((iret = netHandlers[pos].handler(xbee, client, id, buf)) != 0) {
 			xbee_log(2, "netHandler '%s' returned %d for client %s:%hu", netHandlers[pos].handlerName, iret, client->addr, client->port);
 		}
