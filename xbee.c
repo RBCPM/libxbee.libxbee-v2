@@ -202,6 +202,9 @@ EXPORT void xbee_shutdown(struct xbee *xbee) {
 	ll_ext_item(&xbee_list, xbee);
 	xbee_default = ll_get_tail(&xbee_list);
 	
+	/* cleanup networking */
+	if (xbee->net) xbee_netStop(xbee);
+	
 	/* cleanup txThread */
 	xbee_log(5,"- Terminating txThread...");
 	xbee_threadStopMonitored(xbee, &xbee->txThread, NULL, NULL);
