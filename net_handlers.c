@@ -99,6 +99,7 @@ static int xbee_netH_conNew(struct xbee *xbee, struct xbee_netClient *client, un
 	userData->key = client->conKeyCount++;
 	
 	xbee_conSetData(xbee, con, userData);
+	ll_add_tail(&client->conList, con);
 	
 	ibuf->len = 4;
 	ibuf->buf[0] = (userData->key >> 24) & 0xFF;
@@ -137,10 +138,7 @@ static int xbee_netH_conValidate(struct xbee *xbee, struct xbee_netClient *clien
 	
 	if (buf->len != 4) return XBEE_EINVAL;
 	
-	key  = (buf->buf[0] << 24) & 0xFF000000;
-	key |= (buf->buf[1] << 16) & 0x00FF0000;
-	key |= (buf->buf[2] << 8 ) & 0x0000FF00;
-	key |= (buf->buf[3]      ) & 0x000000FF;
+	key = xbee_netKeyFromBytes(&buf->buf[0]);
 	
 	xbee_log(5, "searching for connection 0x%08X...", key);
 	

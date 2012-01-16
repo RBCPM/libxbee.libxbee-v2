@@ -48,7 +48,9 @@ struct xbee_netConData {
 };
 
 int xbee_netClientTx(struct xbee *xbee, struct xbee_netClient *client, unsigned char id, unsigned char returnValue, struct bufData *buf);
+
 int xbee_netGetCon(struct xbee *xbee, struct xbee_netClient *client, unsigned short key, struct xbee_con **rCon);
+int xbee_netKeyFromBytes(unsigned char *bytes);
 
 void xbee_netClientRxThread(struct xbee_netClientThreadInfo *info);
 

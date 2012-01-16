@@ -135,6 +135,17 @@ int xbee_netGetCon(struct xbee *xbee, struct xbee_netClient *client, unsigned sh
 	return ret;
 }
 
+int xbee_netKeyFromBytes(unsigned char *bytes) {
+	int key;
+	
+	key  = (bytes[0] << 24) & 0xFF000000;
+	key |= (bytes[1] << 16) & 0x00FF0000;
+	key |= (bytes[2] << 8 ) & 0x0000FF00;
+	key |= (bytes[3]      ) & 0x000000FF;
+	
+	return key;
+}
+
 /* ######################################################################### */
 
 /* protocol is as follows:
