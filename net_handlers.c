@@ -68,7 +68,52 @@ static int xbee_netH_connTx(struct xbee *xbee, struct xbee_netClient *client, un
 }
 
 static int xbee_netH_conNew(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf, struct bufData **rBuf) {
-	return 1;
+	unsigned char conTypeId;
+	struct xbee_conAddress *address;
+	struct xbee_con *con;
+	struct xbee_netConData *userData;
+	struct bufData *ibuf;
+	int ret;
+	
+	/* +1 for conTypeId */
+	if (buf->len != sizeof(struct xbee_conAddress) + 1) return XBEE_EINVAL;
+	
+	conTypeId = buf->buf[0];
+	address = (struct xbee_conAddress *)&(buf->buf[1]);
+	
+	if ((ret = xbee_conNew(xbee, &con, conTypeId, address, NULL)) != 0 && ret != XBEE_EEXISTS) return ret;
+	
+	if (!con) return XBEE_EUNKNOWN;
+	
+	if ((userData = calloc(1, sizeof(*userData))) == NULL) {
+		ret = XBEE_ENOMEM;
+		goto die1;
+	}
+	
+	/* 3 because one is included in sizeof(*buf) */
+	if ((ibuf = calloc(1, sizeof(*buf) + 3)) == NULL) {
+		ret = XBEE_ENOMEM;
+		goto die2;
+	}
+	
+	userData->key = client->conKeyCount++;
+	
+	xbee_conSetData(xbee, con, userData);
+	
+	ibuf->len = 4;
+	ibuf->buf[0] = (userData->key >> 24) & 0xFF;
+	ibuf->buf[1] = (userData->key >> 16) & 0xFF;
+	ibuf->buf[2] = (userData->key >> 8 ) & 0xFF;
+	ibuf->buf[3] = (userData->key      ) & 0xFF;
+	
+	*rBuf = ibuf;
+	
+	goto done;
+die2:
+	free(userData);
+die1:
+done:
+	return ret;
 }
 
 static int xbee_netH_conEnd(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf, struct bufData **rBuf) {
@@ -90,7 +135,7 @@ static int xbee_netH_conWake(struct xbee *xbee, struct xbee_netClient *client, u
 static int xbee_netH_conValidate(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf, struct bufData **rBuf) {
 	int key;
 	
-	if (buf->len != 4) return XBEE_EUNKNOWN;
+	if (buf->len != 4) return XBEE_EINVAL;
 	
 	key  = (buf->buf[0] << 24) & 0xFF000000;
 	key |= (buf->buf[1] << 16) & 0x00FF0000;
