@@ -23,6 +23,8 @@
 
 int xbee_conFree(struct xbee *xbee, struct xbee_con *con);
 
+int _xbee_conGetTypeList(struct xbee *xbee, char ***retList, int *retLength);
+
 int _xbee_conTypeIdFromName(struct xbee *xbee, char *name, unsigned char *id, int ignoreInitialized);
 struct xbee_conType *_xbee_conTypeFromID(struct xbee_conType *conTypes, unsigned char id, int ignoreInitialized);
 struct xbee_conType *xbee_conTypeFromID(struct xbee_conType *conTypes, unsigned char id);

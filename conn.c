@@ -52,7 +52,7 @@ EXPORT int xbee_conTypeIdFromName(struct xbee *xbee, char *name, unsigned char *
 	return _xbee_conTypeIdFromName(xbee, name, id, 0);
 }
 
-EXPORT int xbee_conGetTypeList(struct xbee *xbee, char ***retList) {
+int _xbee_conGetTypeList(struct xbee *xbee, char ***retList, int *retLength) {
 	int i;
 	char **retL;
 	char *d;
@@ -81,8 +81,12 @@ EXPORT int xbee_conGetTypeList(struct xbee *xbee, char ***retList) {
 	retL[i] = NULL;
 	
 	*retList = retL;
+	if (retLength) *retLength = datalen;
 	
 	return 0;
+}
+EXPORT int xbee_conGetTypeList(struct xbee *xbee, char ***retList) {
+	return _xbee_conGetTypeList(xbee, retList, NULL);
 }
 
 struct xbee_conType *_xbee_conTypeFromID(struct xbee_conType *conTypes, unsigned char id, int ignoreInitialized) {
