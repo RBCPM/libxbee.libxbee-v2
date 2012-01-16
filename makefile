@@ -22,7 +22,7 @@ OBJCOPY:=$(CROSS_COMPILE)objcopy
 
 DEBUG:=-g
 CFLAGS:=-Wall -Wstrict-prototypes -Wno-variadic-macros -c -fPIC $(DEBUG)
-#CFLAGS+=-fvisibility=hidden
+CFLAGS+=-fvisibility=hidden
 #CFLAGS+=-pedantic
 CLINKS:=$(addprefix -l,$(LIBS)) $(DEBUG)
 
