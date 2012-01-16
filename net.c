@@ -117,13 +117,10 @@ die1:
 /* ######################################################################### */
 
 int xbee_netGetCon(struct xbee *xbee, struct xbee_netClient *client, unsigned short key, struct xbee_con **rCon) {
-	int ret;
 	struct xbee_con *con;
 
 	if (!xbee || !client) return XBEE_EMISSINGPARAM;
 	if (!xbee->net) return XBEE_EINVAL;
-
-	ret = 0;
 
 	for (con = NULL; (con = ll_get_next(&client->conList, con)) != NULL;) {
 		if (((struct xbee_netConData *)con->userData)->key == key) break;
@@ -132,7 +129,7 @@ int xbee_netGetCon(struct xbee *xbee, struct xbee_netClient *client, unsigned sh
 
 	if (rCon) *rCon = con;
 
-	return ret;
+	return 0;
 }
 
 int xbee_netKeyFromBytes(unsigned char *bytes) {

@@ -144,11 +144,31 @@ static int xbee_netH_conOptions(struct xbee *xbee, struct xbee_netClient *client
 }
 
 static int xbee_netH_conSleep(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf, struct bufData **rBuf) {
-	return 1;
+	int key;
+	int ret;
+	struct xbee_con *con;
+	
+	if (buf->len != 5) return XBEE_EINVAL;
+	
+	key = xbee_netKeyFromBytes(&buf->buf[0]);
+	
+	if ((ret = xbee_netGetCon(xbee, client, key, &con)) != 0) return ret;
+	
+	return xbee_conSleep(xbee, con, buf->buf[4]);
 }
 
 static int xbee_netH_conWake(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf, struct bufData **rBuf) {
-	return 1;
+	int key;
+	int ret;
+	struct xbee_con *con;
+	
+	if (buf->len != 4) return XBEE_EINVAL;
+	
+	key = xbee_netKeyFromBytes(&buf->buf[0]);
+	
+	if ((ret = xbee_netGetCon(xbee, client, key, &con)) != 0) return ret;
+	
+	return xbee_conWake(xbee, con);
 }
 
 static int xbee_netH_conValidate(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf, struct bufData **rBuf) {
