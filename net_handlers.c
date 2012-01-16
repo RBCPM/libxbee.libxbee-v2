@@ -101,17 +101,37 @@ static int xbee_netH_conTypeIdFromName(struct xbee *xbee, struct xbee_netClient 
 /* ######################################################################### */
 
 static int xbee_netH_modeGet(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf) {
-	return 1;
+	char *mode;
+	struct bufData *ibuf;
+
+	mode = xbee_modeGet(xbee);
+
+	if (!mode) {
+		xbee_netClientTx(xbee, client, id, NULL);
+		return 0;
+	}
+
+	if ((ibuf = malloc(sizeof(*buf) + strlen(mode))) == NULL) {
+		return XBEE_ENOMEM;
+	}
+
+	ibuf->len = strlen(mode);
+	memcpy(ibuf->buf, mode, ibuf->len);
+	ibuf->buf[ibuf->len] = '\0';
+	ibuf->len++;
+
+	return xbee_netClientTx(xbee, client, id, ibuf);
 }
 
 static int xbee_netH_echo(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf) {
 	int i;
+
 	xbee_log(3,"Message: (%d bytes)", buf->len);
 	for (i = 0; i < buf->len; i++) {
 		xbee_log(3,"  %2d: 0x%02X '%c'", i, buf->buf[i], ((buf->buf[i] >= ' ' && buf->buf[i] <= '~')?buf->buf[i]:'.'));
 	}
-	xbee_netClientTx(xbee, client, id, buf);
-	return 0;
+
+	return xbee_netClientTx(xbee, client, id, buf);
 }
 
 /* ######################################################################### */
