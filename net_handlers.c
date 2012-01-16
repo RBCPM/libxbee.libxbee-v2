@@ -150,7 +150,36 @@ static int xbee_netH_conEnd(struct xbee *xbee, struct xbee_netClient *client, un
 }
 
 static int xbee_netH_conOptions(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf, struct bufData **rBuf) {
-	return 1;
+	int key;
+	int ret;
+	struct xbee_con *con;
+	struct xbee_conOptions getOptions;
+	struct xbee_conOptions *setOptions;
+	struct bufData *ibuf;
+	
+	if (!(buf->len == 4 || buf->len == 4 + sizeof(struct xbee_conOptions))) return XBEE_EINVAL;
+	
+	key = xbee_netKeyFromBytes(&buf->buf[0]);
+	
+	if ((ret = xbee_netGetCon(xbee, client, key, &con)) != 0) return ret;
+	
+	if (buf->len == 4) {
+		setOptions = NULL;
+	} else {
+		setOptions = (struct xbee_conOptions *)&buf->buf[4];
+	}
+
+	/* -1 because 1 is included in the struct bufData */
+	if ((ibuf = malloc(sizeof(*ibuf) + sizeof(struct xbee_conOptions) - 1)) == NULL) return XBEE_ENOMEM;
+	
+	if ((ret = xbee_conOptions(xbee, con, &getOptions, setOptions)) != 0) return ret;
+	
+	ibuf->len = sizeof(struct xbee_conOptions);
+	memcpy(ibuf->buf, &getOptions, ibuf->len);
+	
+	*rBuf = ibuf;
+
+	return 0;
 }
 
 static int xbee_netH_conSleep(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf, struct bufData **rBuf) {
@@ -199,9 +228,7 @@ static int xbee_netH_conGetTypeList(struct xbee *xbee, struct xbee_netClient *cl
 	int ret;
 	struct bufData *ibuf;
 
-	if ((ret = _xbee_conGetTypeList(xbee, &list, &len)) != 0) {
-		return ret;
-	}
+	if ((ret = _xbee_conGetTypeList(xbee, &list, &len)) != 0) return ret;
 
 	len -= (int)list[0] - (int)list;
 	if (len < 0) {
@@ -209,9 +236,7 @@ static int xbee_netH_conGetTypeList(struct xbee *xbee, struct xbee_netClient *cl
 		return XBEE_EUNKNOWN;
 	}
 
-	if ((ibuf = malloc(sizeof(*ibuf) + len)) == NULL) {
-		return XBEE_ENOMEM;
-	}
+	if ((ibuf = malloc(sizeof(*ibuf) + len)) == NULL) return XBEE_ENOMEM;
 
 	ibuf->len = len;
 	memcpy(ibuf->buf, list[0], len);
@@ -228,17 +253,11 @@ static int xbee_netH_conTypeIdFromName(struct xbee *xbee, struct xbee_netClient 
 	struct bufData *ibuf;
 
 	/* check for NUL termination */
-	if (buf->buf[buf->len] != '\0') {
-		return XBEE_EINVAL;
-	}
+	if (buf->buf[buf->len] != '\0') return XBEE_EINVAL;
 
-	if ((ret = xbee_conTypeIdFromName(xbee, (char*)buf->buf, &typeId)) != 0) {
-		return ret;
-	}
+	if ((ret = xbee_conTypeIdFromName(xbee, (char*)buf->buf, &typeId)) != 0) return ret;
 
-	if ((ibuf = malloc(sizeof(*ibuf))) == NULL) {
-		return XBEE_ENOMEM;
-	}
+	if ((ibuf = malloc(sizeof(*ibuf))) == NULL) return XBEE_ENOMEM;
 
 	ibuf->len = 1;
 	ibuf->buf[0] = typeId;
@@ -258,9 +277,7 @@ static int xbee_netH_modeGet(struct xbee *xbee, struct xbee_netClient *client, u
 
 	if (!mode) return 0;
 
-	if ((ibuf = malloc(sizeof(*buf) + strlen(mode))) == NULL) {
-		return XBEE_ENOMEM;
-	}
+	if ((ibuf = malloc(sizeof(*buf) + strlen(mode))) == NULL) return XBEE_ENOMEM;
 
 	ibuf->len = strlen(mode);
 	memcpy(ibuf->buf, mode, ibuf->len);
