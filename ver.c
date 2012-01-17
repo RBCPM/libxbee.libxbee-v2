@@ -20,7 +20,7 @@
 
 #include "internal.h"
 
-EXPORT const char libxbee_revision[]  = LIBXBEE_REVISION;
-EXPORT const char libxbee_commit[]    = LIBXBEE_COMMIT;
-EXPORT const char libxbee_committer[] = LIBXBEE_COMMITTER;
-EXPORT const char libxbee_buildtime[] = LIBXBEE_BUILDTIME;
+EXPORT const char libxbee_revision[]  = LIB_REVISION;
+EXPORT const char libxbee_commit[]    = LIB_COMMIT;
+EXPORT const char libxbee_committer[] = LIB_COMMITTER;
+EXPORT const char libxbee_buildtime[] = LIB_BUILDTIME;

@@ -104,7 +104,7 @@ $(BUILDDIR)/%.d: .$(BUILDDIR).dir %.c
 	$(GCC) -MM -MT $(addprefix $(BUILDDIR)/,$(filter %.o,$(^:.c=.o))) $(filter %.c,$^) -o $@
 
 $(BUILDDIR)/ver.o: .$(BUILDDIR).dir $(BUILDDIR)/ver.d *.c *.h
-	$(GCC) $(CFLAGS) -DLIBXBEE_REVISION="\"$(LIBFULLREV)\"" -DLIBXBEE_COMMIT="\"$(shell git log -1 --format="%H")\"" -DLIBXBEE_COMMITTER="\"$(shell git log -1 --format="%cn <%ce>")\"" -DLIBXBEE_BUILDTIME="\"$(shell date)\"" ver.c -o $@
+	$(GCC) $(CFLAGS) -DLIB_REVISION="\"$(LIBFULLREV)\"" -DLIB_COMMIT="\"$(shell git log -1 --format="%H")\"" -DLIB_COMMITTER="\"$(shell git log -1 --format="%cn <%ce>")\"" -DLIB_BUILDTIME="\"$(shell date)\"" ver.c -o $@
 
 $(BUILDDIR)/%.o: .$(BUILDDIR).dir $(BUILDDIR)/%.d %.c
 	$(GCC) $(CFLAGS) $(firstword $(filter %.c,$^)) -o $@
