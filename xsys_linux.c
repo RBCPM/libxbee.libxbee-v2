@@ -128,7 +128,7 @@ int xsys_setupSerial(struct xbee *xbee) {
 	
 	/* enable input & output transmission */
   if (tcflow(xbee->device.fd, TCOON | TCION)) {
-		xbee_perror(1,"tcflow");
+		xbee_perror(1,"tcflow()");
 		return XBEE_ESETUP;
 	}
 	

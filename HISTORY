@@ -1,4 +1,6 @@
 v2.0.5 - in progress
+	Major New Features:
+		+ Added network interface (TCP/IP) - libxbeen project to follow
 	Bug fixes:
 		+ Fixed memory leaks
 		+ Remove O_NONBLOCK from serial port open, fixing hardware flow control implementation

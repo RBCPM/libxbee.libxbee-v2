@@ -29,6 +29,12 @@ extern struct xbee *xbee_default;
 
 /* ######################################################################### */
 
+struct xbee_netInfo {
+	int fd;
+	int listenPort;
+	xsys_thread listenThread;
+	struct ll_head clientList;
+};
 struct xbee_device {
 	char *path;
 	int fd;
@@ -64,6 +70,8 @@ struct xbee {
 	int rxRunning;
 	
 	struct ll_head pluginList;
+	
+	struct xbee_netInfo *net;
 };
 
 /* ######################################################################### */

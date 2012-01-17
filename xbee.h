@@ -66,6 +66,7 @@ extern const char libxbee_buildtime[];
 #define XBEE_ERANGE                                        -28
 #define XBEE_EEXISTS                                       -29
 #define XBEE_ENULL                                         -30
+#define XBEE_ESOCKET                                       -31
 
 /* from user-space you don't get access to the xbee or xbee_con structs, and should never de-reference thier pointers... sorry */
 struct xbee;
@@ -307,6 +308,21 @@ int xbee_pluginLoad(char *filename, struct xbee *xbee, void *arg);
  *-  'xbee' may be NULL or a valid xbee instance. This must match the call to xbee_pluginLoad()
  */
 int xbee_pluginUnload(char *filename, struct xbee *xbee);
+
+/* ######################################################################### */
+/* ######################################################################### */
+/* ######################################################################### */
+/* --- net.c --- */
+/* this function allows you to listen for libxbeed connections over TCP/IP
+ *-  'xbee' should be the libxbee instance that you wish to use. If this is NULL, then the most recent instance will be used
+ *-  'port' is the TCP port you would like to listen on
+ */
+int xbee_netStart(struct xbee *xbee, int port);
+
+/* this function will close the existing listening connection, and all active connections
+ *-  'xbee' should be the libxbee instance that you wish to use. If this is NULL, then the most recent instance will be used
+ */
+int xbee_netStop(struct xbee *xbee);
 
 /* ######################################################################### */
 /* ######################################################################### */
