@@ -61,7 +61,7 @@ $(SYS_LIBDIR)/$(LIBOUT).so.$(LIBFULLREV).dbg: $(DESTDIR)/$(LIBOUT).so.$(LIBFULLR
 	cp -f $^ $@
 	chmod 644 $@
 
-$(SYS_INCDIR)/%.h: %/h
+$(SYS_INCDIR)/%.h: %.h
 	cp -f $^ $@
 	chmod 644 $@
 
