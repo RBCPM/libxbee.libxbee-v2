@@ -11,7 +11,8 @@ RELEASE_ITEMS:=$(DESTDIR)/$(LIBOUT).so.$(LIBFULLREV) \
                $(DESTDIR)/$(LIBOUT).so.$(LIBFULLREV).dbg \
                $(DESTDIR)/$(LIBOUT).a.$(LIBFULLREV) \
                $(DESTDIR)/$(LIBOUT).a \
-               $(SYS_HEADERS)
+               $(SYS_HEADERS) \
+               $(RELEASE_FILES)
 LIBS:=rt pthread dl
 
 CROSS_COMPILE?=
