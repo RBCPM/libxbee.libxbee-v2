@@ -11,7 +11,7 @@ RELEASE_ITEMS:=$(DESTDIR)/$(LIBOUT).so.$(LIBFULLREV) \
                $(DESTDIR)/$(LIBOUT).so.$(LIBFULLREV).dbg \
                $(DESTDIR)/$(LIBOUT).a.$(LIBFULLREV) \
                $(DESTDIR)/$(LIBOUT).a \
-               xbee.h
+               $(SYS_HEADERS)
 LIBS:=rt pthread dl
 
 CROSS_COMPILE?=
@@ -38,6 +38,7 @@ CLINKS:=$(addprefix -l,$(LIBS)) $(DEBUG)
 
 OBJS:=$(addprefix $(BUILDDIR)/,$(addsuffix .o,$(SRCS)))
 
+
 all: $(DESTDIR)/$(LIBOUT).so $(DESTDIR)/$(LIBOUT).a
 
 install: all
@@ -46,19 +47,24 @@ install: all
 install_dbg: all
 	sudo make install_dbg_sudo
 
-install_sudo: all
-	cp -f $(DESTDIR)/$(LIBOUT).so.$(LIBFULLREV) $(SYS_LIBDIR)/$(LIBOUT).so.$(LIBFULLREV)
-	chmod 644 $(SYS_LIBDIR)/$(LIBOUT).so.$(LIBFULLREV)
-	ln -fs $(SYS_LIBDIR)/$(LIBOUT).so.$(LIBFULLREV) $(SYS_LIBDIR)/$(LIBOUT).so
-	cp -f $(DESTDIR)/$(LIBOUT).a.$(LIBFULLREV) $(SYS_LIBDIR)
-	chmod 644 $(SYS_LIBDIR)/$(LIBOUT).a.$(LIBFULLREV)
-	ln -fs $(SYS_LIBDIR)/$(LIBOUT).a.$(LIBFULLREV) $(SYS_LIBDIR)/$(LIBOUT).a
-	cp -f xbee.h $(SYS_INCDIR)/xbee.h
-	chmod 644 $(SYS_INCDIR)/xbee.h
+install_sudo: all $(addprefix $(SYS_INCDIR)/,$(SYS_HEADERS)) $(SYS_LIBDIR)/$(LIBOUT).so.$(LIBFULLREV) $(SYS_LIBDIR)/$(LIBOUT).a.$(LIBFULLREV)
 
-install_dbg_sudo: install_sudo
-	cp -f $(DESTDIR)/$(LIBOUT).so.$(LIBFULLREV).dbg $(SYS_LIBDIR)/$(LIBOUT).so.$(LIBFULLREV).dbg
-	chmod 644 $(SYS_LIBDIR)/$(LIBOUT).so.$(LIBFULLREV).dbg
+install_dbg_sudo: install_sudo $(SYS_LIBDIR)/$(LIBOUT).so.$(LIBFULLREV).dbg
+
+
+$(SYS_LIBDIR)/$(LIBOUT).%.$(LIBFULLREV): $(DESTDIR)/$(LIBOUT).%.$(LIBFULLREV)
+	cp -f $^ $@
+	chmod 644 $@
+	ln -fs $@ $(subst .$(LIBFULLREV),,$@)
+
+$(SYS_LIBDIR)/$(LIBOUT).so.$(LIBFULLREV).dbg: $(DESTDIR)/$(LIBOUT).so.$(LIBFULLREV).dbg
+	cp -f $^ $@
+	chmod 644 $@
+
+$(SYS_INCDIR)/%.h: %/h
+	cp -f $^ $@
+	chmod 644 $@
+
 
 new: clean
 	@$(MAKE) --no-print-directory all

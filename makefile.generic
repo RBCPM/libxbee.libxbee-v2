@@ -6,3 +6,5 @@ LIBOUT:=libxbee
 LIBFULLREV:=$(LIBMAJ).$(LIBMIN).$(LIBREV)
 
 SRCS:=conn io ll log mode frame rx tx xbee xbee_s1 xbee_s2 xbee_sG xsys thread plugin pkt ver net net_handlers
+
+SYS_HEADERS:=xbee.h
