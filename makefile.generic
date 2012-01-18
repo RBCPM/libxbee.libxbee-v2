@@ -1,12 +1,36 @@
-LIBMAJ:=2
-LIBMIN:=0
-LIBREV:=4
+### libxbee configuration options:
 
-LIBOUT:=libxbee
-LIBFULLREV:=$(LIBMAJ).$(LIBMIN).$(LIBREV)
+### system install directories
+SYS_LIBDIR:=    /usr/lib
+SYS_INCDIR:=    /usr/include
 
-SRCS:=conn io ll log mode frame rx tx xbee xbee_s1 xbee_s2 xbee_sG xsys thread plugin pkt ver net net_handlers
+### setup a cross-compile toolchain (either here, or in the environment)
+#CROSS_COMPILE:=
 
-SYS_HEADERS:=xbee.h
+### un-comment to remove ALL logging (smaller & faster binary)
+#CFLAGS+=        -DXBEE_DISABLE_LOGGING
 
-RELEASE_FILES:=HISTORY
+### un-comment to turn off hardware flow control
+#CFLAGS+=        -DXBEE_NO_RTSCTS
+
+################################################################################
+### Do NOT change below this line
+
+LIBMAJ:=        2
+LIBMIN:=        0
+LIBREV:=        4
+
+LIBOUT:=        libxbee
+
+LIBS:=          rt pthread dl
+
+SRCS:=          conn io ll log mode frame rx tx xbee xbee_s1 xbee_s2 xbee_sG \
+                xsys thread plugin pkt ver net net_handlers
+
+SYS_HEADERS:=   xbee.h
+RELEASE_FILES:= HISTORY
+
+VER_DEFINES:=   -DLIB_REVISION="\"$(LIBFULLREV)\""                             \
+                -DLIB_COMMIT="\"$(shell git log -1 --format="%H")\""           \
+                -DLIB_COMMITTER="\"$(shell git log -1 --format="%cn <%ce>")\"" \
+                -DLIB_BUILDTIME="\"$(shell date)\""

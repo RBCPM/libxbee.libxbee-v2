@@ -2,20 +2,16 @@ include makefile.generic
 
 BUILDDIR:=.build
 DESTDIR:=lib
+LIBFULLREV:=$(LIBMAJ).$(LIBMIN).$(LIBREV)
 
-SYS_LIBDIR:=/usr/lib
-SYS_INCDIR:=/usr/include
-
-RELEASE_ITEMS:=$(DESTDIR)/$(LIBOUT).so.$(LIBFULLREV) \
-               $(DESTDIR)/$(LIBOUT).so \
-               $(DESTDIR)/$(LIBOUT).so.$(LIBFULLREV).dbg \
-               $(DESTDIR)/$(LIBOUT).a.$(LIBFULLREV) \
-               $(DESTDIR)/$(LIBOUT).a \
-               $(SYS_HEADERS) \
+RELEASE_ITEMS:=$(DESTDIR)/$(LIBOUT).so.$(LIBFULLREV)       \
+               $(DESTDIR)/$(LIBOUT).so                     \
+               $(DESTDIR)/$(LIBOUT).so.$(LIBFULLREV).dbg   \
+               $(DESTDIR)/$(LIBOUT).a.$(LIBFULLREV)        \
+               $(DESTDIR)/$(LIBOUT).a                      \
+               $(SYS_HEADERS)                              \
                $(RELEASE_FILES)
-LIBS:=rt pthread dl
 
-CROSS_COMPILE?=
 AR:=$(CROSS_COMPILE)ar
 LD:=$(CROSS_COMPILE)ld
 GCC:=$(CROSS_COMPILE)gcc
@@ -26,11 +22,6 @@ CFLAGS:=-Wall -Wstrict-prototypes -Wno-variadic-macros -c -fPIC $(DEBUG)
 CFLAGS+=-fvisibility=hidden
 #CFLAGS+=-pedantic
 CLINKS:=$(addprefix -l,$(LIBS)) $(DEBUG)
-
-### un-comment to remove ALL logging (smaller & faster binary)
-#CFLAGS+=-DXBEE_DISABLE_LOGGING
-### un-comment to turn off hardware flow control
-#CFLAGS+=-DXBEE_NO_RTSCTS
 
 ###############################################################################
 
@@ -108,12 +99,13 @@ $(DESTDIR)/$(LIBOUT).o: .$(DESTDIR).dir $(OBJS)
 
 
 $(BUILDDIR)/%.d: .$(BUILDDIR).dir %.c
-	$(GCC) -MM -MT $(addprefix $(BUILDDIR)/,$(filter %.o,$(^:.c=.o))) $(filter %.c,$^) -o $@
+	$(GCC) -MM -MT $(addprefix $(BUILDDIR)/,$*.o) $*.c -o $@
 
-$(BUILDDIR)/ver.o: .$(BUILDDIR).dir $(BUILDDIR)/ver.d *.c *.h
-	$(GCC) $(CFLAGS) -DLIB_REVISION="\"$(LIBFULLREV)\"" -DLIB_COMMIT="\"$(shell git log -1 --format="%H")\"" -DLIB_COMMITTER="\"$(shell git log -1 --format="%cn <%ce>")\"" -DLIB_BUILDTIME="\"$(shell date)\"" ver.c -o $@
+$(BUILDDIR)/ver.o: $(BUILDDIR)/ver.d *.c *.h
+	$(GCC) $(CFLAGS) $(VER_DEFINES) ver.c -o $@
 
-$(BUILDDIR)/%.o: .$(BUILDDIR).dir $(BUILDDIR)/%.d %.c
-	$(GCC) $(CFLAGS) $(firstword $(filter %.c,$^)) -o $@
+$(BUILDDIR)/%.o: $(BUILDDIR)/%.d
+	$(GCC) $(CFLAGS) $*.c -o $@
 
 include $(wildcard $(BUILDDIR)/*.d)
+
