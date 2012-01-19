@@ -31,6 +31,7 @@
 void xbee_netCallback(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt **pkt, void **userData) {
 	struct xbee_netClient *client;
 	struct bufData *buf;
+	void *p;
 	unsigned int dataLen;
 
 	if (!userData) {
@@ -53,8 +54,11 @@ void xbee_netCallback(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt *
 	}
 	buf->len = dataLen;
 
+	/* we don't want to pass the dataItems through, it SHOULD be possible to determine these from the buffer */
+	p = (*pkt)->dataItems;
+	(*pkt)->dataItems = NULL;
 	memcpy(buf->buf, *pkt, dataLen);
-#warning TODO - currently doesnt transmit the dataItems
+	(*pkt)->dataItems = p;
 
 	xbee_netClientTx(xbee, ((struct xbee_netConData*)(*userData))->client, 0x02, 0, buf);
 
