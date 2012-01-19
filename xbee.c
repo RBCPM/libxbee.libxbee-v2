@@ -46,7 +46,7 @@ static void xbee_init(void) {
 	}
 }
 
-int xbee_validate(struct xbee *xbee) {
+EXPORT int xbee_validate(struct xbee *xbee) {
 	return _xbee_validate(xbee, 0);
 }
 int _xbee_validate(struct xbee *xbee, int acceptShutdown) {
