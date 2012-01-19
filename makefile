@@ -25,7 +25,7 @@ CLINKS:=$(addprefix -l,$(LIBS)) $(DEBUG)
 
 ###############################################################################
 
-.PHONY: all install install_dbg install_sudo install_dbg_sudo clean spotless new release .%.dir
+.PHONY: all install install_dbg install_sudo install_dbg_sudo help clean spotless new release .%.dir
 .PRECIOUS: .%.dir $(BUILDDIR)/%.d
 
 OBJS:=$(addprefix $(BUILDDIR)/,$(addsuffix .o,$(SRCS)))
@@ -43,6 +43,21 @@ install_sudo: all $(addprefix $(SYS_INCDIR)/,$(SYS_HEADERS)) $(SYS_LIBDIR)/$(LIB
 
 install_dbg_sudo: install_sudo $(SYS_LIBDIR)/$(LIBOUT).so.$(LIBFULLREV).dbg
 
+help:
+	@echo "usage:"
+	@echo "  make [all]        - to simply build $(LIBOUT)"
+	@echo "  make clean        - to remote all object files and start again"
+	@echo "  make new          - to perform a 'clean', followed by an 'all'"
+	@echo "  make spotless     - to remove ALL generated files and directories"
+	@echo "  make release      - to make a *.tar.bz2 file containing all files required to make use of $(LIBOUT)"
+	@echo "  make install      - to install $(LIBOUT) on this system"
+	@echo "  make install_dbg  - to install $(LIBOUT) along with debug information on this system"
+	@echo "  make help         - to display this help information"
+	@echo ""
+	@echo "other information:"
+	@echo "  to modify settings for the build environment and control various aspects ofthe resulting binary,"
+	@echo "  edit 'makefile.generic'"
+	
 
 $(SYS_LIBDIR)/$(LIBOUT).%.$(LIBFULLREV): $(DESTDIR)/$(LIBOUT).%.$(LIBFULLREV)
 	cp -f $^ $@
@@ -80,32 +95,38 @@ release: all
 
 
 $(DESTDIR)/$(LIBOUT).so: $(DESTDIR)/$(LIBOUT).so.$(LIBFULLREV)
-	ln -fs `basename $^` $@
+	@ln -fs `basename $^` $@
 
 $(DESTDIR)/$(LIBOUT).so.$(LIBFULLREV): .$(DESTDIR).dir $(DESTDIR)/$(LIBOUT).o
-	$(GCC) -shared -Wl,-soname,$(LIBOUT).so.$(LIBFULLREV) $(CLINKS) $(filter %.o,$^) -o $@
-	$(OBJCOPY) --only-keep-debug $@ $@.dbg
-	$(OBJCOPY) --add-gnu-debuglink=$@.dbg $@
-	$(OBJCOPY) --strip-debug $@
+	@echo "  [SPLIT] $@ / $@.dbg"
+	@$(GCC) -shared -Wl,-soname,$(LIBOUT).so.$(LIBFULLREV) $(CLINKS) $(filter %.o,$^) -o $@
+	@$(OBJCOPY) --only-keep-debug $@ $@.dbg
+	@$(OBJCOPY) --add-gnu-debuglink=$@.dbg $@
+	@$(OBJCOPY) --strip-debug $@
 
 $(DESTDIR)/$(LIBOUT).a: $(DESTDIR)/$(LIBOUT).a.$(LIBFULLREV)
-	ln -fs `basename $^` $@
+	@ln -fs `basename $^` $@
 
 $(DESTDIR)/$(LIBOUT).a.$(LIBFULLREV): .$(DESTDIR).dir $(DESTDIR)/$(LIBOUT).o
-	$(AR) rcs $@ $(filter %.o,$^)
+	@echo "  [AR]    $@"
+	@$(AR) rcs $@ $(filter %.o,$^)
 
 $(DESTDIR)/$(LIBOUT).o: .$(DESTDIR).dir $(OBJS)
-	$(LD) -r $(filter %.o,$^) -o $@
+	@echo "  [LD]    $@"
+	@$(LD) -r $(filter %.o,$^) -o $@
 
 
 $(BUILDDIR)/%.d: .$(BUILDDIR).dir %.c
-	$(GCC) -MM -MT $(addprefix $(BUILDDIR)/,$*.o) $*.c -o $@
+	@echo "  [GEN]   $@"
+	@$(GCC) -MM -MT $(addprefix $(BUILDDIR)/,$*.o) $*.c -o $@
 
 $(BUILDDIR)/ver.o: $(BUILDDIR)/ver.d *.c *.h
-	$(GCC) $(CFLAGS) $(VER_DEFINES) ver.c -o $@
+	@echo "  [GCC]   $@"
+	@$(GCC) $(CFLAGS) $(VER_DEFINES) ver.c -o $@
 
 $(BUILDDIR)/%.o: $(BUILDDIR)/%.d
-	$(GCC) $(CFLAGS) $*.c -o $@
+	@echo "  [GCC]   $@"
+	@$(GCC) $(CFLAGS) $*.c -o $@
 
 include $(wildcard $(BUILDDIR)/*.d)
 
