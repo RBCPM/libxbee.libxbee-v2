@@ -21,7 +21,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef XBEE_NO_NETSERVER
+#ifndef XBEE_NO_NET_SERVER
 
 #ifndef INET_ADDRSTRLEN
 #define INET_ADDRSTRLEN 16
@@ -41,26 +41,28 @@ struct xbee_netClient {
 
 	struct ll_head conList;
 	xsys_thread rxThread;
+	
+	char versionsMatched;
 
-	int conKeyCount;
+	unsigned short conKeyCount;
 };
 
 struct xbee_netConData {
-	int key;
+	unsigned short key;
 	struct xbee_netClient *client;
 };
 
-int xbee_netClientTx(struct xbee *xbee, struct xbee_netClient *client, unsigned char id, unsigned char returnValue, struct bufData *buf);
+int xbee_netClientTx(struct xbee *xbee, struct xbee_netClient *client, unsigned char id, unsigned char reqID, unsigned char returnValue, struct bufData *buf);
 
 int xbee_netGetCon(struct xbee *xbee, struct xbee_netClient *client, unsigned short key, struct xbee_con **rCon);
-int xbee_netKeyFromBytes(unsigned char *bytes);
+unsigned short xbee_netKeyFromBytes(unsigned char *bytes);
 
 void xbee_netClientRxThread(struct xbee_netClientThreadInfo *info);
 
-#else /* XBEE_NO_NETSERVER */
+#else /* XBEE_NO_NET_SERVER */
 
 #define xbee_netStop
 
-#endif /* XBEE_NO_NETSERVER */
+#endif /* XBEE_NO_NET_SERVER */
 
 #endif /* __XBEE_NET_H */

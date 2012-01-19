@@ -18,7 +18,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef XBEE_NO_NETSERVER
+#ifndef XBEE_NO_NET_SERVER
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -79,9 +79,10 @@ done:
 
 /* ######################################################################### */
 
-int xbee_netClientTx(struct xbee *xbee, struct xbee_netClient *client, unsigned char id, unsigned char returnValue, struct bufData *buf) {
+int xbee_netClientTx(struct xbee *xbee, struct xbee_netClient *client, unsigned char id, unsigned char reqID, unsigned char returnValue, struct bufData *buf) {
 	int ret;
-	unsigned char ibuf[7];
+	int txLen;
+	unsigned char ibuf[8];
 
 	ret = 0;
 
@@ -101,14 +102,20 @@ int xbee_netClientTx(struct xbee *xbee, struct xbee_netClient *client, unsigned 
 	}
 	ibuf[3] = '|';
 	ibuf[4] = id;
-	ibuf[5] = returnValue;
-	ibuf[6] = '}';
+	ibuf[5] = reqID;
+	if (id & 0x80) {
+		ibuf[6] = returnValue;
+		txLen = 7;
+	} else {
+		txLen = 6;
+	}
+	ibuf[7] = '}';
 
 	xsys_mutex_lock(&client->fdTxMutex);
 
-	         if (xbee_netSend(client->fd, ibuf, 6, MSG_WAITALL) != 6)                    { ret = XBEE_EIO; goto die1; }
+	         if (xbee_netSend(client->fd, ibuf, txLen, MSG_WAITALL) != txLen)            { ret = XBEE_EIO; goto die1; }
 	if (buf) if (xbee_netSend(client->fd, buf->buf, buf->len, MSG_WAITALL) != buf->len)  { ret = XBEE_EIO; goto die1; }
-	         if (xbee_netSend(client->fd, &ibuf[6], 1, MSG_WAITALL) != 1)                { ret = XBEE_EIO; goto die1; }
+	         if (xbee_netSend(client->fd, &ibuf[7], 1, MSG_WAITALL) != 1)                { ret = XBEE_EIO; goto die1; }
 
 die1:
 	xsys_mutex_unlock(&client->fdTxMutex);
@@ -134,13 +141,11 @@ int xbee_netGetCon(struct xbee *xbee, struct xbee_netClient *client, unsigned sh
 	return 0;
 }
 
-int xbee_netKeyFromBytes(unsigned char *bytes) {
-	int key;
+unsigned short xbee_netKeyFromBytes(unsigned char *bytes) {
+	unsigned short key;
 	
-	key  = (bytes[0] << 24) & 0xFF000000;
-	key |= (bytes[1] << 16) & 0x00FF0000;
-	key |= (bytes[2] << 8 ) & 0x0000FF00;
-	key |= (bytes[3]      ) & 0x000000FF;
+	key  = (bytes[0] << 8) & 0xFF00;
+	key |= (bytes[1]     ) & 0x00FF;
 	
 	return key;
 }
@@ -149,14 +154,23 @@ int xbee_netKeyFromBytes(unsigned char *bytes) {
 
 /* protocol is as follows:
 
-		{<size>|<id><data>}
-			<size> is a 2 byte unsigned integer. indicates length of data
-			<id>   is a 1 byte type identifier
-			<data> is raw data
+		{<size>|<id><reqID>[returnValue]<data...>}
+			<size>         is a 2 byte unsigned integer. indicates length of <data>
+			<id>           is a 1 byte type identifier
+			               bit 7 indicates that this is a response
+			<reqID>        is a 1 byte identifier that links a response to a request
+			               the ID in a request will be used in the response, it is up to the client to ensure that only 1 id is active at any one time
+			[returnValue]  is a 1 byte return value (on the response)
+			               a response is identified by ((id & 0x80) == 0x80)
+			<data...>      is raw data, of <size> bytes
 
-	e.g: message with id of 'x' and 6 bytes of data (pass the following through `echo`)
-		{\0000\0006|x123456}
+	e.g: request with id of 'x', request id of 'y' and 6 bytes of data (pass the following through `echo`)
+		{\0000\0006|xy123456}
+		
+	e.g: the response for the above example could be as follows (a 0 return value indicates NO ERROR):
+		{\0000\0002|\0370y\0000Hi}
 
+			it is permitted for a response to be sent with no request, for example within an XBee connection's callback function - see xbee_netCallback()
 */
 int xbee_netClientRx(struct xbee *xbee, struct xbee_netClient *client) {
 	int ret;
@@ -164,8 +178,10 @@ int xbee_netClientRx(struct xbee *xbee, struct xbee_netClient *client) {
 	int pos;
 	int i;
 	unsigned char c;
-	unsigned char ibuf[4];
+	unsigned char ibuf[5];
 	unsigned char id;
+	unsigned char reqID;
+	unsigned char returnValue;
 	unsigned short len;
 	struct bufData *buf, *rBuf;
 
@@ -182,8 +198,8 @@ int xbee_netClientRx(struct xbee *xbee, struct xbee_netClient *client) {
 
 		if (c != '{') continue;
 
-		/* read the length, seperator and id bytes */
-		if ((iret = xbee_netRecv(client->fd, ibuf, 4, MSG_WAITALL)) == -1) {
+		/* read the length, seperator and id and reqID bytes */
+		if ((iret = xbee_netRecv(client->fd, ibuf, 5, MSG_WAITALL)) == -1) {
 			xbee_perror(1, "xbee_netRecv()");
 			goto retry;
 		} else if (iret == -2) {
@@ -196,6 +212,32 @@ int xbee_netClientRx(struct xbee *xbee, struct xbee_netClient *client) {
 		}
 		len = ((ibuf[0] << 8) & 0xFF00) | (ibuf[1] & 0xFF);
 		id = ibuf[3];
+		reqID = ibuf[4];
+		
+		if (id & 0x80) {
+			/* then this is a response... so suck in the returnValue */
+			if ((iret = xbee_netRecv(client->fd, &returnValue, 1, MSG_WAITALL)) == -1) {
+				xbee_perror(1, "xbee_netRecv()");
+				goto retry;
+			} else if (iret == -2) {
+				break;
+			}
+		} else {
+			returnValue = 0;
+		}
+
+#ifndef XBEE_NO_NET_STRICT_VERSIONS
+		if (!client->versionsMatched) {
+			if (id != 0x7F) {
+				xbee_log(5, "client must confirm commit ID before communication can begin");
+				if ((iret = xbee_netClientTx(xbee, client, 0x7F | 0x80, reqID, XBEE_EINVAL, NULL)) != 0) {
+					xbee_log(1, "WARNING! response failed (%d)", iret);
+				}
+				goto retry;
+			}
+		}
+#endif /* XBEE_NO_NET_STRICT_VERSIONS */
+		
 
 		if ((buf = calloc(1, sizeof(*buf) + len)) == NULL) {
 			xbee_log(1, "ENOMEM - data lost");
@@ -234,12 +276,16 @@ int xbee_netClientRx(struct xbee *xbee, struct xbee_netClient *client) {
   	}
 
 		rBuf = NULL;
-		if ((iret = netHandlers[pos].handler(xbee, client, id, buf, &rBuf)) != 0) {
+#warning TODO - need to make this threadded...
+		/* a request handler should not expect anything from the returnValue */
+		if ((iret = netHandlers[pos].handler(xbee, client, id, returnValue, buf, &rBuf)) != 0) {
 			xbee_log(2, "netHandler '%s' returned %d for client %s:%hu", netHandlers[pos].handlerName, iret, client->addr, client->port);
 		}
-
-		if ((iret = xbee_netClientTx(xbee, client, id, iret, rBuf)) != 0) {
-			xbee_log(1, "WARNING! response failed (%d)", iret);
+		/* if this was a request, then send a response */
+		if (!(id & 0x80)) {
+			if ((iret = xbee_netClientTx(xbee, client, id | 0x80, reqID, iret, rBuf)) != 0) {
+				xbee_log(1, "WARNING! response failed (%d)", iret);
+			}
 		}
 
 		if (rBuf && rBuf != buf) free(rBuf);
@@ -515,4 +561,4 @@ EXPORT int xbee_netStop(struct xbee *xbee) {
 	return XBEE_EUNKNOWN;
 }
 
-#endif /* XBEE_NO_NETSERVER */
+#endif /* XBEE_NO_NET_SERVER */

@@ -21,21 +21,23 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef XBEE_NO_NETSERVER
+#ifndef XBEE_NO_NET_SERVER
 
 /* ADD_NET_HANDLER(id, functionName) */
-#define ADD_NET_HANDLER(a, b) \
-  { (a), (#b), (b) }
+#define ADD_NET_REQ_HANDLER(a, b) \
+  { ((a)&0x7F), (#b), (b) }
+#define ADD_NET_RSP_HANDLER(a, b) \
+  { ((a)|0x80), (#b), (b) }
 #define ADD_NET_HANDLER_TERMINATOR() \
   { 0, NULL, NULL  }
 struct xbee_netHandler {
 	unsigned char id;
 	char *handlerName;
-	int (*handler)(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, struct bufData *buf, struct bufData **rBuf);
+	int (*handler)(struct xbee *xbee, struct xbee_netClient *client, unsigned int id, unsigned int returnValue, struct bufData *buf, struct bufData **rBuf);
 };
 
 extern struct xbee_netHandler netHandlers[];
 
-#endif /* XBEE_NO_NETSERVER */
+#endif /* XBEE_NO_NET_SERVER */
 
 #endif /* __XBEE_NET_HANDLERS_H */
