@@ -28,7 +28,7 @@
 #include "xbee_sG.h"
 #include "log.h"
 
-static int xbee_s1_parseIO(struct xbee *xbee, struct bufData *buf, struct xbee_pkt *pkt, int startIndex) {
+int xbee_s1_parseIO(struct xbee *xbee, struct bufData *buf, struct xbee_pkt *pkt, int startIndex) {
 	int sampleCount;
 	int i, o;
 	int ioMask;
@@ -307,7 +307,7 @@ done:
 
 /* ######################################################################### */
 
-static struct xbee_conType conTypes[] = {
+struct xbee_conType conTypes[] = {
 	ADD_TYPE_RX  (0x8A,       0, "Modem Status"),
 	ADD_TYPE_RX  (0x89,       0, "Transmit Status"),
 	
@@ -325,7 +325,7 @@ static struct xbee_conType conTypes[] = {
 	ADD_TYPE_TERMINATOR()
 };
 
-static struct xbee_pktHandler pktHandlers[] = {
+struct xbee_pktHandler pktHandlers[] = {
 	ADD_HANDLER(0x88, xbee_s1_atRx),      /* local AT */
 	ADD_HANDLER(0x08, xbee_sG_atTx),      /* local AT */
 	ADD_HANDLER(0x09, xbee_sG_atTx),      /* local AT - queued */

@@ -21,6 +21,8 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef XBEE_NO_NETSERVER
+
 #ifndef INET_ADDRSTRLEN
 #define INET_ADDRSTRLEN 16
 #endif
@@ -54,5 +56,11 @@ int xbee_netGetCon(struct xbee *xbee, struct xbee_netClient *client, unsigned sh
 int xbee_netKeyFromBytes(unsigned char *bytes);
 
 void xbee_netClientRxThread(struct xbee_netClientThreadInfo *info);
+
+#else /* XBEE_NO_NETSERVER */
+
+#define xbee_netStop
+
+#endif /* XBEE_NO_NETSERVER */
 
 #endif /* __XBEE_NET_H */

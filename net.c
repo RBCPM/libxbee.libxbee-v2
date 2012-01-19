@@ -18,6 +18,8 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef XBEE_NO_NETSERVER
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -84,7 +86,7 @@ int xbee_netClientTx(struct xbee *xbee, struct xbee_netClient *client, unsigned 
 	ret = 0;
 
 	ibuf[0] = '{';
-	if (!buf) {
+	if (!buf || buf->len == 0) {
 		ibuf[1] = 0;
 		ibuf[2] = 0;
 	  xbee_log(20,"Tx message: (0 bytes)");
@@ -170,6 +172,7 @@ int xbee_netClientRx(struct xbee *xbee, struct xbee_netClient *client) {
 	ret = 0;
 
 	for (;;) {
+		/* read the start byte '{' */
 		if ((iret = xbee_netRecv(client->fd, &c, 1, MSG_WAITALL)) == -1) {
 			xbee_perror(1, "xbee_netRecv()");
 			goto retry;
@@ -179,6 +182,7 @@ int xbee_netClientRx(struct xbee *xbee, struct xbee_netClient *client) {
 
 		if (c != '{') continue;
 
+		/* read the length, seperator and id bytes */
 		if ((iret = xbee_netRecv(client->fd, ibuf, 4, MSG_WAITALL)) == -1) {
 			xbee_perror(1, "xbee_netRecv()");
 			goto retry;
@@ -200,7 +204,7 @@ int xbee_netClientRx(struct xbee *xbee, struct xbee_netClient *client) {
 		buf->len = len;
 
 		len += 1; /* +1 so that we read the closing '}'
-		             this will later be overwritten with a '\0', and is included in the sizeof(struct bufData) */
+		             this will later be checked and then overwritten with a '\0', and is included in the sizeof(struct bufData) */
 
 		if ((iret = xbee_netRecv(client->fd, buf->buf, len, MSG_WAITALL)) == -1) {
 			xbee_perror(1, "xbee_netRecv()");
@@ -301,12 +305,12 @@ die1:;
 
 /* ######################################################################### */
 
-static int xbee_netAuthorizeAddress(struct xbee *xbee, char *addr) {
+int xbee_netAuthorizeAddress(struct xbee *xbee, char *addr) {
 	/* checks IP address, returns 0 to allow, else deny. not yet implemented */
 	return 0;
 }
 
-static void xbee_netListenThread(struct xbee *xbee) {
+void xbee_netListenThread(struct xbee *xbee) {
 	struct sockaddr_in addrinfo;
 	socklen_t addrlen;
 	char addr[INET_ADDRSTRLEN];
@@ -510,3 +514,5 @@ EXPORT int xbee_netStop(struct xbee *xbee) {
 
 	return XBEE_EUNKNOWN;
 }
+
+#endif /* XBEE_NO_NETSERVER */

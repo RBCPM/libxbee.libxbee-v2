@@ -21,6 +21,8 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef XBEE_NO_NETSERVER
+
 /* ADD_NET_HANDLER(id, functionName) */
 #define ADD_NET_HANDLER(a, b) \
   { (a), (#b), (b) }
@@ -33,5 +35,7 @@ struct xbee_netHandler {
 };
 
 extern struct xbee_netHandler netHandlers[];
+
+#endif /* XBEE_NO_NETSERVER */
 
 #endif /* __XBEE_NET_HANDLERS_H */

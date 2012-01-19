@@ -10,6 +10,9 @@ SYS_INCDIR:=    /usr/include
 ### un-comment to remove ALL logging (smaller & faster binary)
 #CFLAGS+=        -DXBEE_DISABLE_LOGGING
 
+### un-comment to remove network server functionality
+#CFLAGS+=        -DXBEE_NO_NETSERVER
+
 ### un-comment to turn off hardware flow control
 #CFLAGS+=        -DXBEE_NO_RTSCTS
 

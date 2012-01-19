@@ -31,6 +31,7 @@
 #include "log.h"
 #include "rx.h"
 #include "tx.h"
+#include "net.h"
 
 struct xbee *xbee_default = NULL;
 static struct ll_head xbee_list;
