@@ -18,7 +18,7 @@ GCC:=$(CROSS_COMPILE)gcc
 OBJCOPY:=$(CROSS_COMPILE)objcopy
 
 DEBUG:=-g
-CFLAGS:=-Wall -Wstrict-prototypes -Wno-variadic-macros -c -fPIC $(DEBUG) $(CFLAGS)
+CFLAGS:=-Wall -Wstrict-prototypes -Wno-variadic-macros -c -fPIC $(DEBUG) $(addprefix -D,$(OPTIONS))
 CFLAGS+=-fvisibility=hidden
 #CFLAGS+=-pedantic
 CLINKS:=$(addprefix -l,$(LIBS)) $(DEBUG)
