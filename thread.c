@@ -54,6 +54,7 @@ void xbee_threadMonitor(struct xbee *xbee) {
 		restarted = 0;
 		for (info = NULL; (info = ll_get_next(&xbee->threadList, info)) != NULL;) {
 			if (info->running) {
+#warning TODO - find an alternative to pthread_tryjoin_np()
 				if ((ret = xsys_thread_tryjoin(*info->thread, &tRet)) == 0) {
 					info->running = 0;
 					xbee_log(15,"Thread 0x%X died (%s), it returned 0x%X", info->thread, info->funcName, ret);
