@@ -16,6 +16,9 @@ SYS_INCDIR:=    /usr/include
 ### un-comment to turn off hardware flow control
 #OPTIONS+=       XBEE_NO_RTSCTS
 
+### un-comment to turn off plugin support
+#OPTIONS+=       XBEE_NO_PLUGINS
+
 ################################################################################
 ### Do NOT change below this line
 

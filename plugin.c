@@ -29,6 +29,26 @@
 #include "thread.h"
 #include "log.h"
 
+#ifdef XBEE_NO_PLUGINS
+
+EXPORT int xbee_pluginLoad(char *filename, struct xbee *xbee, void *arg) {
+	return XBEE_EINVAL;
+}
+
+EXPORT int xbee_pluginUnload(char *filename, struct xbee *xbee) {
+	return XBEE_EINVAL;
+}
+
+int _xbee_pluginUnload(struct plugin_info *plugin, int acceptShutdown) {
+	return XBEE_EINVAL;
+}
+
+struct xbee_mode *xbee_pluginModeGet(char *name) {
+	return NULL;
+}
+
+#else /* XBEE_NO_PLUGINS */
+
 struct ll_head plugin_list;
 int plugins_initialized = 0;
 
@@ -264,3 +284,5 @@ struct xbee_mode *xbee_pluginModeGet(char *name) {
 	
 	return NULL;
 }
+
+#endif /* XBEE_NO_PLUGINS */
