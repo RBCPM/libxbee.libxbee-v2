@@ -18,10 +18,12 @@ GCC:=$(CROSS_COMPILE)gcc
 OBJCOPY:=$(CROSS_COMPILE)objcopy
 
 DEBUG:=-g
-CFLAGS:=-Wall -Wstrict-prototypes -Wno-variadic-macros -c -fPIC $(DEBUG) $(addprefix -D,$(OPTIONS))
+CFLAGS:=-Wall -Wstrict-prototypes -Wno-variadic-macros -c -fPIC $(DEBUG) $(addprefix -D,$(OPTIONS)) $(CFLAGS)
 CFLAGS+=-fvisibility=hidden
 #CFLAGS+=-pedantic
-CLINKS:=$(addprefix -l,$(LIBS)) $(DEBUG)
+CLINKS:=$(addprefix -l,$(LIBS)) $(DEBUG) $(CLINKS)
+
+PDEPS:=makefile makefile.generic
 
 ###############################################################################
 
@@ -34,10 +36,10 @@ OBJS:=$(addprefix $(BUILDDIR)/,$(addsuffix .o,$(SRCS)))
 all: $(DESTDIR)/$(LIBOUT).so $(DESTDIR)/$(LIBOUT).a
 
 install: all
-	sudo make install_sudo
+	@sudo make install_sudo
 
 install_dbg: all
-	sudo make install_dbg_sudo
+	@sudo make install_dbg_sudo
 
 install_sudo: all $(addprefix $(SYS_INCDIR)/,$(SYS_HEADERS)) $(SYS_LIBDIR)/$(LIBOUT).so.$(LIBFULLREV) $(SYS_LIBDIR)/$(LIBOUT).a.$(LIBFULLREV)
 
@@ -60,17 +62,17 @@ help:
 	
 
 $(SYS_LIBDIR)/$(LIBOUT).%.$(LIBFULLREV): $(DESTDIR)/$(LIBOUT).%.$(LIBFULLREV)
-	cp -f $^ $@
-	chmod 644 $@
-	ln -fs $@ $(subst .$(LIBFULLREV),,$@)
+	@echo "  [INSTALL] $@"
+	@install -g root -o root -m 755 -DT $^ $@
+	@ln -fs $@ $(subst .$(LIBFULLREV),,$@)
 
 $(SYS_LIBDIR)/$(LIBOUT).so.$(LIBFULLREV).dbg: $(DESTDIR)/$(LIBOUT).so.$(LIBFULLREV).dbg
-	cp -f $^ $@
-	chmod 644 $@
+	@echo "  [INSTALL] $@"
+	@install -g root -o root -m 755 -DT $^ $@
 
 $(SYS_INCDIR)/%.h: %.h
-	cp -f $^ $@
-	chmod 644 $@
+	@echo "  [INSTALL] $@"
+	@install -g root -o root -m 644 -DT $^ $@
 
 
 new: clean
@@ -98,7 +100,7 @@ $(DESTDIR)/$(LIBOUT).so: $(DESTDIR)/$(LIBOUT).so.$(LIBFULLREV)
 	@ln -fs `basename $^` $@
 
 $(DESTDIR)/$(LIBOUT).so.$(LIBFULLREV): .$(DESTDIR).dir $(DESTDIR)/$(LIBOUT).o
-	@echo "  [SPLIT] $@ / $@.dbg"
+	@echo "  [SPLIT]   $@ / $@.dbg"
 	@$(GCC) -shared -Wl,-soname,$(LIBOUT).so.$(LIBFULLREV) $(CLINKS) $(filter %.o,$^) -o $@
 	@$(OBJCOPY) --only-keep-debug $@ $@.dbg
 	@$(OBJCOPY) --add-gnu-debuglink=$@.dbg $@
@@ -108,25 +110,24 @@ $(DESTDIR)/$(LIBOUT).a: $(DESTDIR)/$(LIBOUT).a.$(LIBFULLREV)
 	@ln -fs `basename $^` $@
 
 $(DESTDIR)/$(LIBOUT).a.$(LIBFULLREV): .$(DESTDIR).dir $(DESTDIR)/$(LIBOUT).o
-	@echo "  [AR]    $@"
+	@echo "  [AR]      $@"
 	@$(AR) rcs $@ $(filter %.o,$^)
 
 $(DESTDIR)/$(LIBOUT).o: .$(DESTDIR).dir $(OBJS)
-	@echo "  [LD]    $@"
+	@echo "  [LD]      $@"
 	@$(LD) -r $(filter %.o,$^) -o $@
 
 
-$(BUILDDIR)/%.d: .$(BUILDDIR).dir %.c
-	@echo "  [GEN]   $@"
+$(BUILDDIR)/%.d: .$(BUILDDIR).dir %.c $(PDEPS)
+	@echo "  [GEN]     $@"
 	@$(GCC) -MM -MT $(addprefix $(BUILDDIR)/,$*.o) $*.c -o $@
 
-$(BUILDDIR)/ver.o: $(BUILDDIR)/ver.d *.c *.h
-	@echo "  [GCC]   $@"
+$(BUILDDIR)/ver.o: $(BUILDDIR)/ver.d *.c *.h $(PDEPS)
+	@echo "  [GCC]     $@"
 	@$(GCC) $(CFLAGS) $(VER_DEFINES) ver.c -o $@
 
-$(BUILDDIR)/%.o: $(BUILDDIR)/%.d
-	@echo "  [GCC]   $@"
+$(BUILDDIR)/%.o: $(BUILDDIR)/%.d $(PDEPS)
+	@echo "  [GCC]     $@"
 	@$(GCC) $(CFLAGS) $*.c -o $@
 
 include $(wildcard $(BUILDDIR)/*.d)
-
