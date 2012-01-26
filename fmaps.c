@@ -27,10 +27,11 @@
 
 #include "rx.h"
 #include "tx.h"
+#include "io.h"
 
 const struct xbee_fmap xbee_fmap_serial = {
-	.io_open = NULL,
-	.io_close = NULL,
+	.io_open = xbee_io_open,
+	.io_close = xbee_io_close,
 
 	.tx = xbee_txSerialXBee,
 	.rx = xbee_rxSerialXBee,

@@ -71,6 +71,11 @@ EXPORT int xbee_setup(char *path, int baudrate, struct xbee **retXbee) {
 	}
 	xbee->f = &xbee_fmap_serial;
 	
+	if (!xbee->f) {
+		ret = XBEE_ENOTIMPLEMENTED;
+		goto die2;
+	}
+	
 	if ((xbee->device.path = calloc(1, sizeof(char) * (strlen(path) + 1))) == NULL) {
 		ret = XBEE_ENOMEM;
 		goto die2;
@@ -78,7 +83,11 @@ EXPORT int xbee_setup(char *path, int baudrate, struct xbee **retXbee) {
 	strcpy(xbee->device.path, path);
 	xbee->device.baudrate = baudrate;
 	
-	if (xbee_io_open(xbee)) {
+	if (!xbee->f->io_open) {
+		ret = XBEE_ENOTIMPLEMENTED;
+		goto die3;
+	}
+	if (xbee->f->io_open(xbee)) {
 		ret = XBEE_EIO;
 		goto die3;
 	}
@@ -176,7 +185,7 @@ die5:
 		xsys_sem_destroy(&xbee->frameIds[i].sem);
 	}
 die4:
-	xbee_io_close(xbee);
+	if (xbee->f->io_close) xbee->f->io_close(xbee);
 die3:
 	free(xbee->device.path);
 die2:
@@ -246,7 +255,7 @@ EXPORT void xbee_shutdown(struct xbee *xbee) {
 	}
 	
 	xbee_log(5,"- Cleanup I/O information...");
-	xbee_io_close(xbee);
+	if (xbee->f->io_close) xbee->f->io_close(xbee);
 	free(xbee->device.path);
 	
 	/* xbee_cleanupMode() prints it's own messages */

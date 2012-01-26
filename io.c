@@ -105,9 +105,10 @@ void xbee_io_close(struct xbee *xbee) {
 }
 
 int xbee_io_reopen(struct xbee *xbee) {
-	xbee_io_close(xbee);
+	if (!xbee->f->io_open) return XBEE_ENOTIMPLEMENTED;
+	if (xbee->f->io_close) xbee->f->io_close(xbee);
 	usleep(10000);
-	return xbee_io_open(xbee);
+	return xbee->f->io_open(xbee);
 }
 
 /* ######################################################################### */
