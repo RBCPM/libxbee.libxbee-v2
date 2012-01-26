@@ -330,7 +330,7 @@ EXPORT int xbee_convTx(struct xbee *xbee, struct xbee_con *con, char *format, va
 
 EXPORT int xbee_connTx(struct xbee *xbee, struct xbee_con *con, char *data, int length) {
 	int ret = XBEE_ENONE;
-	struct bufData *buf, *oBuf;
+	struct bufData *buf;
 	struct xbee_conType *conType;
 	if (!xbee) {
 		if (!xbee_default) return XBEE_ENOXBEE;
@@ -340,13 +340,12 @@ EXPORT int xbee_connTx(struct xbee *xbee, struct xbee_con *con, char *data, int 
 	if (!con) return XBEE_EMISSINGPARAM;
 	
 	if (_xbee_conValidate(xbee, con, &conType)) return XBEE_EINVAL;
-	if (!conType->txHandler) return XBEE_ECANTTX;
+	if (!conType->txHandler && !xbee->f->connTx) return XBEE_ECANTTX;
 	
 	if ((buf = calloc(1, sizeof(struct bufData) + (sizeof(unsigned char) * (length - 1)))) == NULL) {
 		ret = XBEE_ENOMEM;
 		goto die1;
 	}
-	oBuf = buf;
 	
 	buf->len = length;
 	memcpy(buf->buf, data, length);
@@ -359,25 +358,34 @@ EXPORT int xbee_connTx(struct xbee *xbee, struct xbee_con *con, char *data, int 
 		}
 	}
 	
-	xbee_log(6,"Executing handler (%s)...", conType->txHandler->handlerName);
-	if ((ret = conType->txHandler->handler(xbee, conType->txHandler, 0, &buf, con, NULL)) != XBEE_ENONE) goto die2;
-	
-	/* a bit of sanity checking... */
-	if (!buf ||
-	    buf == oBuf) {
-		ret = XBEE_EUNKNOWN;
-		goto die2;
+	/* if there is a custom mapping for connTx, then the handlers are skipped (but can be called from within the mapping!) */
+	if (!xbee->f->connTx) {
+		struct bufData *oBuf;
+		oBuf = buf;
+		xbee_log(6,"Executing handler (%s)...", conType->txHandler->handlerName);
+		if ((ret = conType->txHandler->handler(xbee, conType->txHandler, 0, &buf, con, NULL)) != XBEE_ENONE) goto die2;
+		
+		/* a bit of sanity checking... */
+		if (!buf || buf == oBuf) {
+			ret = XBEE_EUNKNOWN;
+			goto die2;
+		}
+		free(oBuf);
 	}
-	free(oBuf);
 	
 	if (con->options.waitForAck && con->frameID) {
 		xbee_log(4,"Locking txMutex for con @ %p", con);
 		xsys_mutex_lock(&con->txMutex);
 	}
 	
-	ll_add_tail(&xbee->txList, buf);
-	xsys_sem_post(&xbee->txSem);
-	
+	if (!xbee->f->connTx) {
+		/* same as before, if a mapping is registered, then the packet isn't queued for Tx, at least not here */
+		ll_add_tail(&xbee->txList, buf);
+		xsys_sem_post(&xbee->txSem);
+	} else {
+		if ((ret = xbee->f->connTx(xbee, con, buf)) != XBEE_ENONE) goto die2;
+	}
+		
 	if (con->options.waitForAck && con->frameID) {
 		xbee_log(4,"Waiting for txSem for con @ %p", con);
 		ret = xbee_frameIdGetACK(xbee, con, con->frameID);
