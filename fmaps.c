@@ -50,6 +50,6 @@ const struct xbee_fmap xbee_fmap_serial = {
 	.pluginLoad = xbee_pluginLoad,
 	.pluginUnload = xbee_pluginUnload,
 
-	.netStart = NULL,
-	.netStop = NULL,
+	.netStart = xbee_netStart,
+	.netStop = xbee_netStop,
 };

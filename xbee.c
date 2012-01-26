@@ -219,7 +219,8 @@ EXPORT void xbee_shutdown(struct xbee *xbee) {
 	   this means that for the default behavior, the fmap must point at this function! */
 	if (!xbee->f->shutdown) return;
 	if (xbee->f->shutdown != xbee_shutdown) {
-		return xbee->f->shutdown(xbee);
+		xbee->f->shutdown(xbee);
+		return;
 	}
 	
 	xbee->running = 0;

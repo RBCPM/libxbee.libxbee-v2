@@ -102,8 +102,8 @@ struct xbee_fmap {
 	int  (*pluginLoad)(char *filename, struct xbee *xbee, void *arg); /* user-facing / diversion */
 	int  (*pluginUnload)(char *filename, struct xbee *xbee); /* user-facing / diversion */
 
-	int  (*netStart)(struct xbee *xbee, int port);
-	int  (*netStop)(struct xbee *xbee);
+	int  (*netStart)(struct xbee *xbee, int port); /* user-facing / diversion */
+	int  (*netStop)(struct xbee *xbee); /* user-facing / diversion */
 };
 
 /* ######################################################################### */
