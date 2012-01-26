@@ -7,4 +7,4 @@ main: main.c /usr/lib/libxbee.so
 	gcc $(filter %.c,$^) -g -lxbee -lpthread -lrt -ldl -o $@
 
 plugin.so: plugin.c
-	gcc -shared -Wl,-soname,myplugin.so -g -fPIC $^ -o $@
+	gcc -shared -Wl,-soname,myplugin.so -g -fPIC -iquote ../../ $^ -o $@

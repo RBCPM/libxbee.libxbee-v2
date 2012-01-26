@@ -21,7 +21,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../../internal.h"
+#include "internal.h"
+#include "plugin.h"
 
 int myInit(struct xbee *xbee, void *arg, void **pluginData) {
 	int ret;
