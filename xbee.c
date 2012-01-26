@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include "internal.h"
+#include "fmaps.h"
 #include "mode.h"
 #include "thread.h"
 #include "plugin.h"
@@ -68,6 +69,7 @@ EXPORT int xbee_setup(char *path, int baudrate, struct xbee **retXbee) {
 		ret = XBEE_ENOMEM;
 		goto die1;
 	}
+	xbee->f = &xbee_fmap_serial;
 	
 	if ((xbee->device.path = calloc(1, sizeof(char) * (strlen(path) + 1))) == NULL) {
 		ret = XBEE_ENOMEM;
