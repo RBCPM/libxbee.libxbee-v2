@@ -24,5 +24,6 @@
 #define XBEE_TX_RESTART_DELAY 25
 
 int xbee_tx(struct xbee *xbee);
+int xbee_txSerialXBee(struct xbee *xbee, struct bufData *buf);
 
 #endif /* __XBEE_TX_H */

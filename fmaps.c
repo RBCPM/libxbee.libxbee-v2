@@ -32,7 +32,7 @@ const struct xbee_fmap xbee_fmap_serial = {
 	.io_open = NULL,
 	.io_close = NULL,
 
-	.tx = NULL,
+	.tx = xbee_txSerialXBee,
 	.rx = xbee_rxSerialXBee,
 
 	.postInit = NULL,
