@@ -442,6 +442,14 @@ EXPORT int xbee_netStart(struct xbee *xbee, int port) {
     xbee = xbee_default;
   }
   if (!xbee_validate(xbee)) return XBEE_ENOXBEE;
+	
+	/* user-facing functions need this form of protection...
+	   this means that for the default behavior, the fmap must point at this function! */
+	if (!xbee->f->netStart) return XBEE_ENOTIMPLEMENTED;
+	if (xbee->f->netStart != xbee_netStart) {
+		return xbee->f->netStart(xbee, port);
+	}
+	
 	if (port <= 0 || port >= 65535) return XBEE_ERANGE;
 
 	ret = XBEE_ENONE;
@@ -541,6 +549,13 @@ EXPORT int xbee_netStop(struct xbee *xbee) {
     xbee = xbee_default;
   }
   if (!xbee_validate(xbee)) return XBEE_ENOXBEE;
+	
+	/* user-facing functions need this form of protection...
+	   this means that for the default behavior, the fmap must point at this function! */
+	if (!xbee->f->netStop) return XBEE_ENOTIMPLEMENTED;
+	if (xbee->f->netStop != xbee_netStop) {
+		return xbee->f->netStop(xbee);
+	}
 
 	if (!xbee->net) return XBEE_EINVAL;
 	net = xbee->net;

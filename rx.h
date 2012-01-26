@@ -25,5 +25,6 @@
 
 void xbee_triggerCallback(struct xbee *xbee, struct xbee_con *con);
 int xbee_rx(struct xbee *xbee);
+int xbee_rxSerialXBee(struct xbee *xbee, struct bufData **buf, int retries);
 
 #endif /* __XBEE_RX_H */

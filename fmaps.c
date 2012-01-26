@@ -1,6 +1,3 @@
-#ifndef __XBEE_TX_H
-#define __XBEE_TX_H
-
 /*
   libxbee - a C library to aid the use of Digi's XBee wireless modules
             running in API mode (AP=2).
@@ -21,9 +18,38 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define XBEE_TX_RESTART_DELAY 25
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-int xbee_tx(struct xbee *xbee);
-int xbee_txSerialXBee(struct xbee *xbee, struct bufData *buf);
+#include "internal.h"
+#include "fmaps.h"
 
-#endif /* __XBEE_TX_H */
+#include "rx.h"
+#include "tx.h"
+#include "io.h"
+
+const struct xbee_fmap xbee_fmap_serial = {
+	.io_open = xbee_io_open,
+	.io_close = xbee_io_close,
+
+	.tx = xbee_txSerialXBee,
+	.rx = xbee_rxSerialXBee,
+
+	.postInit = NULL,
+	.shutdown = xbee_shutdown,
+
+	.conValidate = NULL,
+	.conNew = NULL,
+	.connTx = NULL,
+	.conEnd = NULL,
+	.conOptions = NULL,
+	.conSleep = NULL,
+	.conWake = NULL,
+
+	.pluginLoad = xbee_pluginLoad,
+	.pluginUnload = xbee_pluginUnload,
+
+	.netStart = xbee_netStart,
+	.netStop = xbee_netStop,
+};

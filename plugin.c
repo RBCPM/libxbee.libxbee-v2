@@ -32,15 +32,15 @@
 #ifdef XBEE_NO_PLUGINS
 
 EXPORT int xbee_pluginLoad(char *filename, struct xbee *xbee, void *arg) {
-	return XBEE_EINVAL;
+	return XBEE_ENOTIMPLEMENTED;
 }
 
 EXPORT int xbee_pluginUnload(char *filename, struct xbee *xbee) {
-	return XBEE_EINVAL;
+	return XBEE_ENOTIMPLEMENTED;
 }
 
 int _xbee_pluginUnload(struct plugin_info *plugin, int acceptShutdown) {
-	return XBEE_EINVAL;
+	return XBEE_ENOTIMPLEMENTED;
 }
 
 struct xbee_mode *xbee_pluginModeGet(char *name) {
@@ -79,6 +79,15 @@ EXPORT int xbee_pluginLoad(char *filename, struct xbee *xbee, void *arg) {
 	if (!filename) return XBEE_EMISSINGPARAM;
 	if (xbee && !xbee_validate(xbee)) {
 		return XBEE_EINVAL;
+	}
+	
+	if (xbee) {
+		/* user-facing functions need this form of protection...
+			 this means that for the default behavior, the fmap must point at this function! */
+		if (!xbee->f->pluginLoad) return XBEE_ENOTIMPLEMENTED;
+		if (xbee->f->pluginLoad != xbee_pluginLoad) {
+			return xbee->f->pluginLoad(filename, xbee, arg);
+		}
 	}
 	
 	if (!plugins_initialized) {
@@ -241,6 +250,20 @@ EXPORT int xbee_pluginUnload(char *filename, struct xbee *xbee) {
 	char *realfilename;
 	struct plugin_info *plugin;
 	void *p;
+	
+	if (!filename) return XBEE_EMISSINGPARAM;
+	if (xbee && !xbee_validate(xbee)) {
+		return XBEE_EINVAL;
+	}
+	
+	if (xbee) {
+		/* user-facing functions need this form of protection...
+			 this means that for the default behavior, the fmap must point at this function! */
+		if (!xbee->f->pluginUnload) return XBEE_ENOTIMPLEMENTED;
+		if (xbee->f->pluginUnload != xbee_pluginUnload) {
+			return xbee->f->pluginUnload(filename, xbee);
+		}
+	}
 	
 	ret = 0;
 	

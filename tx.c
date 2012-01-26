@@ -26,9 +26,28 @@
 #include "io.h"
 #include "log.h"
 
-int _xbee_tx(struct xbee *xbee) {
+int xbee_txSerialXBee(struct xbee *xbee, struct bufData *buf) {
 	unsigned char chksum;
 	int i;
+		
+	chksum = 0;
+	
+	xbee_io_writeRawByte(xbee, 0x7E);
+	xbee_io_writeEscapedByte(xbee, ((buf->len >> 8) & 0xFF));
+	xbee_io_writeEscapedByte(xbee, ( buf->len       & 0xFF));
+	
+	for (i = 0; i < buf->len; i++) {
+		chksum += buf->buf[i];
+		xbee_io_writeEscapedByte(xbee, buf->buf[i]);
+	}
+	
+	xbee_io_writeEscapedByte(xbee, 0xFF - chksum);
+	
+	return 0;
+}
+
+int _xbee_tx(struct xbee *xbee) {
+	int ret;
 	struct bufData *buf;
 	
 	if (!xbee) return XBEE_ENOXBEE;
@@ -45,18 +64,14 @@ int _xbee_tx(struct xbee *xbee) {
 #endif
 		}
 		
-		chksum = 0;
-		
-		xbee_io_writeRawByte(xbee, 0x7E);
-		xbee_io_writeEscapedByte(xbee, ((buf->len >> 8) & 0xFF));
-		xbee_io_writeEscapedByte(xbee, ( buf->len       & 0xFF));
-		
-		for (i = 0; i < buf->len; i++) {
-			chksum += buf->buf[i];
-			xbee_io_writeEscapedByte(xbee, buf->buf[i]);
+		if (!xbee->f->tx) {
+			xbee_log(-999,"xbee->f->tx(): not registered!");
+			return XBEE_EINVAL;
 		}
 		
-		xbee_io_writeEscapedByte(xbee, 0xFF - chksum);
+		if ((ret = xbee->f->tx(xbee, buf)) != 0) {
+			xbee_log(1,"xbee->f->tx(): returned %d", ret);
+		}
 		
 		free(buf);
 	}

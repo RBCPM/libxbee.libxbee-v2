@@ -287,14 +287,90 @@ done:
 	return ret;
 }
 
+int xbee_rxSerialXBee(struct xbee *xbee, struct bufData **buf, int retries) {
+	struct bufData *ibuf;
+	int pos;
+	int len;
+	int ret;
+	unsigned char c;
+	unsigned char chksum;
+
+	ret = XBEE_ENONE;
+
+	if ((ibuf = calloc(1, sizeof(struct bufData) + (sizeof(unsigned char) * (XBEE_MAX_PACKETLEN - 1)))) == NULL) {
+		ret = XBEE_ENOMEM;
+		goto die1;
+	}
+	xbee->rxBuf = (void*)ibuf;
+	
+	for (pos = -3; pos < 0 || (pos < len && pos < XBEE_MAX_PACKETLEN); pos++) {
+		if ((ret = xbee_io_getEscapedByte(xbee, &c)) != 0) {
+			if (ret == XBEE_EUNESCAPED_START) {
+				if (pos > -3) xbee_log(3,"Unexpected start byte... restarting packet capture");
+				pos = -3;
+				continue;
+			} else if (ret == XBEE_EEOF) {
+				if (--retries == 0) {
+					xbee_log(1,"Too many device failures (EOF)");
+					goto die2;
+				}
+				/* try closing and re-opening the device */
+				usleep(100000);
+				if ((ret = xbee_io_reopen(xbee)) != 0) {
+					ret = XBEE_EOPENFAILED;
+					goto die2;
+				}
+				usleep(10000);
+				continue;
+			}
+			xbee_perror(1,"xbee_io_getEscapedByte()");
+			ret = XBEE_EIO;
+			goto die2;
+		}
+		switch (pos) {
+			case -3:
+				if (c != 0x7E) pos--;    /* restart if we don't have the start of frame */
+				continue;
+			case -2:
+				len = c << 8;            /* length high byte */
+				break;
+			case -1:
+				len |= c;                /* length low byte */
+				ibuf->len = len;
+				len++;
+				chksum = 0;              /* wipe the checksum */
+				break;
+			default:
+				chksum += c;
+				ibuf->buf[pos] = c;
+		}
+	}
+	
+  /* check the checksum */
+  if ((chksum & 0xFF) != 0xFF) {
+		int i;
+   	xbee_log(1,"Invalid checksum detected... %d byte packet discarded", ibuf->len);
+		for (i = 0; i < len; i++) {
+			xbee_log(1,"%3d: 0x%02X",i, ibuf->buf[i]);
+		}
+		ret = XBEE_EINVAL;
+		goto die2;
+  }
+
+	*buf = ibuf;
+	goto done;
+die2:
+	free(ibuf);
+die1:
+done:
+	return ret;
+}
+
 int _xbee_rx(struct xbee *xbee) {
   static int warnedMode = 0;
 	struct bufData *buf;
 	void *p;
-	unsigned char c;
 	int pos;
-	int len;
-	unsigned char chksum;
 	int retries = XBEE_IO_RETRIES;
 	int ret;
 	struct xbee_pktHandler *pktHandlers;
@@ -314,71 +390,18 @@ int _xbee_rx(struct xbee *xbee) {
 	buf = NULL;
 	while (xbee->running) {
 		ret = XBEE_ENONE;
-		if (!buf) {
-			/* there are a number of occasions where we don't need to allocate new memory,
-			   we just re-use the previous memory (e.g. checksum fails) */
-			if (!(buf = calloc(1, sizeof(struct bufData) + (sizeof(unsigned char) * (XBEE_MAX_PACKETLEN - 1))))) {
-				ret = XBEE_ENOMEM;
-				goto die1;
-			}
-			xbee->rxBuf = (void*)buf;
+		if (!xbee->f->rx) {
+			xbee_log(-999, "xbee->f->rx(): not registered!");
+			return XBEE_EINVAL;
 		}
 		
-		for (pos = -3; pos < 0 || (pos < len && pos < XBEE_MAX_PACKETLEN); pos++) {
-			if ((ret = xbee_io_getEscapedByte(xbee, &c)) != 0) {
-				if (ret == XBEE_EUNESCAPED_START) {
-					if (pos > -3) xbee_log(3,"Unexpected start byte... restarting packet capture");
-					pos = -3;
-					continue;
-				} else if (ret == XBEE_EEOF) {
-					if (--retries == 0) {
-						xbee_log(1,"Too many device failures (EOF)");
-						goto die2;
-					}
-					/* try closing and re-opening the device */
-					usleep(100000);
-					if ((ret = xbee_io_reopen(xbee)) != 0) {
-						ret = XBEE_EOPENFAILED;
-						goto die2;
-					}
-					usleep(10000);
-					continue;
-				}
-				xbee_perror(1,"xbee_io_getEscapedByte()");
-				ret = XBEE_EIO;
-				goto die2;
-			}
-			switch (pos) {
-				case -3:
-					if (c != 0x7E) pos--;    /* restart if we don't have the start of frame */
-					continue;
-				case -2:
-					len = c << 8;            /* length high byte */
-					break;
-				case -1:
-					len |= c;                /* length low byte */
-					buf->len = len;
-					len++;
-					chksum = 0;              /* wipe the checksum */
-					break;
-				default:
-					chksum += c;
-					buf->buf[pos] = c;
-			}
+		buf = NULL;
+		if ((ret = xbee->f->rx(xbee, &buf, retries)) != 0) {
+			goto die1;
 		}
-		
-    /* check the checksum */
-    if ((chksum & 0xFF) != 0xFF) {
-			int i;
-    	xbee_log(1,"Invalid checksum detected... %d byte packet discarded", buf->len);
-			for (i = 0; i < len; i++) {
-				xbee_log(1,"%3d: 0x%02X",i, buf->buf[i]);
-			}
-    	continue;
-    }
 		
 		if (!xbee->mode) {
-			xbee_log(-999,"libxbee's mode has not been un-set, please use xbee_setMode()");
+			xbee_log(-999,"libxbee's mode has been un-set, please use xbee_setMode()");
 			ret = XBEE_ENOMODE;
 			goto die2;
 		}

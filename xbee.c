@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include "internal.h"
+#include "fmaps.h"
 #include "mode.h"
 #include "thread.h"
 #include "plugin.h"
@@ -68,6 +69,12 @@ EXPORT int xbee_setup(char *path, int baudrate, struct xbee **retXbee) {
 		ret = XBEE_ENOMEM;
 		goto die1;
 	}
+	xbee->f = &xbee_fmap_serial;
+	
+	if (!xbee->f) {
+		ret = XBEE_ENOTIMPLEMENTED;
+		goto die2;
+	}
 	
 	if ((xbee->device.path = calloc(1, sizeof(char) * (strlen(path) + 1))) == NULL) {
 		ret = XBEE_ENOMEM;
@@ -76,7 +83,11 @@ EXPORT int xbee_setup(char *path, int baudrate, struct xbee **retXbee) {
 	strcpy(xbee->device.path, path);
 	xbee->device.baudrate = baudrate;
 	
-	if (xbee_io_open(xbee)) {
+	if (!xbee->f->io_open) {
+		ret = XBEE_ENOTIMPLEMENTED;
+		goto die3;
+	}
+	if (xbee->f->io_open(xbee)) {
 		ret = XBEE_EIO;
 		goto die3;
 	}
@@ -144,6 +155,14 @@ EXPORT int xbee_setup(char *path, int baudrate, struct xbee **retXbee) {
 		goto die13;
 	}
 	
+	if (xbee->f->postInit) {
+		/* postInit is entirely optional */
+		if ((ret = xbee->f->postInit(xbee)) != 0) {
+			ret = XBEE_ESETUP;
+			goto die13;
+		}
+	}
+	
 	if (retXbee) *retXbee = xbee;
 	xbee_default = xbee;
 	goto done;
@@ -174,7 +193,7 @@ die5:
 		xsys_sem_destroy(&xbee->frameIds[i].sem);
 	}
 die4:
-	xbee_io_close(xbee);
+	if (xbee->f->io_close) xbee->f->io_close(xbee);
 die3:
 	free(xbee->device.path);
 die2:
@@ -195,6 +214,14 @@ EXPORT void xbee_shutdown(struct xbee *xbee) {
 	}
 	
 	if (!xbee_validate(xbee)) return;
+	
+	/* user-facing functions need this form of protection...
+	   this means that for the default behavior, the fmap must point at this function! */
+	if (!xbee->f->shutdown) return;
+	if (xbee->f->shutdown != xbee_shutdown) {
+		xbee->f->shutdown(xbee);
+		return;
+	}
 	
 	xbee->running = 0;
 	xbee->device.ready = 0;
@@ -244,7 +271,7 @@ EXPORT void xbee_shutdown(struct xbee *xbee) {
 	}
 	
 	xbee_log(5,"- Cleanup I/O information...");
-	xbee_io_close(xbee);
+	if (xbee->f->io_close) xbee->f->io_close(xbee);
 	free(xbee->device.path);
 	
 	/* xbee_cleanupMode() prints it's own messages */

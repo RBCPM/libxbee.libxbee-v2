@@ -1,5 +1,5 @@
-#ifndef __XBEE_TX_H
-#define __XBEE_TX_H
+#ifndef __XBEE_FUNC_MAP_H
+#define __XBEE_FUNC_MAP_H
 
 /*
   libxbee - a C library to aid the use of Digi's XBee wireless modules
@@ -21,9 +21,6 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define XBEE_TX_RESTART_DELAY 25
+extern const struct xbee_fmap xbee_fmap_serial;
 
-int xbee_tx(struct xbee *xbee);
-int xbee_txSerialXBee(struct xbee *xbee, struct bufData *buf);
-
-#endif /* __XBEE_TX_H */
+#endif /* __XBEE_FUNC_MAP_H */

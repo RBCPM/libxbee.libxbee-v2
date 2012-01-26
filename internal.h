@@ -25,6 +25,9 @@
 #include "xsys.h"
 #include "ll.h"
 
+struct bufData;
+struct xbee_conType;
+
 extern struct xbee *xbee_default;
 
 /* ######################################################################### */
@@ -51,6 +54,7 @@ struct xbee {
 	int running;
 	struct xbee_device device;
 	struct xbee_mode *mode;
+	const struct xbee_fmap *f;
 	
 	struct ll_head txList; /* data is struct bufData containing 'Frame Data' (no start delim, length or checksum) */
 	xsys_thread txThread;
@@ -72,6 +76,34 @@ struct xbee {
 	struct ll_head pluginList;
 	
 	struct xbee_netInfo *net;
+};
+
+/* ######################################################################### */
+
+struct xbee_fmap {
+	int  (*io_open)(struct xbee *xbee);
+	void (*io_close)(struct xbee *xbee);
+
+	int  (*tx)(struct xbee *xbee, struct bufData *buf);
+	int  (*rx)(struct xbee *xbee, struct bufData **buf, int retries);
+
+	int  (*postInit)(struct xbee *xbe);
+	void (*shutdown)(struct xbee *xbee); /* user-facing / diversion */
+
+	int  (*conValidate)(struct xbee *xbee, struct xbee_con *con, struct xbee_conType **conType); /* extension */
+	int  (*conNew)(struct xbee *xbee, struct xbee_con **retCon, unsigned char id, struct xbee_conAddress *address, void *userData); /* extension */
+	/* conRx() currently doesn't need any function mapping */
+	int  (*connTx)(struct xbee *xbee, struct xbee_con *con, struct bufData *buf); /* extension & diversion */
+	int  (*conEnd)(struct xbee *xbee, struct xbee_con *con, void **userData); /* extension */
+	int  (*conOptions)(struct xbee *xbee, struct xbee_con *con, struct xbee_conOptions *getOptions, struct xbee_conOptions *setOptions); /* extension */
+	int  (*conSleep)(struct xbee *xbee, struct xbee_con *con, int wakeOnRx); /* extension */
+	int  (*conWake)(struct xbee *xbee, struct xbee_con *con); /* extension */
+
+	int  (*pluginLoad)(char *filename, struct xbee *xbee, void *arg); /* user-facing / diversion */
+	int  (*pluginUnload)(char *filename, struct xbee *xbee); /* user-facing / diversion */
+
+	int  (*netStart)(struct xbee *xbee, int port); /* user-facing / diversion */
+	int  (*netStop)(struct xbee *xbee); /* user-facing / diversion */
 };
 
 /* ######################################################################### */
