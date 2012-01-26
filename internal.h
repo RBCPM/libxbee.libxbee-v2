@@ -88,7 +88,7 @@ struct xbee_fmap {
 	int  (*rx)(struct xbee *xbee, struct bufData **buf, int retries);
 
 	int  (*postInit)(struct xbee *xbe);
-	void (*shutdown)(struct xbee *xbee);
+	void (*shutdown)(struct xbee *xbee); /* user-facing */
 
 	int  (*conValidate)(struct xbee *xbee, struct xbee_con *con, struct xbee_conType **conType);
 	int  (*conNew)(struct xbee *xbee, struct xbee_con **retCon, unsigned char id, struct xbee_conAddress *address, void *userData);

@@ -37,7 +37,7 @@ const struct xbee_fmap xbee_fmap_serial = {
 	.rx = xbee_rxSerialXBee,
 
 	.postInit = NULL,
-	.shutdown = NULL,
+	.shutdown = xbee_shutdown,
 
 	.conValidate = NULL,
 	.conNew = NULL,

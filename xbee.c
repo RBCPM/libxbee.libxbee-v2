@@ -215,6 +215,13 @@ EXPORT void xbee_shutdown(struct xbee *xbee) {
 	
 	if (!xbee_validate(xbee)) return;
 	
+	/* user-facing functions need this form of protection...
+	   this means that for the default behavior, the fmap must point at this function! */
+	if (!xbee->f->shutdown) return;
+	if (xbee->f->shutdown != xbee_shutdown) {
+		return xbee->f->shutdown(xbee);
+	}
+	
 	xbee->running = 0;
 	xbee->device.ready = 0;
 	xbee_log(2,"Shutting down libxbee...");
