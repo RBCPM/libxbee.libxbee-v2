@@ -155,6 +155,14 @@ EXPORT int xbee_setup(char *path, int baudrate, struct xbee **retXbee) {
 		goto die13;
 	}
 	
+	if (xbee->f->postInit) {
+		/* postInit is entirely optional */
+		if ((ret = xbee->f->postInit(xbee)) != 0) {
+			ret = XBEE_ESETUP;
+			goto die13;
+		}
+	}
+	
 	if (retXbee) *retXbee = xbee;
 	xbee_default = xbee;
 	goto done;
