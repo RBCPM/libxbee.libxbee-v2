@@ -95,7 +95,7 @@ struct xbee_fmap {
 	/* conRx() currently doesn't need any function mapping */
 	int  (*connTx)(struct xbee *xbee, struct xbee_con *con, struct bufData *buf); /* extension & diversion */
 	int  (*conEnd)(struct xbee *xbee, struct xbee_con *con, void **userData); /* extension */
-	int  (*conOptions)(struct xbee *xbee, struct xbee_con *con, struct xbee_conOptions *getOptions, struct xbee_conOptions *setOptions);
+	int  (*conOptions)(struct xbee *xbee, struct xbee_con *con, struct xbee_conOptions *getOptions, struct xbee_conOptions *setOptions); /* extension */
 	int  (*conSleep)(struct xbee *xbee, struct xbee_con *con, int wakeOnRx);
 	int  (*conWake)(struct xbee *xbee, struct xbee_con *con);
 

@@ -507,6 +507,16 @@ EXPORT int xbee_conOptions(struct xbee *xbee, struct xbee_con *con, struct xbee_
 	
 	if (_xbee_conValidate(xbee, con, NULL)) return XBEE_EINVAL;
 
+	/* this mapping is implemented as an extension, therefore it is entirely optional! */
+	if (xbee->f->conOptions) {
+		/* do the external stuff first, and then the internal if we have success */
+		int ret;
+		if ((ret = xbee->f->conOptions(xbee, con, getOptions, setOptions)) != 0) {
+			/* ret should be either 0 / XBEE_ESTALE */;
+			return ret;
+		}
+	}
+
 	if (getOptions) memcpy(getOptions, &con->options, sizeof(struct xbee_conOptions));
 	if (setOptions) memcpy(&con->options, setOptions, sizeof(struct xbee_conOptions));
 
