@@ -47,8 +47,8 @@ const struct xbee_fmap xbee_fmap_serial = {
 	.conSleep = NULL,
 	.conWake = NULL,
 
-	.pluginLoad = NULL,
-	.pluginUnload = NULL,
+	.pluginLoad = xbee_pluginLoad,
+	.pluginUnload = xbee_pluginUnload,
 
 	.netStart = NULL,
 	.netStop = NULL,
