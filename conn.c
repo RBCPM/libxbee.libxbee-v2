@@ -438,6 +438,15 @@ EXPORT int xbee_conEnd(struct xbee *xbee, struct xbee_con *con, void **userData)
 		xsys_sem_post(&con->callbackSem);
 		return XBEE_ECALLBACK;
 	}
+
+	/* this mapping is implemented as an extension, therefore it is entirely optional! */
+	if (xbee->f->conEnd) {
+		int ret;
+		if ((ret = xbee->f->conEnd(xbee, con, userData)) != 0) {
+			/* ret should be either 0 / XBEE_ESTALE */;
+			return ret;
+		}
+	}
 	
 	xbee_conFree(xbee, con);
 	

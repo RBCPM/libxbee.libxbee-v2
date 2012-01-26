@@ -68,6 +68,7 @@ extern const char libxbee_buildtime[];
 #define XBEE_ENULL                                         -30
 #define XBEE_ESOCKET                                       -31
 #define XBEE_ENOTIMPLEMENTED                               -32
+#define XBEE_ESTALE                                        -33
 
 /* from user-space you don't get access to the xbee or xbee_con structs, and should never de-reference thier pointers... sorry */
 struct xbee;
