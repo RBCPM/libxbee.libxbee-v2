@@ -96,8 +96,8 @@ struct xbee_fmap {
 	int  (*connTx)(struct xbee *xbee, struct xbee_con *con, struct bufData *buf); /* extension & diversion */
 	int  (*conEnd)(struct xbee *xbee, struct xbee_con *con, void **userData); /* extension */
 	int  (*conOptions)(struct xbee *xbee, struct xbee_con *con, struct xbee_conOptions *getOptions, struct xbee_conOptions *setOptions); /* extension */
-	int  (*conSleep)(struct xbee *xbee, struct xbee_con *con, int wakeOnRx);
-	int  (*conWake)(struct xbee *xbee, struct xbee_con *con);
+	int  (*conSleep)(struct xbee *xbee, struct xbee_con *con, int wakeOnRx); /* extension */
+	int  (*conWake)(struct xbee *xbee, struct xbee_con *con); /* extension */
 
 	int  (*pluginLoad)(char *filename, struct xbee *xbee, void *arg);
 	int  (*pluginUnload)(char *filename, struct xbee *xbee);

@@ -560,6 +560,16 @@ EXPORT int xbee_conSleep(struct xbee *xbee, struct xbee_con *con, int wakeOnRx) 
 
 	if (_xbee_conValidate(xbee, con, NULL)) return XBEE_EINVAL;
 
+	/* this mapping is implemented as an extension, therefore it is entirely optional! */
+	if (xbee->f->conSleep) {
+		/* do the external stuff first, and then the internal if we have success */
+		int ret;
+		if ((ret = xbee->f->conSleep(xbee, con, wakeOnRx)) != 0) {
+			/* ret should be either 0 / XBEE_ESTALE */;
+			return ret;
+		}
+	}
+	
 	con->sleeping = 1;
 	con->wakeOnRx = !!wakeOnRx;
 
@@ -575,6 +585,16 @@ EXPORT int xbee_conWake(struct xbee *xbee, struct xbee_con *con) {
 	if (!con) return XBEE_EMISSINGPARAM;
 
 	if (_xbee_conValidate(xbee, con, NULL)) return XBEE_EINVAL;
+
+	/* this mapping is implemented as an extension, therefore it is entirely optional! */
+	if (xbee->f->conWake) {
+		/* do the external stuff first, and then the internal if we have success */
+		int ret;
+		if ((ret = xbee->f->conWake(xbee, con)) != 0) {
+			/* ret should be either 0 / XBEE_ESTALE */;
+			return ret;
+		}
+	}
 
 	con->sleeping = 0;
 
