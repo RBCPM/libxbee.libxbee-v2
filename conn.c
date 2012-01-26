@@ -186,6 +186,16 @@ int _xbee_conValidate(struct xbee *xbee, struct xbee_con *con, struct xbee_conTy
 	}
 	
 	if (conType) *conType = &(xbee->mode->conTypes[i]);
+	
+	/* this mapping is implemented as an extension, therefore it is entirely optional! */
+	if (xbee->f->conValidate) {
+		int ret;
+		if ((ret = xbee->f->conValidate(xbee, con, conType)) != 0) {
+			/* ret should be either 0 / XBEE_ESTALE */;
+			return ret;
+		}
+	}
+	
 	return XBEE_ENONE;
 }
 
