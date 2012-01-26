@@ -261,6 +261,15 @@ EXPORT int xbee_conNew(struct xbee *xbee, struct xbee_con **retCon, unsigned cha
 	xsys_sem_init(&con->callbackSem);
 	xsys_mutex_init(&con->txMutex);
 
+	/* this mapping is implemented as an extension, therefore it is entirely optional! */
+	if (xbee->f->conNew) {
+		int ret;
+		if ((ret = xbee->f->conNew(xbee, retCon, id, address, userData)) != 0) {
+			/* ret should be either 0 / XBEE_ESTALE */;
+			return ret;
+		}
+	}
+	
 	ll_add_tail(&(con->conType->conList), con);
 	*retCon = con;
 	

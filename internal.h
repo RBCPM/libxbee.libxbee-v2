@@ -91,7 +91,7 @@ struct xbee_fmap {
 	void (*shutdown)(struct xbee *xbee); /* user-facing */
 
 	int  (*conValidate)(struct xbee *xbee, struct xbee_con *con, struct xbee_conType **conType); /* extension */
-	int  (*conNew)(struct xbee *xbee, struct xbee_con **retCon, unsigned char id, struct xbee_conAddress *address, void *userData);
+	int  (*conNew)(struct xbee *xbee, struct xbee_con **retCon, unsigned char id, struct xbee_conAddress *address, void *userData); /* extension */
 	/* conRx() currently doesn't need any function mapping */
 	int  (*connTx)(struct xbee *xbee, struct xbee_con *con, struct bufData *buf);
 	int  (*conEnd)(struct xbee *xbee, struct xbee_con *con, void **userData);
