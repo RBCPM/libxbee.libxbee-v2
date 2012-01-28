@@ -262,13 +262,9 @@ EXPORT void xbee_shutdown(struct xbee *xbee) {
 	/* validate the connection */
 	if (!xbee_validate(xbee)) return;
 	
-	/* user-facing functions need this form of protection...
-	   this means that for the default behavior, the fmap must point at this function! */
-	if (!xbee->f->shutdown) return;
-	if (xbee->f->shutdown != xbee_shutdown) {
-		/* if it doesnt, then a custom shutdown procedure will be followed */
+	/* if a shutdown function is registered, call it */
+	if (xbee->f->shutdown) {
 		xbee->f->shutdown(xbee);
-		return;
 	}
 	
 	/* we are no longer running! threads should start to die */
