@@ -40,6 +40,14 @@ struct xbee_pkt *xbee_pktAlloc(void) {
 	return pkt;
 }
 
+/* clean a packet (doesn't consider data past the struct's size, e.g. the 'data' item) */
+void xbee_pktClean(struct xbee_pkt *pkt) {
+	void *p;
+	p = pkt->dataItems;
+	memset(pkt, 0, sizeof(struct xbee_pkt));
+	pkt->dataItems = p;
+}
+
 /* add a key, or get hold of a key if it exists already */
 int xbee_pktAddKey(struct xbee *xbee, struct xbee_pkt *pkt, char *key, int id, struct pkt_infoKey **retKey, void (*freeCallback)(void*)) {
 	struct pkt_infoKey *p;

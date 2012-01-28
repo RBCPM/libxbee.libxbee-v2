@@ -30,6 +30,7 @@ struct pkt_infoKey {
 };
 
 struct xbee_pkt *xbee_pktAlloc(void);
+void xbee_pktClean(struct xbee_pkt *pkt);
 
 int xbee_pktAddKey(struct xbee *xbee, struct xbee_pkt *pkt, char *key, int id, struct pkt_infoKey **retKey, void (*freeCallback)(void*));
 int xbee_pktAddInfo(struct xbee *xbee, struct xbee_pkt *pkt, char *key, int id, void *data, void (*freeCallback)(void*));

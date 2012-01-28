@@ -210,7 +210,7 @@ int _xbee_rxHandlerThread(struct xbee_pktHandler *pktHandler) {
 		xbee_log(2,"Processing packet @ %p", buf);
 		
 		/* clear out the connection and packet structs - the handler should fill them in */
-		memset( pkt, 0, sizeof(struct xbee_pkt));
+		xbee_pktClean(pkt);
 		memset(&con, 0, sizeof(struct xbee_con));
 		/* call the handler, it should fill in con and pkt */
 		if ((ret = pktHandler->handler(data->xbee, pktHandler, 1, &buf, &con, &pkt)) != 0) {
