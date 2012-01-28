@@ -517,6 +517,7 @@ done:
 
 /* rx thread */
 int xbee_rx(struct xbee *xbee) {
+	int i;
 	int ret;
 	
 	/* ensure we have an xbee instance */
@@ -524,6 +525,14 @@ int xbee_rx(struct xbee *xbee) {
 	
 	/* indicate that we are running */
 	xbee->rxRunning = 1;
+	
+	/* wait for the mode to be set... (max of 500ms before we die) */
+	for (i = 500; i > 0 && !xbee->mode; i--) {
+		usleep(1000);
+	}
+	if (!i) {
+		return XBEE_ENOMODE;
+	}
 	
 	while (xbee->running) {
 		/* keep executing the rx function */

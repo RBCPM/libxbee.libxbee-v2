@@ -50,7 +50,7 @@ unsigned char xbee_frameIdGet(struct xbee *xbee, struct xbee_con *con) {
 			xbee->frameIds[i].ack = XBEE_EUNKNOWN;
 			xbee->frameIds[i].con = con;
 			/* update the last, so that future hunting should be quicker */
-			xbee->frameIdLast = i + 1;
+			xbee->frameIdLast = i;
 			/* return the FrameID assigned */
 			ret = i;
 			break;
