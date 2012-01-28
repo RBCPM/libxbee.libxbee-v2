@@ -442,7 +442,7 @@ int _xbee_rx(struct xbee *xbee) {
 	int pos;
 	int retries = XBEE_IO_RETRIES;
 	int ret;
-	struct xbee_pktHandler *pktHandlers;
+	struct xbee_conType *conTypes;
 	
 	/* check parameters */
 	if (!xbee) return XBEE_ENOXBEE;
@@ -476,23 +476,29 @@ int _xbee_rx(struct xbee *xbee) {
 			ret = XBEE_ENOMODE;
 			goto die2;
 		}
-		pktHandlers = xbee->mode->pktHandlers;
-		
-		/* find an initialized packet handler that should be able to handle this message */
-		for (pos = 0; pktHandlers[pos].handler; pos++) {
-			if (!pktHandlers[pos].initialized) continue;
-			if (pktHandlers[pos].id == buf->buf[0]) break;
+		conTypes = xbee->mode->conTypes;
+
+		/* find an initialized conType that can handle this message */
+		for (pos = 0; conTypes[pos].name; pos++) {
+			if (!conTypes[pos].initialized) continue;
+			if (!conTypes[pos].rxEnabled) continue;
+			if (conTypes[pos].rxID != buf->buf[0]) continue;
+			break;
 		}
-		if (!pktHandlers[pos].handler) {
+		if (!conTypes[pos].name) {
 			xbee_log(1,"Unknown packet received / no packet handler (0x%02X)", buf->buf[0]);
 			continue;
 		}
-		xbee_log(2,"Received %d byte packet (0x%02X - '%s') @ %p", buf->len, buf->buf[0], pktHandlers[pos].conType->name, buf);
+		if (!conTypes[pos].rxHandler) {
+			xbee_log(1,"Packet recieved, but not handler is registered (0x%02X)", buf->buf[0]);
+			continue;
+		}
+		xbee_log(2,"Received %d byte packet (0x%02X - '%s') @ %p", buf->len, buf->buf[0], conTypes[pos].name, buf);
 		
 		/* try (and ignore failure) to realloc buf to the correct length */
 		if ((p = realloc(buf, sizeof(struct bufData) + (sizeof(unsigned char) * (buf->len - 1)))) != NULL) buf = p;
 
-		if ((ret = _xbee_rxHandler(xbee, &pktHandlers[pos], buf)) != 0) {
+		if ((ret = _xbee_rxHandler(xbee, conTypes[pos].rxHandler, buf)) != 0) {
 			xbee_log(1,"Failed to handle packet... _xbee_rxHandler() returned %d", ret);
 			free(buf);
 		}
