@@ -47,6 +47,6 @@ struct plugin_info {
 };
 
 int _xbee_pluginUnload(struct plugin_info *plugin, int acceptShutdown);
-struct xbee_mode *xbee_pluginModeGet(char *name);
+struct xbee_mode *xbee_pluginModeGet(char *name, struct xbee *xbee);
 
 #endif /* __XBEE_PLUGIN_H */

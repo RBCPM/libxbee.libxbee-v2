@@ -29,6 +29,7 @@
 #include "tx.h"
 #include "io.h"
 
+/* this is the default function map, used by all SERIAL xbee units */
 const struct xbee_fmap xbee_fmap_serial = {
 	.io_open = xbee_io_open,
 	.io_close = xbee_io_close,
@@ -39,6 +40,7 @@ const struct xbee_fmap xbee_fmap_serial = {
 	.postInit = NULL,
 	.shutdown = xbee_shutdown,
 
+	/* these don't need extending / redirecting at all */
 	.conValidate = NULL,
 	.conNew = NULL,
 	.connTx = NULL,

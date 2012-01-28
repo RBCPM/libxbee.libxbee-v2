@@ -13,6 +13,7 @@ v2.0.5 - in progress
 		+ Removed 'mapping' functions from xsys_linux.c, and added mapping macros instead (saved ~1.5k)
 		+ Implemented xbee_pluginUnload() and added pluginData storage for plugins
 		+ xbee_conNew() now returns XBEE_EEXISTS if a connection already exists (still returns the *con)
+		+ Commented most of the source code, ironing out a few issues along the way
 
 v2.0.4 - ada265100533 - 31 Dec 2011
 	Modifications / Additions:

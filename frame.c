@@ -26,45 +26,69 @@
 #include "internal.h"
 #include "frame.h"
 
+/* get a free FrameID for message transmission */
 unsigned char xbee_frameIdGet(struct xbee *xbee, struct xbee_con *con) {
 	unsigned char i;
 	unsigned char ret;
 	ret = 0;
+	
+	/* lock the array of IDs */
 	xsys_mutex_lock(&xbee->frameIdMutex);
+	
+	/* find one that isn't being used, we start at the one after the last one provided (it'll probrably be free)
+	   scary use of 'i' here... it is an unsigned char so should wrap around at 255... */
 	for (i = xbee->frameIdLast + 1; i != xbee->frameIdLast; i++) {
+		/* skip FrameID 0 (it indicates to the XBee units that no ACK is requested) */
 		if (i == 0) i++;
+		
+		/* if we have been in a full circle, then return (none found) */
 		if (i == xbee->frameIdLast) break;
 		
+		/* if this FrameID doesn't have a connection assigned to it, then it is free! */
 		if (!xbee->frameIds[i].con) {
+			/* set the ack state to unknown, and aquire the FrameId */
 			xbee->frameIds[i].ack = XBEE_EUNKNOWN;
 			xbee->frameIds[i].con = con;
-			xbee->frameIdLast = i;
+			/* update the last, so that future hunting should be quicker */
+			xbee->frameIdLast = i + 1;
+			/* return the FrameID assigned */
 			ret = i;
 			break;
 		}
 	}
+	
+	/* unlock the array! */
 	xsys_mutex_unlock(&xbee->frameIdMutex);
+	
 	return ret;
 }
 
+/* give an ACK to a FrameID */
 void xbee_frameIdGiveACK(struct xbee *xbee, unsigned char frameID, unsigned char ack) {
 	struct xbee_frameIdInfo *info;
-	if (!xbee)          return;
+	/* very basic checking of parameters */
+	if (!xbee)            return;
 	info = &(xbee->frameIds[frameID]);
-	if (!info->con)     return;
+	/* just to ensure that the FrameID is actually in use */
+	if (!info->con)       return;
+	
+	/* provide the ACK value */
 	info->ack = ack;
+	/* and prod the waiter */
 	xsys_sem_post(&info->sem);
 }
 
+/* wait for an ACK, and retrieve it */
 int xbee_frameIdGetACK(struct xbee *xbee, struct xbee_con *con, unsigned char frameID) {
 	struct xbee_frameIdInfo *info;
 	int ret;
-	if (!xbee)          return XBEE_ENOXBEE;
-	if (!con)           return XBEE_EMISSINGPARAM;
+	/* very basic checking of parameters */
+	if (!xbee)            return XBEE_ENOXBEE;
+	if (!con)             return XBEE_EMISSINGPARAM;
 	info = &(xbee->frameIds[frameID]);
-	if (info->con != con) {
-		return XBEE_EINVAL;
-	}
+	if (info->con != con) return XBEE_EINVAL;
+	
+	/* wait for AT MOST 1 second! that should REALLY be enough, but also prevent blocking indefinately */
 	if (xsys_sem_timedwait(&info->sem,1,0)) {
 		if (errno == ETIMEDOUT) {
 			ret = XBEE_ETIMEOUT;
@@ -73,8 +97,12 @@ int xbee_frameIdGetACK(struct xbee *xbee, struct xbee_con *con, unsigned char fr
 		}
 		goto done;
 	}
+	
+	/* give some useful information back to the user! */
 	ret = info->ack;
 done:
+
+	/* free up the FrameID, this will also prevent a sem_wait() from occuring on an abandoned (timeout) FrameID */
 	info->con = NULL;
 	return ret;
 }

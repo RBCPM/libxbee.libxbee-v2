@@ -30,6 +30,8 @@ struct xbee_conType *_xbee_conTypeFromID(struct xbee_conType *conTypes, unsigned
 struct xbee_conType *xbee_conTypeFromID(struct xbee_conType *conTypes, unsigned char id);
 struct xbee_con *xbee_conFromAddress(struct xbee *xbee, struct xbee_conType *conType, struct xbee_conAddress *address);
 
+int _xbee_conEnd2(struct xbee *xbee, struct xbee_con *con);
+
 int _xbee_conValidate(struct xbee *xbee, struct xbee_con *con, struct xbee_conType **conType);
 
 void xbee_conLogAddress(struct xbee *xbee, struct xbee_conAddress *address);

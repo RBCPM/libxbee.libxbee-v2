@@ -26,34 +26,47 @@
 #include "io.h"
 #include "log.h"
 
+/* send a buffer obeying the XBee interface rules (delimiter/length/checksum) */
 int xbee_txSerialXBee(struct xbee *xbee, struct bufData *buf) {
 	unsigned char chksum;
 	int i;
-		
+	
+	/* clear the checksum */
 	chksum = 0;
 	
+	/* start of packet */
 	xbee_io_writeRawByte(xbee, 0x7E);
+	
+	/* length of packet */
 	xbee_io_writeEscapedByte(xbee, ((buf->len >> 8) & 0xFF));
 	xbee_io_writeEscapedByte(xbee, ( buf->len       & 0xFF));
 	
+	/* packet data (and building the checksum) */
 	for (i = 0; i < buf->len; i++) {
 		chksum += buf->buf[i];
 		xbee_io_writeEscapedByte(xbee, buf->buf[i]);
 	}
 	
+	/* checksum */
 	xbee_io_writeEscapedByte(xbee, 0xFF - chksum);
 	
 	return 0;
 }
 
+/* the bulk of the tx thread for libxbee */
 int _xbee_tx(struct xbee *xbee) {
 	int ret;
 	struct bufData *buf;
 	
+	/* ensure we have an xbee instance */
 	if (!xbee) return XBEE_ENOXBEE;
 	
+	/* loop until we stop running */
 	while (xbee->running) {
+		/* pull the next buffer in the txList */
 		buf = ll_ext_head(&xbee->txList);
+		
+		/* if there isn't a buffer avaliable, then wait to be prodded */
 		if (!buf) {
 			xsys_sem_wait(&xbee->txSem);
 			continue;
@@ -64,32 +77,54 @@ int _xbee_tx(struct xbee *xbee) {
 #endif
 		}
 		
+		/* if there is no tx function mapped, then replace the buffer, and return! */
 		if (!xbee->f->tx) {
-			xbee_log(-999,"xbee->f->tx(): not registered!");
+			ll_add_head(&xbee->txList, buf);
+			/* try pretty hard to tell the user about this error */
+			xbee_log(-99,"xbee->f->tx(): not registered!");
 			return XBEE_EINVAL;
 		}
 		
+		/* send the buffer */
 		if ((ret = xbee->f->tx(xbee, buf)) != 0) {
+			/* if xbee->f->tx() returned non-zero, then log the details */
 			xbee_log(1,"xbee->f->tx(): returned %d", ret);
 		}
 		
+		/* free the buffer, and continue */
 		free(buf);
 	}
 	
 	return 0;
 }
 
+/* kick off the tx thread */
 int xbee_tx(struct xbee *xbee) {
 	int ret;
-	if (!xbee) return 1;
 	
+	/* ensure we have an xbee instance */
+	if (!xbee) return XBEE_ENOXBEE;
+	
+	/* indicate that we are running */
 	xbee->txRunning = 1;
+	
 	while (xbee->running) {
+		/* keep executing the tx function */
 		ret = _xbee_tx(xbee);
 		xbee_log(1,"_xbee_tx() returned %d\n", ret);
+		
 		if (!xbee->running) break;
-		usleep(XBEE_TX_RESTART_DELAY * 1000);
+		
+		if (ret && XBEE_TX_RESTART_DELAY < 2000) {
+			/* if an error occured (returned non-zero), sleep for at least 2 seconds */
+			sleep(2);
+		} else {
+			/* otherwise sleep for RESTART_DELAY ms (default: 25ms) */
+			usleep(XBEE_TX_RESTART_DELAY * 1000);
+		}
 	}
+	
+	/* indicate that we are no longer running */
 	xbee->txRunning = 0;
 	
 	return 0;

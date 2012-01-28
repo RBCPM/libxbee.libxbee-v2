@@ -24,6 +24,9 @@
 #include "internal.h"
 #include "ll.h"
 
+/* this file is scary, sorry it isn't commented... i nearly broke myself writing it
+   maybe oneday soon i'll be brave and put some commends down */
+
 struct ll_head *ll_alloc(void) {
 	struct ll_head *h;
 	

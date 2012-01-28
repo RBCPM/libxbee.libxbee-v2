@@ -34,6 +34,7 @@
 #include "log.h"
 #include "thread.h"
 
+/* super simple - it transmits the buffer */
 int xbee_netSend(int fd, unsigned char *buf, int len, int flags) {
 	int ret;
 	int i, j;
@@ -52,6 +53,7 @@ done:
 	return ret;
 }
 
+/* super simple - it fills the given buffer */
 int xbee_netRecv(int fd, unsigned char *buf, int len, int flags) {
 	int ret;
 	int i, j;
@@ -79,6 +81,7 @@ done:
 
 /* ######################################################################### */
 
+/* transmit a message, with correct encapsulation */
 int xbee_netClientTx(struct xbee *xbee, struct xbee_netClient *client, unsigned char id, unsigned char reqID, unsigned char returnValue, struct bufData *buf) {
 	int ret;
 	int txLen;
@@ -86,7 +89,10 @@ int xbee_netClientTx(struct xbee *xbee, struct xbee_netClient *client, unsigned 
 
 	ret = 0;
 
+	/* starting byte */
 	ibuf[0] = '{';
+	
+	/* data length */
 	if (!buf || buf->len == 0) {
 		ibuf[1] = 0;
 		ibuf[2] = 0;
@@ -100,23 +106,30 @@ int xbee_netClientTx(struct xbee *xbee, struct xbee_netClient *client, unsigned 
     	xbee_log(20,"  %2d: 0x%02X '%c'", i, buf->buf[i], ((buf->buf[i] >= ' ' && buf->buf[i] <= '~')?buf->buf[i]:'.'));
   	}
 	}
+	
+	/* header seperator */
 	ibuf[3] = '|';
+	
+	/* identification bytes */
 	ibuf[4] = id;
 	ibuf[5] = reqID;
+	
+	/* return value, if necessary */
 	if (id & 0x80) {
 		ibuf[6] = returnValue;
 		txLen = 7;
 	} else {
 		txLen = 6;
 	}
+	
+	/* ending byte */
 	ibuf[7] = '}';
 
+	/* lock the file, transmit, and unlock */
 	xsys_mutex_lock(&client->fdTxMutex);
-
 	         if (xbee_netSend(client->fd, ibuf, txLen, MSG_WAITALL) != txLen)            { ret = XBEE_EIO; goto die1; }
 	if (buf) if (xbee_netSend(client->fd, buf->buf, buf->len, MSG_WAITALL) != buf->len)  { ret = XBEE_EIO; goto die1; }
 	         if (xbee_netSend(client->fd, &ibuf[7], 1, MSG_WAITALL) != 1)                { ret = XBEE_EIO; goto die1; }
-
 die1:
 	xsys_mutex_unlock(&client->fdTxMutex);
 
@@ -125,22 +138,27 @@ die1:
 
 /* ######################################################################### */
 
+/* get a connection based on the network 'key' rather than its address */
 int xbee_netGetCon(struct xbee *xbee, struct xbee_netClient *client, unsigned short key, struct xbee_con **rCon) {
 	struct xbee_con *con;
 
+	/* check parameters */
 	if (!xbee || !client) return XBEE_EMISSINGPARAM;
 	if (!xbee->net) return XBEE_EINVAL;
 
+	/* find the connection */
 	for (con = NULL; (con = ll_get_next(&client->conList, con)) != NULL;) {
 		if (((struct xbee_netConData *)con->userData)->key == key) break;
 	}
 	if (!con) return XBEE_EFAILED;
 
+	/* if successful, return it */
 	if (rCon) *rCon = con;
 
 	return 0;
 }
 
+/* convert 2 bytes into a 'key', for use with the network interface */
 unsigned short xbee_netKeyFromBytes(unsigned char *bytes) {
 	unsigned short key;
 	
@@ -148,6 +166,11 @@ unsigned short xbee_netKeyFromBytes(unsigned char *bytes) {
 	key |= (bytes[1]     ) & 0x00FF;
 	
 	return key;
+}
+/* convert a 'key' into 2 bytes, for use with the network interface */
+void xbee_netBytesFromKey(unsigned char *bytes, unsigned short key) {
+	bytes[0] = ((key >> 8) & 0xFF);
+	bytes[1] = ((key     ) & 0xFF);
 }
 
 /* ######################################################################### */
@@ -196,9 +219,10 @@ int xbee_netClientRx(struct xbee *xbee, struct xbee_netClient *client) {
 			break;
 		}
 
+		/* try again if that wasn't a '{' */
 		if (c != '{') continue;
 
-		/* read the length, seperator and id and reqID bytes */
+		/* read the length, seperator, messageID and reqID bytes */
 		if ((iret = xbee_netRecv(client->fd, ibuf, 5, MSG_WAITALL)) == -1) {
 			xbee_perror(1, "xbee_netRecv()");
 			goto retry;
@@ -206,14 +230,18 @@ int xbee_netClientRx(struct xbee *xbee, struct xbee_netClient *client) {
 			break;
 		}
 
+		/* try again if the seperator wasn't where it should have been */
 		if (ibuf[2] != '|') {
 			xbee_log(1, "invalid data recieved...");
 			goto next;
 		}
+		
+		/* retrieve the data length, messageID and requestID */
 		len = ((ibuf[0] << 8) & 0xFF00) | (ibuf[1] & 0xFF);
 		id = ibuf[3];
 		reqID = ibuf[4];
 		
+		/* if bit 7 is set, then this is a response */
 		if (id & 0x80) {
 			/* then this is a response... so suck in the returnValue */
 			if ((iret = xbee_netRecv(client->fd, &returnValue, 1, MSG_WAITALL)) == -1) {
@@ -227,6 +255,7 @@ int xbee_netClientRx(struct xbee *xbee, struct xbee_netClient *client) {
 		}
 
 #ifndef XBEE_NO_NET_STRICT_VERSIONS
+		/* if enabled, nothing can be done until the versions have been compared, and match */
 		if (!client->versionsMatched) {
 			if (id != 0x7F) {
 				xbee_log(5, "client must confirm commit ID before communication can begin");
@@ -238,7 +267,7 @@ int xbee_netClientRx(struct xbee *xbee, struct xbee_netClient *client) {
 		}
 #endif /* XBEE_NO_NET_STRICT_VERSIONS */
 		
-
+		/* get some storage */
 		if ((buf = calloc(1, sizeof(*buf) + len)) == NULL) {
 			xbee_log(1, "ENOMEM - data lost");
 			goto next;
@@ -248,6 +277,7 @@ int xbee_netClientRx(struct xbee *xbee, struct xbee_netClient *client) {
 		len += 1; /* +1 so that we read the closing '}'
 		             this will later be checked and then overwritten with a '\0', and is included in the sizeof(struct bufData) */
 
+		/* suck in the data */
 		if ((iret = xbee_netRecv(client->fd, buf->buf, len, MSG_WAITALL)) == -1) {
 			xbee_perror(1, "xbee_netRecv()");
 			goto retry;
@@ -255,12 +285,14 @@ int xbee_netClientRx(struct xbee *xbee, struct xbee_netClient *client) {
 			break;
 		}
 
+		/* check we have the terminator ('}') and replace it with a nul ('\0') */
 		if (buf->buf[buf->len] != '}') {
 			xbee_log(1, "invalid data recieved...");
 			goto next;
 		}
 		buf->buf[buf->len] = '\0';
 
+		/* find a net handler that is registered for this messageID */
 		for (pos = 0; netHandlers[pos].handler; pos++ ) {
 			if (netHandlers[pos].id == id) break;
 		}
@@ -270,6 +302,7 @@ int xbee_netClientRx(struct xbee *xbee, struct xbee_netClient *client) {
 		}
 		xbee_log(2, "Received %d byte message (0x%02X - '%s') @ %p", buf->len, id, netHandlers[pos].handlerName, buf);
 
+		/* print the message! */
 	  xbee_log(20,"Rx message: (%d bytes)", buf->len);
 	  for (i = 0; i < buf->len; i++) {
     	xbee_log(20,"  %2d: 0x%02X '%c'", i, buf->buf[i], ((buf->buf[i] >= ' ' && buf->buf[i] <= '~')?buf->buf[i]:'.'));
@@ -288,8 +321,8 @@ int xbee_netClientRx(struct xbee *xbee, struct xbee_netClient *client) {
 			}
 		}
 
+		/* free the stuff */
 		if (rBuf && rBuf != buf) free(rBuf);
-
 next:
 		free(buf);
 		continue;
@@ -300,6 +333,7 @@ retry:
 	return ret;
 }
 
+/* the receiving thread */
 void xbee_netClientRxThread(struct xbee_netClientThreadInfo *info) {
 	struct xbee *xbee;
 	struct xbee_con *con;
@@ -310,6 +344,7 @@ void xbee_netClientRxThread(struct xbee_netClientThreadInfo *info) {
 
 	xbee = NULL;
 
+	/* check parameters */
 	if (!info) goto die1;
 
 	if (!info->client) goto die2;
@@ -322,11 +357,13 @@ void xbee_netClientRxThread(struct xbee_netClientThreadInfo *info) {
 
 	free(info); info = NULL;
 
+	/* execute the Rx function */
 	if ((ret = xbee_netClientRx(xbee, client)) != 0) {
 		xbee_log(5, "xbee_netClientRx() returned %d", ret);
 	}
 
 die4:
+	/* if we get here, then the client probrably disconnected, so close up */
 	if (ll_ext_item(&xbee->net->clientList, client)) {
 		xbee_log(1, "tried to remove missing client... %p", client);
 		goto die2;
@@ -337,9 +374,11 @@ die3:
 
 	xbee_log(2, "connection from %s:%hu ended", client->addr, client->port);
 
+	/* remove all xbee connections that the network client had active */
 	while ((con = ll_ext_head(&client->conList)) != NULL) {
 		void *p;
 		xbee_conEnd(xbee, con, &p);
+		/* we know what the userData was, so it's okay to free() it */
 		if (p) free(p);
 	}
 	ll_destroy(&client->conList, NULL);
@@ -351,11 +390,13 @@ die1:;
 
 /* ######################################################################### */
 
+/* currently just returns 'OK!' */
 int xbee_netAuthorizeAddress(struct xbee *xbee, char *addr) {
 	/* checks IP address, returns 0 to allow, else deny. not yet implemented */
 	return 0;
 }
 
+/* the listen thread - accepts incoming connections */
 void xbee_netListenThread(struct xbee *xbee) {
 	struct sockaddr_in addrinfo;
 	socklen_t addrlen;
@@ -370,13 +411,17 @@ void xbee_netListenThread(struct xbee *xbee) {
 	run = 1;
 
 	while (xbee->net && run) {
+		/* accept the next connection */
 		addrlen = sizeof(addrinfo);
 		if ((confd = accept(xbee->net->fd, (struct sockaddr *)&addrinfo, &addrlen)) < 0) {
 			xbee_perror(1, "accept()");
 			usleep(750000);
 			goto die1;
 		}
+		
 		if (!xbee->net) break;
+		
+		/* get the network address info */
 		memset(addr, 0, sizeof(addr));
 		if (inet_ntop(AF_INET, (const void *)&addrinfo.sin_addr, addr, sizeof(addr)) == NULL) {
 			xbee_perror(1, "inet_ntop()");
@@ -384,6 +429,7 @@ void xbee_netListenThread(struct xbee *xbee) {
 		}
 		port = ntohs(addrinfo.sin_port);
 
+		/* try to authorize the host */
 		if (xbee_netAuthorizeAddress(xbee, addr)) {
 			xbee_log(0, "*** connection from %s:%hu was blocked ***", addr, port);
 			goto die2;
@@ -391,6 +437,7 @@ void xbee_netListenThread(struct xbee *xbee) {
 
 		xbee_log(2, "accepted connection from %s:%hu", addr, port);
 
+		/* build up some info */
 		if ((tinfo = calloc(1, sizeof(*tinfo))) == NULL) {
 			xbee_log(1, "calloc(): no memory");
 			run = 0;
@@ -409,11 +456,13 @@ void xbee_netListenThread(struct xbee *xbee) {
 		tinfo->client->port = port;
 		ll_init(&tinfo->client->conList);
 
+		/* start the thread */
 		if (xsys_thread_create(&tinfo->client->rxThread, (void*(*)(void*))xbee_netClientRxThread, (void*)tinfo)) {
 			xbee_log(1, "xsys_thread_create(): failed to start client thread...");
 			goto die5;
 		}
 
+		/* add the client to the list */
 		ll_add_tail(&xbee->net->clientList, tinfo->client);
 
 		continue;
@@ -431,12 +480,14 @@ die1:
 	}
 }
 
+/* start listening for connections on the given port */
 EXPORT int xbee_netStart(struct xbee *xbee, int port) {
 	int ret;
 	int i;
 	struct xbee_netInfo *net;
   struct sockaddr_in addrinfo;
 
+	/* check parameters */
 	if (!xbee) {
     if (!xbee_default) return XBEE_ENOXBEE;
     xbee = xbee_default;
@@ -450,6 +501,7 @@ EXPORT int xbee_netStart(struct xbee *xbee, int port) {
 		return xbee->f->netStart(xbee, port);
 	}
 	
+	/* sanity check */
 	if (port <= 0 || port >= 65535) return XBEE_ERANGE;
 
 	ret = XBEE_ENONE;
@@ -466,6 +518,7 @@ EXPORT int xbee_netStart(struct xbee *xbee, int port) {
 	net->listenPort = port;
 	ll_init(&net->clientList);
 
+	/* build a socket */
 	if ((net->fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1) {
 		xbee_perror(1, "socket()");
 		ret = XBEE_EOPENFAILED;
@@ -477,6 +530,7 @@ EXPORT int xbee_netStart(struct xbee *xbee, int port) {
 		xbee_perror(1, "setsockopt()");
 	}
 
+	/* bind it to all interfaces */
 	addrinfo.sin_family = AF_INET;
 	addrinfo.sin_port = htons(net->listenPort);
 	addrinfo.sin_addr.s_addr = INADDR_ANY;
@@ -487,12 +541,14 @@ EXPORT int xbee_netStart(struct xbee *xbee, int port) {
 		goto die3;
 	}
 
+	/* and listen! */
   if (listen(net->fd, 512) == -1) {
     xbee_perror(1, "listen()");
 		ret = XBEE_ESOCKET;
     goto die3;
   }
 
+	/* start the listen/accept thread */
 	if (xbee_threadStartMonitored(xbee, &net->listenThread, xbee_netListenThread, xbee)) {
 		xbee_log(1, "xbee_threadStartMonitored(): failed...");
 		ret = XBEE_ETHREAD;
@@ -513,21 +569,26 @@ done:
 	return ret;
 }
 
+/* kill off the given network client */
 int xbee_netClientKill(struct xbee *xbee, struct xbee_netClient *client) {
 	struct xbee_con *con;
 
+	/* remove it from the list */
 	if (ll_ext_item(&xbee->net->clientList, client)) {
 		xbee_log(1, "tried to remove missing client... %p", client);
 		return XBEE_EINVAL;
 	}
 
+	/* cancel its rx thread */
 	xsys_thread_cancel(client->rxThread);
 
+	/* shutdown the communications link */
 	shutdown(client->fd, SHUT_RDWR);
 	close(client->fd);
 
 	xbee_log(2, "connection from %s:%hu killed", client->addr, client->port);
 
+	/* destroy all the connections */
 	while ((con = ll_ext_head(&client->conList)) != NULL) {
 		void *p;
 		xbee_conEnd(xbee, con, &p);
@@ -540,10 +601,12 @@ int xbee_netClientKill(struct xbee *xbee, struct xbee_netClient *client) {
 	return 0;
 }
 
+/* stop listening for network connections, and kill all active clients */
 EXPORT int xbee_netStop(struct xbee *xbee) {
 	struct xbee_netInfo *net;
 	struct xbee_netClient *client;
 
+	/* check parameters */
   if (!xbee) {
     if (!xbee_default) return XBEE_ENOXBEE;
     xbee = xbee_default;
@@ -561,11 +624,14 @@ EXPORT int xbee_netStop(struct xbee *xbee) {
 	net = xbee->net;
 	xbee->net = NULL;
 
+	/* shutdown the listen/accept thread */
 	xbee_threadStopMonitored(xbee, &net->listenThread, NULL, NULL);
 
+	/* shutdown the listening socket */
 	shutdown(net->fd, SHUT_RDWR);
 	close(net->fd);
 
+	/* kill off all the active clients */
 	while ((client = ll_ext_head(&net->clientList)) != NULL) {
 		xbee_netClientKill(xbee, client);
 	}

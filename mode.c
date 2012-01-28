@@ -34,11 +34,12 @@
 
 /* these are the built-in modes avaliable to the user */
 struct xbee_mode *xbee_modes[] = {
-	&xbee_mode_s1,
-	&xbee_mode_s2,
+	&xbee_mode_s1, /* in xbee_s1.c */
+	&xbee_mode_s2, /* in xbee_s2.c */
 	NULL
 };
 
+/* cleanup a mode (called before applying a new mode, and on shutdown) */
 void xbee_cleanupMode(struct xbee *xbee) {
 	int i, o;
 	struct xbee_conType *conType;
@@ -48,9 +49,14 @@ void xbee_cleanupMode(struct xbee *xbee) {
 	struct bufData *buf;
 	struct xbee_mode *mode;
 	
+	/* if there isn't a mode set, then we have nothing to do! */
 	if (!xbee->mode) return;
+	
+	/* swap out the modes, we'll hold on to the current mode, and give them nothing! */
 	mode = xbee->mode;
 	xbee->mode = NULL;
+	
+	/* the xbee_log() calls can suffice for comments here... */
 	
 	xbee_log(5,"- Cleaning up connections...");
 	for (i = 0; mode->conTypes[i].name; i++) {
@@ -69,6 +75,7 @@ void xbee_cleanupMode(struct xbee *xbee) {
 				xsys_thread_cancel(con->callbackThread);
 			}
 			
+			/* we don't use ll_destroy() here, because we want to get some stats (number of packets discarded) */
 			for (o = 0; (pkt = ll_ext_head(&con->rxList)) != NULL; o++) {
 				xbee_pktFree(pkt);
 			}
@@ -95,6 +102,7 @@ void xbee_cleanupMode(struct xbee *xbee) {
 				xsys_thread_cancel(pktHandler->rxData->thread);
 			}
 			
+			/* we don't use ll_destroy() here, because we want to get some stats (number of packets discarded) */
 			for (o = 0; (buf = ll_ext_head(&pktHandler->rxData->list)) != NULL; o++) {
 				free(buf);
 			}
@@ -107,21 +115,29 @@ void xbee_cleanupMode(struct xbee *xbee) {
 		}
 	}
 	
+	/* finish tidying up the mode */
 	free(mode->pktHandlers);
 	free(mode->conTypes);
 	free(mode);
 }
 
+/* returns a string that indicates the current mode
+   don't modify the memory at this location */
 EXPORT char *xbee_modeGet(struct xbee *xbee) {
+	/* check parameters */
 	if (!xbee) {
 		if (!xbee_default) return NULL;
 		xbee = xbee_default;
 	}
 	if (!xbee_validate(xbee)) return NULL;
 	if (!xbee->mode) return NULL;
+	
+	/* return the juice */
 	return xbee->mode->name;
 }
 
+/* get a list of modes
+   for a full example of how to read what this returns, see samples/modes/ */
 EXPORT char **xbee_modeGetList(void) {
 	char **modes;
 	char *d;
@@ -129,30 +145,40 @@ EXPORT char **xbee_modeGetList(void) {
 	int datalen;
 	
 	datalen = 0;
+	/* add up the space required for all the strings */
 	for (i = 0; xbee_modes[i]; i++) {
 		datalen += sizeof(char) * (strlen(xbee_modes[i]->name) + 1);
 	}
+	/* add space for a pointer each, and another for the NULL */
 	datalen += sizeof(char *) * (i + 1);
 	
+	/* allocate the storage */
 	if ((modes = calloc(1, datalen)) == NULL) return NULL;
+	/* get a hold of the begining of the strings */
 	d = (char *)&(modes[i+1]);
 	
+	/* populate the memory (pointers and strings) */
 	for (i = 0; xbee_modes[i]; i++) {
 		strcpy(d, xbee_modes[i]->name);
 		modes[i] = d;
 		d = &(d[strlen(xbee_modes[i]->name) + 1]);
 	}
+	/* null terminate the pointers */
 	modes[i] = NULL;
 	
+	/* return pointers -> NULL -> strings in a single block of memory */
 	return modes;
 }
 
+/* set the mode based on the string provided */
 EXPORT int xbee_modeSet(struct xbee *xbee, char *name) {
 	struct xbee_mode *mode, *foundMode;
 	struct xbee_conType *conType;
 	int isRx;
 	int ret;
 	int i, o, c;
+	
+	/* check parameters */
 	if (!xbee) {
 		if (!xbee_default) return XBEE_ENOXBEE;
 		xbee = xbee_default;
@@ -161,10 +187,12 @@ EXPORT int xbee_modeSet(struct xbee *xbee, char *name) {
 	if (!name) return XBEE_EMISSINGPARAM;
 	
 	ret = 0;
+	
+	/* cleanup any existing mode */
 	xbee_cleanupMode(xbee);
 
 	foundMode = NULL;
-	/* check that the mode specified is in our list of avaliable modes (xbee_sG.c) */
+	/* check that the mode specified is actually in our list of avaliable modes (xbee_sG.c) */
 	for (i = 0; xbee_modes[i]; i++) {
 		if (!strcasecmp(xbee_modes[i]->name, name)) {
 			foundMode = xbee_modes[i];
@@ -172,21 +200,28 @@ EXPORT int xbee_modeSet(struct xbee *xbee, char *name) {
 		}
 	}
 	if (!foundMode) {
-		foundMode = xbee_pluginModeGet(name);
+		/* if it isn't then look to see if a plugin provides it */
+		foundMode = xbee_pluginModeGet(name, xbee);
 	}
+	/* if it still hasn't been found, then it doesn't exist */
 	if (!foundMode) return XBEE_EFAILED;
 	
+	/* ensure that the mode found has some conTypes, pktHandlers and a friendly name */
 	if (!foundMode->conTypes ||
 			!foundMode->pktHandlers ||
 			!foundMode->name) return XBEE_EFAILED;
 	
+	/* if this mode isn't initialized, then get it going! */
 	if (!foundMode->initialized) {
+		/* count the number of packet handlers */
 		for (o = 0; foundMode->pktHandlers[o].handler; o++);
 		foundMode->pktHandlerCount = o;
 		xbee_log(10, "Counted %d packet handlers...", o);
+		/* count the number of connection Types */
 		for (o = 0; foundMode->conTypes[o].name; o++);
 		foundMode->conTypeCount = o;
 		xbee_log(10, "Counted %d connection types...", o);
+		/* mark it as initialized */
 		foundMode->initialized = 1;
 	}
 			
@@ -197,21 +232,26 @@ EXPORT int xbee_modeSet(struct xbee *xbee, char *name) {
 	}
 	mode->name = foundMode->name; /* this is static... we are happy to link in */
 	
-	if ((mode->pktHandlers = calloc(1, sizeof(struct xbee_pktHandler) * (foundMode->pktHandlerCount + 1))) == NULL) {
+	/* get hold of the list of packet handlers */
+	if ((mode->pktHandlers = malloc(sizeof(struct xbee_pktHandler) * (foundMode->pktHandlerCount + 1))) == NULL) {
 		ret = XBEE_ENOMEM;
 		goto die2;
 	}
-	memcpy(mode->pktHandlers, foundMode->pktHandlers, sizeof(struct xbee_pktHandler) * foundMode->pktHandlerCount);
+	/* NULL termination should happen by means of this memcpy() */
+	memcpy(mode->pktHandlers, foundMode->pktHandlers, sizeof(struct xbee_pktHandler) * (foundMode->pktHandlerCount + 1));
 	
-	if ((mode->conTypes = calloc(1, sizeof(struct xbee_conType) * (foundMode->conTypeCount + 1))) == NULL) {
+	/* get hold of the connection types */
+	if ((mode->conTypes = malloc(sizeof(struct xbee_conType) * (foundMode->conTypeCount + 1))) == NULL) {
 		ret = XBEE_ENOMEM;
 		goto die3;
 	}
-	memcpy(mode->conTypes, foundMode->conTypes, sizeof(struct xbee_conType) * foundMode->conTypeCount);
+	/* NULL termination should happen by means of this memcpy() */
+	memcpy(mode->conTypes, foundMode->conTypes, sizeof(struct xbee_conType) * (foundMode->conTypeCount + 1));
 	
+	/* log something interesting */
 	xbee_log(1,"Setting mode to '%s'", name);
 	
-	/* wipe all connection types */
+	/* wipe all connection types - these shouldn't be set anyway */
 	for (i = 0; mode->conTypes[i].name; i++) {
 		mode->conTypes[i].rxHandler = NULL;
 		mode->conTypes[i].txHandler = NULL;
@@ -222,6 +262,8 @@ EXPORT int xbee_modeSet(struct xbee *xbee, char *name) {
 	c = 0;
 	for (i = 0; mode->pktHandlers[i].handler; i++) {
 		mode->pktHandlers[i].initialized = 0;
+		
+		/* discover any duplicates */
 		for (o = 0; o < i; o++) {
 			if (mode->pktHandlers[o].id == mode->pktHandlers[i].id) break;
 		}
@@ -229,49 +271,66 @@ EXPORT int xbee_modeSet(struct xbee *xbee, char *name) {
 			xbee_log(3,"Duplicate packet handler found! (0x%02X) - The first will be used", mode->pktHandlers[i].id);
 			continue;
 		}
+		
+		/* get the conType for this packet handler */
 		if ((conType = _xbee_conTypeFromID(mode->conTypes, mode->pktHandlers[i].id,1)) == NULL) {
 			xbee_log(3,"No conType found for packet handler (0x%02X)", mode->pktHandlers[i].id);
 			continue;
 		}
+		/* match up the Rx / Tx IDs */
 		if (conType->rxEnabled && conType->rxID == mode->pktHandlers[i].id) {
+			/* and assign the handler to the conType */
 			conType->rxHandler = &(mode->pktHandlers[i]);
 			isRx = 1;
 		} else if (conType->txEnabled && conType->txID == mode->pktHandlers[i].id) {
+			/* and assign the handler to the conType */
 			conType->txHandler = &(mode->pktHandlers[i]);
 			isRx = 0;
 		} else {
+			/* shouldn't really get here... but a joke is always fun in situations like these */
 			xbee_log(1,"Umm... why am I here?");
 			continue;
 		}
-		conType->initialized = 1;
-		ll_init(&conType->conList);
+		
+		if (!conType->initialized) {
+			/* mark the conType as (at least) partially initialized - not all conTypes have both Tx and Rx */
+			conType->initialized = 1;
+			ll_init(&conType->conList);
+		}
+		
+		/* match up the pktHandler and conType */
 		mode->pktHandlers[i].conType = conType;
+		/* mark the pktHandler as initialized */
 		mode->pktHandlers[i].initialized = 1;
+		
+		/* log some datails about what just happened */
 		xbee_log(3,"Activated %s packet handler for ID: 0x%02X,  conType: %s", ((isRx)?"Rx":"Tx"), mode->pktHandlers[i].id, conType->name);
 		c++;
 	}
+	/* log some stats */
 	xbee_log(2,"Successfully activated %d packet handlers", c);
 	mode->pktHandlerCount = i;
 	
 	/* check for unused conTypes */
 	c = 0;
 	for (i = 0; mode->conTypes[i].name; i++) {
-		if (!mode->conTypes[i].initialized) {
-			if (mode->conTypes[i].rxEnabled && mode->conTypes[i].txEnabled) {
-				xbee_log(3,"Unused conType for Rx: 0x%02X,  Tx: 0x%02X,  Name: %s", mode->conTypes[i].rxID, mode->conTypes[i].txID, mode->conTypes[i].name);
-			} else if (mode->conTypes[i].rxEnabled) {
-				xbee_log(3,"Unused conType for Rx: 0x%02X,  Tx: ----,  Name: %s", mode->conTypes[i].rxID, mode->conTypes[i].name);
-			} else if (mode->conTypes[i].txEnabled) {
-				xbee_log(3,"Unused conType for Rx: ----,  Tx: 0x%02X,  Name: %s", mode->conTypes[i].txID, mode->conTypes[i].name);
-			} else {
-				xbee_log(3,"Unused conType for Rx: ----,  Tx: ----,  Name: %s", mode->conTypes[i].name);
-			}
-			c++;
+		if (mode->conTypes[i].initialized) continue;
+		if (mode->conTypes[i].rxEnabled && mode->conTypes[i].txEnabled) {
+			xbee_log(3,"Unused conType for Rx: 0x%02X,  Tx: 0x%02X,  Name: %s", mode->conTypes[i].rxID, mode->conTypes[i].txID, mode->conTypes[i].name);
+		} else if (mode->conTypes[i].rxEnabled) {
+			xbee_log(3,"Unused conType for Rx: 0x%02X,  Tx: ----,  Name: %s", mode->conTypes[i].rxID, mode->conTypes[i].name);
+		} else if (mode->conTypes[i].txEnabled) {
+			xbee_log(3,"Unused conType for Rx: ----,  Tx: 0x%02X,  Name: %s", mode->conTypes[i].txID, mode->conTypes[i].name);
+		} else {
+			xbee_log(3,"Unused conType for Rx: ----,  Tx: ----,  Name: %s", mode->conTypes[i].name);
 		}
+		c++;
 	}
+	/* log some unused stats (if appropriate) */
 	if (c) xbee_log(2,"Found %d unused conTypes...", c);
 	mode->conTypeCount = i;
 	
+	/* we finished setting up the mode! */
 	xbee->mode = mode;
 	goto done;
 die3:
