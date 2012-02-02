@@ -465,9 +465,14 @@ EXPORT int xbee_connTx(struct xbee *xbee, struct xbee_con *con, char *data, int 
 	
 	/* if the connection has 'waitForAck' enabled, then we need to get a free FrameID that can be used */
 	if (waitForAckEnabled) {
+		/* if we are configured to wait for an Ack, then we need to lock down the connection */
+		xbee_log(4,"Locking txMutex for con @ %p", con);
+		xsys_mutex_lock(&con->txMutex);
 		if ((con->frameID = xbee_frameIdGet(xbee, con)) == 0) {
 			/* currently we don't inform the user (BAD), but this is unlikely unless you are communicating with >256 remote nodes */
 			xbee_log(1,"No avaliable frame IDs... we can't validate delivery");
+			xbee_log(4,"Unlocking txMutex for con @ %p (failed to get FrameID)", con);
+			xsys_mutex_unlock(&con->txMutex);
 		} else {
 			/* mark the FrameID as present */
 			con->frameID_enabled = 1;
@@ -490,12 +495,6 @@ EXPORT int xbee_connTx(struct xbee *xbee, struct xbee_con *con, char *data, int 
 			goto die2;
 		}
 		free(oBuf);
-	}
-	
-	/* if we are configured to wait for an Ack, then we need to lock down the connection */
-	if (waitForAckEnabled && con->frameID) {
-		xbee_log(4,"Locking txMutex for con @ %p", con);
-		xsys_mutex_lock(&con->txMutex);
 	}
 	
 	if (!xbee->f->connTx) {
