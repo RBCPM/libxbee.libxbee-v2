@@ -61,7 +61,7 @@ struct xbee {
 	xsys_sem txSem;
 	int txRunning;
 	
-	struct xbee_frameIdInfo frameIds[0xFF];
+	struct xbee_frameIdInfo frameIds[0x100];
 	unsigned char frameIdLast;
 	xsys_mutex frameIdMutex;
 	
