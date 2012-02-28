@@ -233,7 +233,7 @@ int xbee_s1_DataTx(struct xbee *xbee, struct xbee_pktHandler *handler, char isRx
 		goto die2;
 	}
 	
-	if (con->options.disableAck)   nBuf->buf[offset + 2] |= 0x01;
+	if (!con->options.waitForAck)  nBuf->buf[offset + 2] |= 0x01;
 	if (con->options.broadcastPAN) nBuf->buf[offset + 2] |= 0x04;
 	
 	nBuf->len = offset + 3 + (*buf)->len;

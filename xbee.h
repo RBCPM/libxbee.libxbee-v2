@@ -91,7 +91,6 @@ struct xbee_conAddress {
 };
 /* this struct stores the settings for a connection. It should be passed to xbee_conOptions() */
 struct xbee_conOptions {
-	unsigned char disableAck   : 1;
 	unsigned char broadcastPAN : 1;
 	unsigned char queueChanges : 1;
 	unsigned char waitForAck   : 1;
